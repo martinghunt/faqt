@@ -10,6 +10,10 @@ Supported sequence inputs:
 
 * FASTA
 * FASTQ
+* Clustal
+* PHYLIP
+* SAM (sequence only)
+* BAM (sequence only)
 * GenBank (sequence only)
 * EMBL (sequence only)
 * GFF3 (sequence only, from `##FASTA` section only)
@@ -74,7 +78,7 @@ Rules:
 ## Package responsibilities
 
 * `seqio`: public API, SeqRecord, Reader/Writer, open helpers
-* `fasta`, `fastq`, `genbank`, `embl`, `gff3`: format parsers
+* `fasta`, `fastq`, `clustal`, `phylip`, `sam`, `bam`, `genbank`, `embl`, `gff3`: format parsers
 * `seq`: sequence utilities
 * `orf`: ORF finding
 * `internal/sniff`: format detection
@@ -97,6 +101,32 @@ Do not mix responsibilities.
 
 * Multi-record required
 * Strict validation of seq/qual length
+
+### Clustal
+
+* Read aligned sequences from multi-block input
+* Preserve gaps as sequence characters
+* Multi-record required
+
+### PHYLIP
+
+* Read relaxed sequential PHYLIP
+* Preserve aligned sequence content
+* Multi-record required
+
+### SAM
+
+* Read sequence and quality from alignment records only
+* Ignore alignment data except reverse-strand orientation
+* Reverse sequence and quality back to original read orientation when reverse-strand flag is set
+* Multi-record required
+
+### BAM
+
+* Read sequence and quality from BAM alignment records only
+* Ignore alignment data except reverse-strand orientation
+* Reverse sequence and quality back to original read orientation when reverse-strand flag is set
+* Multi-record required
 
 ### GenBank
 
