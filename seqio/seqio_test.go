@@ -224,6 +224,131 @@ func TestCreatePathCompressionByExtension(t *testing.T) {
 	}
 }
 
+func TestOpenWriterHelpers(t *testing.T) {
+	var fastaOut bytes.Buffer
+	fastaWriter, err := seqio.OpenFASTAWriter(&fastaOut, seqio.WithCompression(seqio.CompressGzip), seqio.WithWrap(2))
+	if err != nil {
+		t.Fatalf("OpenFASTAWriter() error = %v", err)
+	}
+	if err := fastaWriter.Write(&seqio.SeqRecord{Name: "f1", Seq: []byte("ACGT")}); err != nil {
+		t.Fatalf("FASTA Write() error = %v", err)
+	}
+	if err := fastaWriter.Close(); err != nil {
+		t.Fatalf("FASTA Close() error = %v", err)
+	}
+	r, err := seqio.OpenReader(bytes.NewReader(fastaOut.Bytes()))
+	if err != nil {
+		t.Fatalf("OpenReader(fasta) error = %v", err)
+	}
+	rec, err := r.Read()
+	if err != nil {
+		t.Fatalf("Read(fasta) error = %v", err)
+	}
+	if rec.Name != "f1" || string(rec.Seq) != "ACGT" {
+		t.Fatalf("fasta record = %+v", rec)
+	}
+
+	var fastqOut bytes.Buffer
+	fastqWriter, err := seqio.OpenFASTQWriter(&fastqOut, seqio.WithCompression(seqio.CompressGzip))
+	if err != nil {
+		t.Fatalf("OpenFASTQWriter() error = %v", err)
+	}
+	if err := fastqWriter.Write(&seqio.SeqRecord{Name: "q1", Seq: []byte("AC"), Qual: []byte("!!")}); err != nil {
+		t.Fatalf("FASTQ Write() error = %v", err)
+	}
+	if err := fastqWriter.Close(); err != nil {
+		t.Fatalf("FASTQ Close() error = %v", err)
+	}
+	r, err = seqio.OpenReader(bytes.NewReader(fastqOut.Bytes()))
+	if err != nil {
+		t.Fatalf("OpenReader(fastq) error = %v", err)
+	}
+	rec, err = r.Read()
+	if err != nil {
+		t.Fatalf("Read(fastq) error = %v", err)
+	}
+	if rec.Name != "q1" || string(rec.Qual) != "!!" {
+		t.Fatalf("fastq record = %+v", rec)
+	}
+}
+
+func TestCreateFASTQPathHelper(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "out.fq.gz")
+	w, err := seqio.CreateFASTQPath(path)
+	if err != nil {
+		t.Fatalf("CreateFASTQPath() error = %v", err)
+	}
+	if err := w.Write(&seqio.SeqRecord{Name: "r1", Seq: []byte("AC"), Qual: []byte("!!")}); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
+	r, err := seqio.OpenPath(path)
+	if err != nil {
+		t.Fatalf("OpenPath() error = %v", err)
+	}
+	rec, err := r.Read()
+	if err != nil {
+		t.Fatalf("Read() error = %v", err)
+	}
+	if rec.Name != "r1" || string(rec.Seq) != "AC" || string(rec.Qual) != "!!" {
+		t.Fatalf("record = %+v", rec)
+	}
+}
+
+func TestWriterErrors(t *testing.T) {
+	var buf bytes.Buffer
+
+	if _, err := seqio.OpenWriter(&buf, seqio.FASTA, seqio.WithCompression(seqio.Compression("bogus"))); err == nil {
+		t.Fatal("OpenWriter() error = nil, want unsupported compression error")
+	}
+
+	w := seqio.NewWriter(&buf, seqio.SAM)
+	if err := w.Write(&seqio.SeqRecord{Name: "r1", Seq: []byte("AC")}); err == nil || !strings.Contains(err.Error(), "unsupported output format") {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if err := w.Write(nil); err == nil || !strings.Contains(err.Error(), "cannot write nil record") {
+		t.Fatalf("Write(nil) error = %v", err)
+	}
+}
+
+func TestOpenPathUnknownFormat(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "unknown.txt")
+	if err := os.WriteFile(path, []byte("this is not a sequence file\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	if _, err := seqio.OpenPath(path); err == nil || !strings.Contains(err.Error(), "could not detect sequence format") {
+		t.Fatalf("OpenPath() error = %v", err)
+	}
+}
+
+func TestCompressionAndBasePathHelpers(t *testing.T) {
+	tests := []struct {
+		path     string
+		wantComp seqio.Compression
+		wantBase string
+	}{
+		{path: "reads.fa.gz", wantComp: seqio.CompressGzip, wantBase: "reads.fa"},
+		{path: "reads.fa.bz2", wantComp: seqio.CompressBzip2, wantBase: "reads.fa"},
+		{path: "reads.fa.xz", wantComp: seqio.CompressXZ, wantBase: "reads.fa"},
+		{path: "reads.fa.zst", wantComp: seqio.CompressZstd, wantBase: "reads.fa"},
+		{path: "reads.fa", wantComp: seqio.CompressNone, wantBase: "reads.fa"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.path, func(t *testing.T) {
+			if got := seqio.CompressionFromPath(tc.path); got != tc.wantComp {
+				t.Fatalf("CompressionFromPath() = %q, want %q", got, tc.wantComp)
+			}
+			if got := seqio.BasePathWithoutCompression(tc.path); got != tc.wantBase {
+				t.Fatalf("BasePathWithoutCompression() = %q, want %q", got, tc.wantBase)
+			}
+		})
+	}
+}
+
 func TestRecordStringWriteToAndWriter(t *testing.T) {
 	rec := seqio.SeqRecord{Name: "r1", Description: "desc", Seq: []byte("ACGT")}
 	if got := rec.String(); got != ">r1 desc\nACGT\n" {

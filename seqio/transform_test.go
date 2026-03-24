@@ -2,9 +2,11 @@ package seqio_test
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/martinghunt/faqt/seq"
@@ -84,3 +86,56 @@ func TestToFASTAPath(t *testing.T) {
 		t.Fatalf("record = %+v", rec)
 	}
 }
+
+func TestToFASTAPathWithTransform(t *testing.T) {
+	dir := t.TempDir()
+	in := filepath.Join(dir, "reads.fa")
+	out := filepath.Join(dir, "reads.filtered.fa")
+	if err := os.WriteFile(in, []byte(">keep\nACGT\n>drop\nTTAA\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	err := seqio.ToFASTAPathWithTransform(in, out, func(rec *seqio.SeqRecord) (*seqio.SeqRecord, error) {
+		if rec.Name == "drop" {
+			return nil, nil
+		}
+		return rec, nil
+	})
+	if err != nil {
+		t.Fatalf("ToFASTAPathWithTransform() error = %v", err)
+	}
+
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if string(data) != ">keep\nACGT\n" {
+		t.Fatalf("output = %q", string(data))
+	}
+}
+
+func TestProcessErrorPaths(t *testing.T) {
+	reader, err := seqio.OpenReader(bytes.NewBufferString(">r1\nACGT\n"))
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+
+	if err := seqio.Process(reader, errorWriter{}, nil); err == nil || !strings.Contains(err.Error(), "write failed") {
+		t.Fatalf("Process() error = %v", err)
+	}
+
+	reader, err = seqio.OpenReader(bytes.NewBufferString(">r1\nACGT\n"))
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+	if err := seqio.Process(reader, seqio.NewFASTAWriter(io.Discard), func(*seqio.SeqRecord) (*seqio.SeqRecord, error) {
+		return nil, errors.New("transform failed")
+	}); err == nil || !strings.Contains(err.Error(), "transform failed") {
+		t.Fatalf("Process() error = %v", err)
+	}
+}
+
+type errorWriter struct{}
+
+func (errorWriter) Write(*seqio.SeqRecord) error { return errors.New("write failed") }
+func (errorWriter) Close() error                 { return nil }

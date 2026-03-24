@@ -3,8 +3,10 @@ package stats_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/martinghunt/faqt/seqio"
 	"github.com/martinghunt/faqt/stats"
 )
 
@@ -98,6 +100,54 @@ func TestMinimumLength(t *testing.T) {
 	}
 	if s.TotalLength != 14 || s.Number != 2 || s.Shortest != 6 || s.Longest != 8 {
 		t.Fatalf("stats = %+v", s)
+	}
+}
+
+func TestRenderMany(t *testing.T) {
+	path1 := writeStatsFixture(t)
+	path2 := filepath.Join(t.TempDir(), "stats2.fasta")
+	if err := os.WriteFile(path2, []byte(">x\nAAAA\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	s1, err := stats.FromPath(path1, 1)
+	if err != nil {
+		t.Fatalf("FromPath(path1) error = %v", err)
+	}
+	s2, err := stats.FromPath(path2, 1)
+	if err != nil {
+		t.Fatalf("FromPath(path2) error = %v", err)
+	}
+
+	tab := stats.RenderMany([]stats.Stats{s1, s2}, stats.FormatTab)
+	if !strings.HasPrefix(tab, "filename\ttotal_length") {
+		t.Fatalf("RenderMany(tab) = %q", tab)
+	}
+	if strings.Count(tab, "filename\ttotal_length") != 1 {
+		t.Fatalf("RenderMany(tab) header count = %d, want 1", strings.Count(tab, "filename\ttotal_length"))
+	}
+
+	greppy := stats.RenderMany([]stats.Stats{s2}, stats.FormatGreppy)
+	if !strings.Contains(greppy, path2+"\ttotal_length\t4\n") {
+		t.Fatalf("RenderMany(greppy) = %q", greppy)
+	}
+
+	if got := stats.RenderMany(nil, stats.FormatTab); got != "" {
+		t.Fatalf("RenderMany(nil, tab) = %q, want empty string", got)
+	}
+}
+
+func TestRemoveDashes(t *testing.T) {
+	rec := &seqio.SeqRecord{Name: "r1", Seq: []byte("A-C--GT"), Qual: []byte("!!!!!!")}
+	got, err := stats.RemoveDashes(rec)
+	if err != nil {
+		t.Fatalf("RemoveDashes() error = %v", err)
+	}
+	if string(got.Seq) != "ACGT" {
+		t.Fatalf("RemoveDashes() seq = %q, want ACGT", got.Seq)
+	}
+	if string(rec.Seq) != "A-C--GT" {
+		t.Fatalf("original seq mutated = %q", rec.Seq)
 	}
 }
 
