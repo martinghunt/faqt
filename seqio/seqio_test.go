@@ -2,6 +2,7 @@ package seqio_test
 
 import (
 	"bytes"
+	"compress/gzip"
 	"io"
 	"os"
 	"path/filepath"
@@ -191,6 +192,47 @@ func TestOpenPathDetectsCompressionAndIgnoresFilename(t *testing.T) {
 	}
 	if rec.Name != "rec1" || string(rec.Seq) != "ACGT" {
 		t.Fatalf("record = %+v", rec)
+	}
+}
+
+func TestOpenPathDetectsGzippedFASTQWithLongFirstRecord(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "long-first-record.fastq.gz")
+	firstSeq := strings.Repeat("A", 5000)
+	firstQual := strings.Repeat("I", len(firstSeq))
+	input := "@read1\n" + firstSeq + "\n+\n" + firstQual + "\n@read2\nACGT\n+\n####\n"
+
+	fh, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	gw := gzip.NewWriter(fh)
+	if _, err := gw.Write([]byte(input)); err != nil {
+		t.Fatalf("gzip Write() error = %v", err)
+	}
+	if err := gw.Close(); err != nil {
+		t.Fatalf("gzip Close() error = %v", err)
+	}
+	if err := fh.Close(); err != nil {
+		t.Fatalf("file Close() error = %v", err)
+	}
+
+	r, err := seqio.OpenPath(path)
+	if err != nil {
+		t.Fatalf("OpenPath() error = %v", err)
+	}
+	first, err := r.Read()
+	if err != nil {
+		t.Fatalf("Read(first) error = %v", err)
+	}
+	if first.Name != "read1" || len(first.Seq) != len(firstSeq) || len(first.Qual) != len(firstQual) {
+		t.Fatalf("first record = %+v", first)
+	}
+	second, err := r.Read()
+	if err != nil {
+		t.Fatalf("Read(second) error = %v", err)
+	}
+	if second.Name != "read2" || string(second.Seq) != "ACGT" || string(second.Qual) != "####" {
+		t.Fatalf("second record = %+v", second)
 	}
 }
 

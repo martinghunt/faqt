@@ -58,7 +58,7 @@ func OpenReader(r io.Reader) (Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	br := bufio.NewReader(rc)
+	br := bufio.NewReaderSize(rc, sniff.PeekSize)
 	detected, err := sniff.Format(br)
 	if err != nil {
 		_ = rc.Close()
@@ -104,7 +104,7 @@ func OpenPath(path string) (Reader, error) {
 		_ = src.Close()
 		return nil, err
 	}
-	br := bufio.NewReader(rc)
+	br := bufio.NewReaderSize(rc, sniff.PeekSize)
 	detected, err := sniff.Format(br)
 	if err != nil {
 		_ = newMultiCloser(src, rc).Close()

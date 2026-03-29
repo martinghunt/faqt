@@ -6,10 +6,10 @@ import (
 	"fmt"
 )
 
-const peekSize = 8192
+const PeekSize = 8192
 
 func Format(r *bufio.Reader) (string, error) {
-	buf, err := r.Peek(peekSize)
+	buf, err := r.Peek(PeekSize)
 	if err != nil && !isShortPeek(err) {
 		return "", err
 	}
