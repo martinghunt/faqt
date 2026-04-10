@@ -22,6 +22,8 @@ Default behavior:
 Options:
   --release           Build the full release matrix:
                       darwin/linux/windows x amd64/arm64.
+                      Release outputs are compressed:
+                      .tar.gz for darwin/linux, .zip for windows.
   --all               Same target matrix as --release, but version is optional.
   --version VERSION   Version string for release artifact filenames.
   --os GOOS           Build only for the specified GOOS.
@@ -120,6 +122,28 @@ export GOCACHE="${GOCACHE:-$DEFAULT_CACHE_DIR/gocache}"
 
 build_version="${version:-dev}"
 
+package_release_artifact() {
+	local goos="$1"
+	local outfile="$2"
+	local artifact="$3"
+	local package_base="$output_dir/${artifact}"
+
+	case "$goos" in
+		windows)
+			echo "packaging ${package_base}.zip"
+			(
+				cd "$output_dir"
+				zip -q -m "${artifact}.zip" "$(basename "$outfile")"
+			)
+			;;
+		*)
+			echo "packaging ${package_base}.tar.gz"
+			tar -C "$output_dir" -czf "${package_base}.tar.gz" "$(basename "$outfile")"
+			rm -f "$outfile"
+			;;
+	esac
+}
+
 build_one() {
 	local goos="$1"
 	local goarch="$2"
@@ -151,6 +175,10 @@ build_one() {
 				-ldflags "-X github.com/martinghunt/faqt/internal/buildinfo.Version=${build_version}" \
 				-o "$outfile" ./cmd/faqt
 	)
+
+	if [[ $release_mode -eq 1 ]]; then
+		package_release_artifact "$goos" "$outfile" "${artifact}"
+	fi
 }
 
 if [[ $release_mode -eq 1 || $all_mode -eq 1 ]]; then
