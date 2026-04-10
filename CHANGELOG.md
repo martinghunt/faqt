@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-10
+
 ### Changed
 - Release builds now produce compressed artifacts: `.tar.gz` for darwin and linux, and `.zip` for windows.
 
@@ -17,5 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/martinghunt/faqt/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/martinghunt/faqt/releases/tag/v0.1.0
