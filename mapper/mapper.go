@@ -46,10 +46,13 @@ type ChainOptions struct {
 	MinScore         int
 	GapPenalty       int
 	OccurrenceWeight int
+	SplitGapDiff     int
+	SplitGapRatio    float64
 }
 
 type Candidate struct {
 	Chain          Chain
+	SeedLength     int
 	RefName        string
 	QueryRange     seq.Interval
 	RefRange       seq.Interval
@@ -102,6 +105,8 @@ func DefaultPipeline() Pipeline {
 				MinScore:         2,
 				GapPenalty:       1,
 				OccurrenceWeight: 0,
+				SplitGapDiff:     200,
+				SplitGapRatio:    3.0,
 			},
 		},
 	}
@@ -165,6 +170,7 @@ func ExtractCandidates(index *minimizer.Index, query []byte, chains []Chain, opt
 
 		candidates = append(candidates, Candidate{
 			Chain:          chain,
+			SeedLength:     index.K,
 			RefName:        ref.Name,
 			QueryRange:     queryRange,
 			RefRange:       refRange,
@@ -228,7 +234,9 @@ func (c GreedyChainer) Chain(clusters []Cluster) ([]Chain, error) {
 		}
 		start := 0
 		for i := 1; i <= len(cluster.Anchors); i++ {
-			if i == len(cluster.Anchors) || !chainCompatible(cluster.Anchors[i-1], cluster.Anchors[i], c.Options.MaxGap, c.Options.MaxDiagonalDrift) {
+			if i == len(cluster.Anchors) ||
+				!chainCompatible(cluster.Anchors[i-1], cluster.Anchors[i], c.Options.MaxGap, c.Options.MaxDiagonalDrift) ||
+				shouldSplitTransition(cluster.Anchors[i-1], cluster.Anchors[i], c.Options) {
 				if i-start >= c.Options.MinAnchors {
 					chain := makeChain(cluster.RefID, cluster.RelativeStrand, cluster.Anchors[start:i])
 					chain.Score = scoreChain(chain.Anchors, c.Options)
@@ -271,6 +279,12 @@ func (o ChainOptions) validate() error {
 	}
 	if o.OccurrenceWeight < 0 {
 		return fmt.Errorf("occurrence weight must be >= 0")
+	}
+	if o.SplitGapDiff < 0 {
+		return fmt.Errorf("split gap difference must be >= 0")
+	}
+	if o.SplitGapRatio < 0 {
+		return fmt.Errorf("split gap ratio must be >= 0")
 	}
 	return nil
 }
@@ -338,6 +352,41 @@ func chainCompatible(prev, next minimizer.Anchor, maxGap, maxDiagonalDrift int) 
 	}
 
 	return abs(diagonalValue(next)-diagonalValue(prev)) <= maxDiagonalDrift
+}
+
+func shouldSplitTransition(prev, next minimizer.Anchor, opts ChainOptions) bool {
+	queryGap := next.QueryPos - prev.QueryPos
+	if queryGap < 0 {
+		return true
+	}
+
+	var refGap int
+	if relStrand(prev) == 0 {
+		refGap = next.RefPos - prev.RefPos
+	} else {
+		refGap = prev.RefPos - next.RefPos
+	}
+	if refGap < 0 {
+		return true
+	}
+
+	gapDiff := abs(queryGap - refGap)
+	if opts.SplitGapDiff > 0 && gapDiff > opts.SplitGapDiff {
+		return true
+	}
+
+	if opts.SplitGapRatio > 0 {
+		shorter := minNonZero(queryGap, refGap)
+		longer := maxInt(queryGap, refGap)
+		if shorter == 0 {
+			return longer > 0
+		}
+		if float64(longer)/float64(shorter) > opts.SplitGapRatio {
+			return true
+		}
+	}
+
+	return false
 }
 
 func makeCluster(anchors []minimizer.Anchor, diagonalBand int) Cluster {
@@ -431,6 +480,26 @@ func abs(x int) int {
 	return x
 }
 
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func minNonZero(a, b int) int {
+	if a == 0 {
+		return b
+	}
+	if b == 0 {
+		return a
+	}
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func scoreChain(anchors []minimizer.Anchor, opts ChainOptions) int {
 	if len(anchors) == 0 {
 		return 0
@@ -507,6 +576,7 @@ func CandidateFromChain(ref seqio.SeqRecord, query []byte, k int, chain Chain, o
 
 	return Candidate{
 		Chain:          chain,
+		SeedLength:     k,
 		RefName:        ref.Name,
 		QueryRange:     queryRange,
 		RefRange:       refRange,

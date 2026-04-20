@@ -63,6 +63,8 @@ func TestGreedyChainerSplitsOnLargeGap(t *testing.T) {
 			MinScore:         2,
 			GapPenalty:       1,
 			OccurrenceWeight: 1,
+			SplitGapDiff:     100,
+			SplitGapRatio:    3,
 		},
 	}
 	chains, err := chainer.Chain(clusters)
@@ -99,6 +101,8 @@ func TestGreedyChainerHandlesReverseOrientation(t *testing.T) {
 			MinScore:         2,
 			GapPenalty:       1,
 			OccurrenceWeight: 1,
+			SplitGapDiff:     100,
+			SplitGapRatio:    3,
 		},
 	}
 	chains, err := chainer.Chain(clusters)
@@ -132,6 +136,83 @@ func TestPipelineUsesInjectedStrategies(t *testing.T) {
 	}
 	if chains[0].Score != 3 {
 		t.Fatalf("Process() chain score = %d, want 3", chains[0].Score)
+	}
+}
+
+func TestGreedyChainerSplitsOnInconsistentInternalGap(t *testing.T) {
+	clusters := []mapper.Cluster{
+		{
+			RefID:          0,
+			RelativeStrand: 0,
+			Anchors: []minimizer.Anchor{
+				{RefID: 0, QueryPos: 10, RefPos: 10, QueryStrand: 0, RefStrand: 0},
+				{RefID: 0, QueryPos: 20, RefPos: 20, QueryStrand: 0, RefStrand: 0},
+				{RefID: 0, QueryPos: 30, RefPos: 300, QueryStrand: 0, RefStrand: 0},
+				{RefID: 0, QueryPos: 40, RefPos: 310, QueryStrand: 0, RefStrand: 0},
+			},
+		},
+	}
+
+	chainer := mapper.GreedyChainer{
+		Options: mapper.ChainOptions{
+			MaxGap:           500,
+			MaxDiagonalDrift: 1000,
+			MinAnchors:       2,
+			MinScore:         2,
+			GapPenalty:       1,
+			OccurrenceWeight: 0,
+			SplitGapDiff:     50,
+			SplitGapRatio:    2,
+		},
+	}
+	chains, err := chainer.Chain(clusters)
+	if err != nil {
+		t.Fatalf("Chain() error = %v", err)
+	}
+
+	if len(chains) != 2 {
+		t.Fatalf("Chain() returned %d chains, want 2", len(chains))
+	}
+	if chains[0].AnchorCount != 2 || chains[1].AnchorCount != 2 {
+		t.Fatalf("Chain() anchor counts = %d, %d; want 2,2", chains[0].AnchorCount, chains[1].AnchorCount)
+	}
+}
+
+func TestGreedyChainerKeepsPlausibleInternalGap(t *testing.T) {
+	clusters := []mapper.Cluster{
+		{
+			RefID:          0,
+			RelativeStrand: 0,
+			Anchors: []minimizer.Anchor{
+				{RefID: 0, QueryPos: 10, RefPos: 10, QueryStrand: 0, RefStrand: 0},
+				{RefID: 0, QueryPos: 20, RefPos: 22, QueryStrand: 0, RefStrand: 0},
+				{RefID: 0, QueryPos: 30, RefPos: 33, QueryStrand: 0, RefStrand: 0},
+			},
+		},
+	}
+
+	chainer := mapper.GreedyChainer{
+		Options: mapper.ChainOptions{
+			MaxGap:           100,
+			MaxDiagonalDrift: 20,
+			MinAnchors:       2,
+			MinScore:         1,
+			GapPenalty:       1,
+			OccurrenceWeight: 0,
+			SplitGapDiff:     20,
+			SplitGapRatio:    3,
+		},
+	}
+	chains, err := chainer.Chain(clusters)
+	if err != nil {
+		t.Fatalf("Chain() error = %v", err)
+	}
+
+	if len(chains) != 1 {
+		t.Fatalf("Chain() returned %d chains, want 1", len(chains))
+	}
+	if chains[0].AnchorCount != 3 {
+		t.Fatalf("Chain() anchor count = %d, want 3", chains[0].AnchorCount)
 	}
 }
 

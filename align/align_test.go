@@ -87,6 +87,7 @@ func TestAlignCandidatesRanksResults(t *testing.T) {
 	results, err := align.AlignCandidates(align.DefaultAligner(), []mapper.Candidate{weaker, aligned}, align.Options{
 		Scoring:       align.DefaultAligner().Options.Scoring,
 		MaxAlignments: 1,
+		XDrop:         align.DefaultAligner().Options.XDrop,
 	})
 	if err != nil {
 		t.Fatalf("AlignCandidates() error = %v", err)
@@ -96,6 +97,39 @@ func TestAlignCandidatesRanksResults(t *testing.T) {
 	}
 	if results[0].Candidate.RefName != "ref1" {
 		t.Fatalf("AlignCandidates() top result ref = %q, want ref1", results[0].Candidate.RefName)
+	}
+}
+
+func TestDefaultAlignerSoftClipsMismatchingEnds(t *testing.T) {
+	candidate := mapper.Candidate{
+		SeedLength:     3,
+		QueryRange:     seq.Interval{Start: 0, End: 13},
+		RefRange:       seq.Interval{Start: 0, End: 13},
+		QuerySeq:       []byte("TTAAACCCGGGTT"),
+		RefSeqForward:  []byte("CCAAACCCGGGAA"),
+		RefSeqOriented: []byte("CCAAACCCGGGAA"),
+		RelativeStrand: 0,
+		Chain: mapper.Chain{
+			Anchors: []minimizer.Anchor{
+				{QueryPos: 2, RefPos: 2, QueryStrand: 0, RefStrand: 0},
+				{QueryPos: 8, RefPos: 8, QueryStrand: 0, RefStrand: 0},
+			},
+		},
+	}
+
+	result, err := align.DefaultAligner().Align(candidate)
+	if err != nil {
+		t.Fatalf("Align() error = %v", err)
+	}
+
+	if result.QueryRange != (seq.Interval{Start: 2, End: 11}) {
+		t.Fatalf("Align() query range = %#v, want [2,11)", result.QueryRange)
+	}
+	if result.RefRangeForward != (seq.Interval{Start: 2, End: 11}) {
+		t.Fatalf("Align() ref range = %#v, want [2,11)", result.RefRangeForward)
+	}
+	if result.CIGAR != "2S9M2S" {
+		t.Fatalf("Align() CIGAR = %q, want 2S9M2S", result.CIGAR)
 	}
 }
 
@@ -134,6 +168,84 @@ func TestEndToEndMapAndAlignCandidate(t *testing.T) {
 	}
 	if results[0].Candidate.RefName != "ref1" {
 		t.Fatalf("AlignCandidates() top ref = %q, want ref1", results[0].Candidate.RefName)
+	}
+}
+
+func TestScoringValidationRejectsNonAffineDefaults(t *testing.T) {
+	_, err := align.AlignCandidates(align.DefaultAligner(), nil, align.Options{
+		Scoring: align.Scoring{
+			Match:     2,
+			Mismatch:  -4,
+			GapOpen:   0,
+			GapExtend: -1,
+		},
+	})
+	if err == nil {
+		t.Fatal("AlignCandidates() expected error for invalid affine gap scoring")
+	}
+}
+
+func TestDefaultAlignerHandlesNonSquareInternalGapWithinBand(t *testing.T) {
+	a := align.DefaultAligner()
+	a.Options.BandWidth = 8
+	candidate := mapper.Candidate{
+		SeedLength:     3,
+		QueryRange:     seq.Interval{Start: 0, End: 18},
+		RefRange:       seq.Interval{Start: 0, End: 32},
+		QuerySeq:       []byte("AAAACCCGGGTTTAAAAC"),
+		RefSeqForward:  []byte("AAAACCCGGGTTTTTTTTTTTTTAAAACCCC"),
+		RefSeqOriented: []byte("AAAACCCGGGTTTTTTTTTTTTTAAAACCCC"),
+		RelativeStrand: 0,
+		Chain: mapper.Chain{
+			Anchors: []minimizer.Anchor{
+				{QueryPos: 1, RefPos: 1, QueryStrand: 0, RefStrand: 0},
+				{QueryPos: 12, RefPos: 25, QueryStrand: 0, RefStrand: 0},
+			},
+		},
+	}
+
+	result, err := a.Align(candidate)
+	if err != nil {
+		t.Fatalf("Align() error = %v", err)
+	}
+	if result.AlignedLength == 0 {
+		t.Fatal("Align() produced zero aligned length")
+	}
+	if result.CIGAR == "" {
+		t.Fatal("Align() produced empty CIGAR")
+	}
+}
+
+func TestSmithWatermanFallbackUsesBandedXDrop(t *testing.T) {
+	a := align.SmithWatermanAligner{
+		Options: align.Options{
+			Scoring: align.Scoring{
+				Match:     2,
+				Mismatch:  -4,
+				GapOpen:   -4,
+				GapExtend: -2,
+			},
+			XDrop:     15,
+			BandWidth: 8,
+		},
+	}
+	candidate := mapper.Candidate{
+		QueryRange:     seq.Interval{Start: 0, End: 12},
+		RefRange:       seq.Interval{Start: 0, End: 24},
+		QuerySeq:       []byte("ACGTTGCAAAAA"),
+		RefSeqForward:  []byte("TTTTTTACGTTGCATTTTTTTTT"),
+		RefSeqOriented: []byte("TTTTTTACGTTGCATTTTTTTTT"),
+	}
+
+	result, err := a.Align(candidate)
+	if err != nil {
+		t.Fatalf("Align() error = %v", err)
+	}
+	if result.Score <= 0 {
+		t.Fatalf("Align() score = %d, want > 0", result.Score)
+	}
+	if result.CIGAR == "" {
+		t.Fatal("Align() produced empty CIGAR")
 	}
 }
 
