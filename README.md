@@ -235,10 +235,25 @@ The `seq` package provides byte-slice sequence helpers:
 - `seq.ReverseComplement`
 - `seq.Subseq`
 - `seq.FindGaps`
+- `seq.NormalizeDNA`
 
 The `orf` package provides ORF finding:
 
 - `orf.FindORFs`
+
+### Statistics and Generated Data
+
+The `stats` package computes assembly-style sequence statistics from any supported input format:
+
+```go
+s, err := stats.FromPath("assembly.fa.gz", 0)
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Print(s.String(stats.FormatHuman))
+```
+
+Use `stats.RenderMany` to render multiple `stats.Stats` values in a shared output format. The available formats are `stats.FormatHuman`, `stats.FormatTab`, `stats.FormatTabNoHeader`, and `stats.FormatGreppy`.
 
 Random FASTA contigs can be generated through the `randomcontigs` package:
 
@@ -254,6 +269,81 @@ if err != nil {
 	log.Fatal(err)
 }
 ```
+
+Perfect FASTQ reads can be simulated from a streaming reference reader with the `perfectreads` package:
+
+```go
+reader, err := seqio.OpenPath("ref.fa")
+if err != nil {
+	log.Fatal(err)
+}
+if closer, ok := reader.(io.Closer); ok {
+	defer closer.Close()
+}
+writer, err := seqio.CreateFASTQPath("reads.fq.gz")
+if err != nil {
+	log.Fatal(err)
+}
+defer writer.Close()
+
+report, err := perfectreads.GenerateSingle(reader, writer, perfectreads.Options{
+	Coverage:   50,
+	ReadLength: 150,
+	Seed:       1,
+})
+if err != nil {
+	log.Fatal(err)
+}
+_ = report
+```
+
+The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for downloading one genome accession into one output file.
+
+### Minimizers, Mapping, and Alignment
+
+The `minimizer` package builds minimizer indexes and sketches query sequences:
+
+```go
+index, err := minimizer.BuildFromPath("ref.fa", minimizer.Options{
+	K: 15,
+	W: 10,
+})
+if err != nil {
+	log.Fatal(err)
+}
+
+anchors := index.Query([]byte("ACGTTGCA"))
+_ = anchors
+```
+
+For the common mapping workflow, use the higher-level `mapping` package. It builds a minimizer index, finds candidate hits, and runs the default aligner unless you set `Mapper.Aligner` to `nil`.
+
+```go
+m, err := mapping.BuildFromPath("ref.fa", minimizer.Options{
+	K:         15,
+	W:         10,
+	MidOcc:    100,
+	MaxMaxOcc: 500,
+	OccDist:   500,
+	QOccFrac:  0.01,
+})
+if err != nil {
+	log.Fatal(err)
+}
+
+result, err := m.Map("query1", []byte("ACGTTGCA"))
+if err != nil {
+	log.Fatal(err)
+}
+for _, hit := range result.Hits {
+	fmt.Println(hit.RefName, hit.Alignment.Score, hit.Alignment.CIGAR)
+}
+```
+
+The lower-level `mapper` and `align` packages are available when you need to customize the pipeline:
+
+- `mapper.DefaultPipeline`, `mapper.Map`, and `mapper.ExtractCandidates` expose anchor clustering, chaining, and candidate extraction.
+- `align.DefaultAligner` and `align.AlignCandidates` expose candidate alignment and ranking.
 
 ### Output Layers
 
