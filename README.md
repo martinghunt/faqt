@@ -31,6 +31,7 @@ Local builds report version `dev` unless you pass an explicit release version.
 
 - `faqt to-fasta`: convert supported input formats to FASTA
 - `faqt to-perfect-reads`: simulate perfect FASTQ reads from a reference
+- `faqt make-random-contigs`: make random FASTA contigs
 - `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats))
 - `faqt download-genome`: download a genome and save it to one output file
 
@@ -77,6 +78,7 @@ faqt to-fasta reads.fq.gz > out.fa
 faqt to-fasta --input aln.aln --remove-dashes
 faqt to-perfect-reads ref.fa --out reads.fq --coverage 50 --read-length 150
 faqt to-perfect-reads ref.fa --forward-out reads_1.fq --reverse-out reads_2.fq --mean-insert 300 --insert-std 30 --coverage 50 --read-length 150
+faqt make-random-contigs 10 500 -o contigs.fa --seed 1
 faqt download-genome GCF_000001405.40 -o genome.gff3
 cat reads.gb | faqt to-fasta
 faqt to-fasta -i - -o out.fa < reads.embl
@@ -117,6 +119,7 @@ type SeqRecord struct {
 /gff3               GFF3 sequence reader from ##FASTA only
 /seq                sequence transforms and gap utilities
 /orf                ORF finding
+/randomcontigs      random FASTA contig generation
 /internal/sniff     content-based format detection
 /internal/xopen     compression-aware open/create helpers
 ```
@@ -228,6 +231,18 @@ err := seqio.TransformPath("reads.fa", "reads.rc.fa", seqio.FASTA, func(rec *seq
 })
 ```
 
+Random FASTA contigs can be generated through the library without involving the CLI:
+
+```go
+seed := int64(1)
+err := randomcontigs.GenerateToPath("contigs.fa", randomcontigs.Options{
+    Contigs:     10,
+    Length:      500,
+    Seed:        &seed,
+    FirstNumber: 1,
+})
+```
+
 ## Printing Model
 
 There are three output layers:
@@ -261,6 +276,8 @@ faqt to-fasta --input reads.gff3.zst --output out.fa.gz --wrap 60
 faqt to-fasta --input aln.aln --remove-dashes
 faqt to-perfect-reads ref.fa --out reads.fq --coverage 50 --read-length 150
 faqt to-perfect-reads ref.fa --forward-out reads_1.fq --reverse-out reads_2.fq --mean-insert 300 --insert-std 30 --coverage 50 --read-length 150
+faqt make-random-contigs 10 500 -o contigs.fa --seed 1
+faqt make-random-contigs 28 100 --name-by-letters --prefix contig_
 faqt download-genome GCF_000001405.40 -o genome.gff3
 faqt stats assembly.fa
 faqt stats -t assembly.fa
@@ -270,6 +287,8 @@ faqt stats -s assembly.fa
 `to-fasta` defaults to stdin/stdout, always emits FASTA, and stays thin by calling the library-level `seqio.ToFASTAPath`.
 
 `to-perfect-reads` simulates perfect FASTQ reads from reference sequences. Single-end mode writes one output file with `--out`. Paired-end mode uses innie orientation and insert sizes sampled from a normal distribution, writing separate forward and reverse output files instead of interleaving. Unlike `fastaq`, `faqt` also uses a slightly more realistic quality tail instead of constant `I` scores.
+
+`make-random-contigs` writes random FASTA contigs where each base has equal probability of being `A`, `C`, `G`, or `T`. It writes to stdout by default, or to a file with `-o/--output`. It supports `--seed`, `--first-number`, `--name-by-letters`, `--prefix`, `--wrap`, and `--compress`.
 
 `stats` reports assembly-style length statistics with the same human, greppy, tab-delimited, and tab-delimited-no-header layouts used by `assembly-stats`. It supports:
 
@@ -321,4 +340,4 @@ You can also build a specific target without using release mode:
 ./build.sh --os linux --arch arm64
 ```
 
-The test suite covers multi-record parsing, compression-aware I/O, GFF3 error handling, stdin/stdout behavior, sequence utilities, ORF detection, and CLI conversion.
+The test suite covers multi-record parsing, compression-aware I/O, GFF3 error handling, stdin/stdout behavior, sequence utilities, random contig generation, ORF detection, and CLI conversion.

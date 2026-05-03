@@ -14,6 +14,7 @@ func newRootCmd() *cobra.Command {
 	cmd.SetVersionTemplate("{{.Version}}\n")
 	cmd.AddCommand(newToFastaCmd())
 	cmd.AddCommand(newToPerfectReadsCmd())
+	cmd.AddCommand(newMakeRandomContigsCmd())
 	cmd.AddCommand(newStatsCmd())
 	cmd.AddCommand(newDownloadGenomeCmd())
 	return cmd
