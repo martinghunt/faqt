@@ -236,6 +236,48 @@ func TestOpenPathDetectsGzippedFASTQWithLongFirstRecord(t *testing.T) {
 	}
 }
 
+func TestCountRecords(t *testing.T) {
+	reader, err := seqio.OpenReader(strings.NewReader(">a\nACGT\n>b\nTT\n"))
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+	got, err := seqio.CountRecords(reader)
+	if err != nil {
+		t.Fatalf("CountRecords() error = %v", err)
+	}
+	if got != 2 {
+		t.Fatalf("CountRecords() = %d, want 2", got)
+	}
+}
+
+func TestCountRecordsPath(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "reads.fq")
+	w, err := seqio.CreateFASTQPath(path)
+	if err != nil {
+		t.Fatalf("CreateFASTQPath() error = %v", err)
+	}
+	for _, rec := range []*seqio.SeqRecord{
+		{Name: "r1", Seq: []byte("ACGT"), Qual: []byte("!!!!")},
+		{Name: "r2", Seq: []byte("TT"), Qual: []byte("##")},
+		{Name: "r3", Seq: []byte("AA"), Qual: []byte("II")},
+	} {
+		if err := w.Write(rec); err != nil {
+			t.Fatalf("Write() error = %v", err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
+	got, err := seqio.CountRecordsPath(path)
+	if err != nil {
+		t.Fatalf("CountRecordsPath() error = %v", err)
+	}
+	if got != 3 {
+		t.Fatalf("CountRecordsPath() = %d, want 3", got)
+	}
+}
+
 func TestCreatePathCompressionByExtension(t *testing.T) {
 	paths := []string{"out.fa.gz", "out.fa.bz2", "out.fa.xz", "out.fa.zst"}
 	for _, name := range paths {
