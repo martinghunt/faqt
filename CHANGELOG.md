@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add `randomcontigs` library support for generating random FASTA contigs.
 - Add `faqt make-random-contigs`, which writes random FASTA contigs to stdout by default or to `-o/--output`.
+- Add half-open `seq.Interval` helper methods for validation, length, containment, intersection, distance, merging, and length sums.
 
 ## [0.1.1] - 2026-04-10
 
