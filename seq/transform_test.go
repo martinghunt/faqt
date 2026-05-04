@@ -54,6 +54,33 @@ func TestNormalizeDNA(t *testing.T) {
 	}
 }
 
+func TestTranslateCodon(t *testing.T) {
+	tests := []struct {
+		codon string
+		want  byte
+	}{
+		{codon: "ATG", want: 'M'},
+		{codon: "TAA", want: '*'},
+		{codon: "NNN", want: 'X'},
+		{codon: "ATN", want: 'X'},
+		{codon: "atg", want: 'M'},
+		{codon: "A-T", want: 'X'},
+		{codon: "AT", want: 'X'},
+	}
+	for _, test := range tests {
+		if got := seq.TranslateCodon([]byte(test.codon)); got != test.want {
+			t.Fatalf("TranslateCodon(%q) = %q, want %q", test.codon, got, test.want)
+		}
+	}
+}
+
+func TestTranslate(t *testing.T) {
+	got := string(seq.Translate([]byte("GATCGCGAATGAN")))
+	if got != "DRE*" {
+		t.Fatalf("Translate() = %q", got)
+	}
+}
+
 func TestFindGaps(t *testing.T) {
 	got := seq.FindGaps([]byte("AA--NN.TT"), 2)
 	want := []seq.Interval{{Start: 2, End: 7}}

@@ -256,6 +256,8 @@ The `seq` package provides byte-slice sequence helpers:
 - `seq.Subseq`
 - `seq.FindGaps`
 - `seq.NormalizeDNA`
+- `seq.TranslateCodon`
+- `seq.Translate`
 
 The `orf` package provides ORF finding:
 
