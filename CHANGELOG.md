@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add `seqio.Interleave` and `seqio.InterleavePath` for streaming interleaving of paired sequence files.
+- Add `faqt interleave`, which alternates records from two input files and supports optional mate suffixes.
 - Add `randomcontigs` library support for generating random FASTA contigs.
 - Add `faqt make-random-contigs`, which writes random FASTA contigs to stdout by default or to `-o/--output`.
 - Add half-open `seq.Interval` helper methods for validation, length, containment, intersection, distance, merging, and length sums.

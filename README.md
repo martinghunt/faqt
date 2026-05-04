@@ -30,6 +30,7 @@ Local builds report version `dev` unless you pass an explicit release version.
 `faqt` currently provides these command-line tasks:
 
 - `faqt to-fasta`: convert supported input formats to FASTA
+- `faqt interleave`: interleave two sequence files
 - `faqt to-perfect-reads`: simulate perfect FASTQ reads from a reference
 - `faqt make-random-contigs`: make random FASTA contigs
 - `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats))
@@ -83,6 +84,7 @@ Examples:
 ```bash
 faqt to-fasta reads.fq.gz > out.fa
 faqt to-fasta --input aln.aln --remove-dashes
+faqt interleave reads_1.fq reads_2.fq -o reads_interleaved.fq --suffix1 /1 --suffix2 /2
 faqt to-perfect-reads ref.fa --out reads.fq --coverage 50 --read-length 150
 faqt to-perfect-reads ref.fa --forward-out reads_1.fq --reverse-out reads_2.fq --mean-insert 300 --insert-std 30 --coverage 50 --read-length 150
 faqt make-random-contigs 10 500 -o contigs.fa --seed 1
@@ -218,6 +220,24 @@ if err != nil {
 ```
 
 Returning `nil` from a transform skips that record.
+
+### Interleaving Streams
+
+Use `seqio.Interleave` when you already have readers and a writer. It writes alternating records from the first and second inputs, and returns an error if either input has an unmatched record.
+
+```go
+err := seqio.Interleave(
+	reader1,
+	reader2,
+	writer,
+	seqio.InterleaveOptions{Suffix1: "/1", Suffix2: "/2"},
+)
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+For path-based use, `seqio.InterleavePath` detects input formats and compression from contents, infers FASTA or FASTQ output from the first pair, and applies normal output compression options.
 
 ### Lower-Level Format Packages
 

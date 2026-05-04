@@ -12,6 +12,7 @@ func newRootCmd() *cobra.Command {
 		Version: buildinfo.Version,
 	}
 	cmd.SetVersionTemplate("{{.Version}}\n")
+	cmd.AddCommand(newInterleaveCmd())
 	cmd.AddCommand(newToFastaCmd())
 	cmd.AddCommand(newToPerfectReadsCmd())
 	cmd.AddCommand(newMakeRandomContigsCmd())
