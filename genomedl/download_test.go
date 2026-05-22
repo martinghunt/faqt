@@ -23,6 +23,14 @@ func TestIsAssemblyAccession(t *testing.T) {
 	}
 }
 
+func TestSanitizeFilename(t *testing.T) {
+	got := sanitizeFilename(`NC 000001.1:alt/path\name`)
+	want := "NC_000001.1_alt_path_name"
+	if got != want {
+		t.Fatalf("sanitizeFilename() = %q, want %q", got, want)
+	}
+}
+
 func TestDownloadGenomeNuccore(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {

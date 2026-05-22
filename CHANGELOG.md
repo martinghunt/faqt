@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Share close-error handling across CLI and library helpers.
 - Share `seqio` reader setup between path-based and stream-based inputs.
+- Split genome download archive and output-combining helpers by responsibility.
 - `faqt stats` now reads from stdin when no input files are provided.
 - Genome download GFF3/FASTA combination now streams files instead of reading both fully into memory.
 
