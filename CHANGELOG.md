@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `seq.TranslateCodon` and `seq.Translate` for standard genetic-code translation.
 
 ### Changed
+- Share close-error handling across CLI and library helpers.
 - `faqt stats` now reads from stdin when no input files are provided.
 - Genome download GFF3/FASTA combination now streams files instead of reading both fully into memory.
 

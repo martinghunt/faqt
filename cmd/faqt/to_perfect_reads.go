@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/martinghunt/faqt/perfectreads"
 	"github.com/martinghunt/faqt/seqio"
 	"github.com/spf13/cobra"
@@ -76,7 +77,7 @@ func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev str
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
-		defer closeWithError(&err, w)
+		defer closeutil.CloseWithError(&err, w)
 		return perfectreads.GenerateSingle(reader, w, opts)
 	case outputFwd != "" || outputRev != "":
 		if outputFwd == "" || outputRev == "" {
@@ -89,23 +90,14 @@ func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev str
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
-		defer closeWithError(&err, fw)
+		defer closeutil.CloseWithError(&err, fw)
 		rw, err := seqio.CreateFASTQPath(outputRev)
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
-		defer closeWithError(&err, rw)
+		defer closeutil.CloseWithError(&err, rw)
 		return perfectreads.GeneratePaired(reader, fw, rw, opts)
 	default:
 		return perfectreads.Report{}, fmt.Errorf("must provide either --out or both --forward-out and --reverse-out")
-	}
-}
-
-func closeWithError(errp *error, closer interface{ Close() error }) {
-	if closer == nil {
-		return
-	}
-	if err := closer.Close(); err != nil && *errp == nil {
-		*errp = err
 	}
 }

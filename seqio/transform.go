@@ -1,6 +1,10 @@
 package seqio
 
-import "io"
+import (
+	"io"
+
+	"github.com/martinghunt/faqt/internal/closeutil"
+)
 
 type RecordTransform func(*SeqRecord) (*SeqRecord, error)
 
@@ -67,7 +71,7 @@ func TransformPath(inputPath, outputPath string, format Format, transform Record
 	if err != nil {
 		return err
 	}
-	defer closeWithError(&err, writer)
+	defer closeutil.CloseWithError(&err, writer)
 
 	return Process(reader, writer, transform)
 }

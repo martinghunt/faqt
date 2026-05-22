@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/martinghunt/faqt/internal/closeutil"
 )
 
 type InterleaveOptions struct {
@@ -96,7 +98,7 @@ func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts In
 	if err != nil {
 		return err
 	}
-	defer closeWithError(&err, writer)
+	defer closeutil.CloseWithError(&err, writer)
 
 	if err := writeInterleavedPair(writer, first1, first2, interleaveOpts); err != nil {
 		return err

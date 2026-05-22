@@ -6,6 +6,15 @@ type multiCloser struct {
 	closers []io.Closer
 }
 
+func CloseWithError(errp *error, closer io.Closer) {
+	if closer == nil {
+		return
+	}
+	if err := closer.Close(); err != nil && *errp == nil {
+		*errp = err
+	}
+}
+
 func MultiCloser(closers ...io.Closer) io.Closer {
 	filtered := make([]io.Closer, 0, len(closers))
 	for _, closer := range closers {

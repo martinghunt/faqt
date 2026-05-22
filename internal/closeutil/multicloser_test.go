@@ -5,6 +5,22 @@ import (
 	"testing"
 )
 
+func TestCloseWithErrorUsesCloseErrorOnlyOnSuccess(t *testing.T) {
+	closeErr := errors.New("close failed")
+	var err error
+	CloseWithError(&err, closeErrorStub{err: closeErr})
+	if err != closeErr {
+		t.Fatalf("CloseWithError() error = %v, want close error", err)
+	}
+
+	primaryErr := errors.New("primary failed")
+	err = primaryErr
+	CloseWithError(&err, closeErrorStub{err: closeErr})
+	if err != primaryErr {
+		t.Fatalf("CloseWithError() error = %v, want primary error", err)
+	}
+}
+
 func TestMultiCloserCloseOrderAndFirstError(t *testing.T) {
 	firstErr := errors.New("first")
 	var order []string
@@ -35,5 +51,13 @@ type closeRecorder struct {
 
 func (c closeRecorder) Close() error {
 	*c.order = append(*c.order, c.name)
+	return c.err
+}
+
+type closeErrorStub struct {
+	err error
+}
+
+func (c closeErrorStub) Close() error {
 	return c.err
 }
