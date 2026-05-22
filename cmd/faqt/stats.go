@@ -18,11 +18,14 @@ func newStatsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stats [files...]",
 		Short: "Report assembly-style sequence statistics",
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			format, err := statsFormat(greppy, tabDelimited, tabNoHeader)
 			if err != nil {
 				return err
+			}
+			if len(args) == 0 {
+				args = []string{"-"}
 			}
 			results := make([]stats.Stats, 0, len(args))
 			for _, path := range args {

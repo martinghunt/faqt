@@ -46,6 +46,46 @@ func TestStatsCommandTabDelimited(t *testing.T) {
 	}
 }
 
+func TestStatsCommandDefaultsToStdin(t *testing.T) {
+	in, err := os.CreateTemp(t.TempDir(), "stdin-*")
+	if err != nil {
+		t.Fatalf("CreateTemp(stdin) error = %v", err)
+	}
+	if _, err := in.WriteString(">a\nAAAA\n>b\nNN\n"); err != nil {
+		t.Fatalf("WriteString() error = %v", err)
+	}
+	if _, err := in.Seek(0, 0); err != nil {
+		t.Fatalf("Seek() error = %v", err)
+	}
+	out, err := os.CreateTemp(t.TempDir(), "stdout-*")
+	if err != nil {
+		t.Fatalf("CreateTemp(stdout) error = %v", err)
+	}
+
+	oldStdin, oldStdout := os.Stdin, os.Stdout
+	os.Stdin, os.Stdout = in, out
+	defer func() {
+		os.Stdin, os.Stdout = oldStdin, oldStdout
+	}()
+
+	cmd := newStatsCmd()
+	cmd.SetArgs([]string{"-u"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if err := out.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+	got, err := os.ReadFile(out.Name())
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	expected := "-\t6\t2\t3.00\t4\t2\t2\t1\t4\t1\t2\t2\t2\t2\n"
+	if string(got) != expected {
+		t.Fatalf("stdout = %q, want %q", string(got), expected)
+	}
+}
+
 func TestRootVersionFlag(t *testing.T) {
 	cmd := newRootCmd()
 	var stdout bytes.Buffer
