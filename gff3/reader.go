@@ -11,9 +11,10 @@ import (
 )
 
 type Reader struct {
-	r         *bufio.Reader
-	fastaPart *fasta.Reader
-	seenFASTA bool
+	r            *bufio.Reader
+	fastaPart    *fasta.Reader
+	seenFASTA    bool
+	seenSequence bool
 }
 
 func NewReader(r *bufio.Reader) *Reader {
@@ -22,7 +23,7 @@ func NewReader(r *bufio.Reader) *Reader {
 
 func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 	if r.fastaPart != nil {
-		return r.fastaPart.Read()
+		return r.readFASTARecord()
 	}
 	for {
 		line, err := r.r.ReadBytes('\n')
@@ -33,7 +34,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 		if bytes.Equal(line, []byte("##FASTA")) {
 			r.seenFASTA = true
 			r.fastaPart = fasta.NewReader(r.r)
-			return r.fastaPart.Read()
+			return r.readFASTARecord()
 		}
 		if err == io.EOF {
 			if !r.seenFASTA {
@@ -42,4 +43,16 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 			return nil, io.EOF
 		}
 	}
+}
+
+func (r *Reader) readFASTARecord() (*seqrecord.SeqRecord, error) {
+	rec, err := r.fastaPart.Read()
+	if err == io.EOF && !r.seenSequence {
+		return nil, fmt.Errorf("gff3 input does not contain sequence records in ##FASTA section")
+	}
+	if err != nil {
+		return nil, err
+	}
+	r.seenSequence = true
+	return rec, nil
 }

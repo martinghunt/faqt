@@ -41,3 +41,12 @@ func TestReaderErrorsWithoutFASTA(t *testing.T) {
 		t.Fatalf("Read() error = %v, want missing FASTA error", err)
 	}
 }
+
+func TestReaderErrorsWithEmptyFASTASection(t *testing.T) {
+	r := NewReader(bufio.NewReader(strings.NewReader("##gff-version 3\n##FASTA\n")))
+
+	_, err := r.Read()
+	if err == nil || !strings.Contains(err.Error(), "does not contain sequence records") {
+		t.Fatalf("Read() error = %v, want empty FASTA section error", err)
+	}
+}
