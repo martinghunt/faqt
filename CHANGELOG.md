@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Avoid hangs and panics in paired perfect-read generation for invalid or edge-case insert sizes.
 - Return an error for GFF3 inputs with `##FASTA` but no sequence records.
 - Close wrapped `seqio.OpenReader` sources correctly without closing stdin for `-`.
+- Preserve multi-line descriptions from GenBank and EMBL input records.
 - Support wrapped relaxed sequential PHYLIP records.
 - Report non-404 GFF3 download failures instead of silently producing FASTA-only output.
 

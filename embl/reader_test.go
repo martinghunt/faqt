@@ -32,3 +32,19 @@ func TestReaderMultiRecord(t *testing.T) {
 		t.Fatalf("Read() final error = %v, want EOF", err)
 	}
 }
+
+func TestReaderReadsMultipleDescriptionLines(t *testing.T) {
+	input := "ID   REC1;\nDE   first line\nDE   second line\nSQ   Sequence 6 BP;\n     ACGT NN\n//\n"
+	r := NewReader(bufio.NewReader(strings.NewReader(input)))
+
+	rec, err := r.Read()
+	if err != nil {
+		t.Fatalf("Read() error = %v", err)
+	}
+	if rec.Description != "first line second line" {
+		t.Fatalf("description = %q, want combined DE lines", rec.Description)
+	}
+	if string(rec.Seq) != "acgtnn" {
+		t.Fatalf("sequence = %q, want acgtnn", rec.Seq)
+	}
+}

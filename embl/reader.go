@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/martinghunt/faqt/internal/flatseq"
 	"github.com/martinghunt/faqt/internal/seqrecord"
 )
 
@@ -40,9 +41,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 				seen = true
 			}
 		case strings.HasPrefix(trimmed, "DE"):
-			if desc == "" {
-				desc = strings.TrimSpace(strings.TrimPrefix(trimmed, "DE"))
-			}
+			desc = flatseq.AppendDescription(desc, strings.TrimPrefix(trimmed, "DE"))
 		case strings.HasPrefix(trimmed, "SQ"):
 			inSQ = true
 		case trimmed == "//":
@@ -55,7 +54,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 			return &seqrecord.SeqRecord{Name: name, Description: desc, Seq: seq}, nil
 		default:
 			if inSQ {
-				seq = append(seq, sequenceFromLine(trimmed)...)
+				seq = append(seq, flatseq.SequenceLetters(trimmed)...)
 			}
 		}
 		if err == io.EOF {
@@ -65,16 +64,4 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 			return &seqrecord.SeqRecord{Name: name, Description: desc, Seq: seq}, nil
 		}
 	}
-}
-
-func sequenceFromLine(line string) []byte {
-	line = strings.ToLower(line)
-	var out []byte
-	for i := 0; i < len(line); i++ {
-		ch := line[i]
-		if ch >= 'a' && ch <= 'z' {
-			out = append(out, ch)
-		}
-	}
-	return out
 }

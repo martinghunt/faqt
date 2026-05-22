@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/martinghunt/faqt/internal/flatseq"
 	"github.com/martinghunt/faqt/internal/seqrecord"
 )
 
@@ -23,6 +24,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 		desc     string
 		seq      []byte
 		inOrigin bool
+		inDef    bool
 		seen     bool
 	)
 	for {
@@ -40,11 +42,16 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 			if len(fields) > 1 {
 				name = fields[1]
 			}
+			inDef = false
 			seen = true
 		case strings.HasPrefix(trimmed, "DEFINITION"):
-			desc = strings.TrimSpace(strings.TrimPrefix(trimmed, "DEFINITION"))
+			desc = flatseq.AppendDescription(desc, strings.TrimPrefix(trimmed, "DEFINITION"))
+			inDef = true
+		case inDef && isContinuationLine(trimmed):
+			desc = flatseq.AppendDescription(desc, trimmed)
 		case strings.HasPrefix(trimmed, "ORIGIN"):
 			inOrigin = true
+			inDef = false
 		case trimmed == "//":
 			if !seen {
 				if err == io.EOF {
@@ -54,8 +61,9 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 			}
 			return &seqrecord.SeqRecord{Name: name, Description: desc, Seq: seq}, nil
 		default:
+			inDef = false
 			if inOrigin {
-				seq = append(seq, sequenceFromLine(trimmed)...)
+				seq = append(seq, flatseq.SequenceLetters(trimmed)...)
 			}
 		}
 		if err == io.EOF {
@@ -67,14 +75,6 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 	}
 }
 
-func sequenceFromLine(line string) []byte {
-	line = strings.ToLower(line)
-	var out []byte
-	for i := 0; i < len(line); i++ {
-		ch := line[i]
-		if ch >= 'a' && ch <= 'z' {
-			out = append(out, ch)
-		}
-	}
-	return out
+func isContinuationLine(line string) bool {
+	return strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t")
 }
