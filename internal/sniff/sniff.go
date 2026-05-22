@@ -3,7 +3,9 @@ package sniff
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 )
 
 const PeekSize = 8192
@@ -113,5 +115,5 @@ func isIntegerField(field []byte) bool {
 }
 
 func isShortPeek(err error) bool {
-	return err == bufio.ErrBufferFull || err.Error() == "EOF"
+	return err == bufio.ErrBufferFull || errors.Is(err, io.EOF)
 }

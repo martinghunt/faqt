@@ -3,6 +3,7 @@ package sniff
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -80,6 +81,9 @@ func TestIsShortPeek(t *testing.T) {
 	}
 	if !isShortPeek(io.EOF) {
 		t.Fatal("isShortPeek(io.EOF) = false, want true")
+	}
+	if !isShortPeek(fmt.Errorf("wrapped: %w", io.EOF)) {
+		t.Fatal("isShortPeek(wrapped EOF) = false, want true")
 	}
 	if isShortPeek(errors.New("boom")) {
 		t.Fatal("isShortPeek(boom) = true, want false")
