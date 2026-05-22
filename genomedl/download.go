@@ -76,8 +76,8 @@ func downloadNuccoreGenome(accession, outDir string) ([]string, error) {
 	gffPath := filepath.Join(outDir, base+".gff3")
 	if err := downloadURLToFile(fmt.Sprintf(sviewerGFF3URL, accession), gffPath); err == nil {
 		files = append(files, gffPath)
-	} else if os.IsNotExist(err) {
-		// nothing
+	} else if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("download gff3: %w", err)
 	}
 
 	return files, nil

@@ -63,6 +63,32 @@ func TestDownloadGenomeNuccore(t *testing.T) {
 	}
 }
 
+func TestDownloadGenomeNuccoreReportsGFFDownloadErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.RawQuery, "report=fasta"):
+			_, _ = w.Write([]byte(">chr1\nACGT\n"))
+		case strings.Contains(r.URL.RawQuery, "report=gff3"):
+			http.Error(w, "temporary failure", http.StatusInternalServerError)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	oldFastaURL, oldGFFURL := sviewerFastaURL, sviewerGFF3URL
+	sviewerFastaURL = server.URL + "/viewer?id=%s&report=fasta"
+	sviewerGFF3URL = server.URL + "/viewer?id=%s&report=gff3"
+	defer func() {
+		sviewerFastaURL, sviewerGFF3URL = oldFastaURL, oldGFFURL
+	}()
+
+	_, err := DownloadGenome("NC_000001.1", filepath.Join(t.TempDir(), "genome.gff3"))
+	if err == nil || !strings.Contains(err.Error(), "download gff3") {
+		t.Fatalf("DownloadGenome() error = %v, want GFF3 download error", err)
+	}
+}
+
 func TestExtractGenomeFilesFromZipPreservesOriginalFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	zipPath := filepath.Join(tmpDir, "test.zip")
