@@ -59,28 +59,12 @@ func TestMakeRandomContigsCommandNameByLetters(t *testing.T) {
 }
 
 func TestMakeRandomContigsCommandStdoutDefault(t *testing.T) {
-	out, err := os.CreateTemp(t.TempDir(), "stdout-*")
-	if err != nil {
-		t.Fatalf("CreateTemp() error = %v", err)
-	}
-	oldStdout := os.Stdout
-	os.Stdout = out
-	defer func() { os.Stdout = oldStdout }()
-
 	cmd := newMakeRandomContigsCmd()
 	cmd.SetArgs([]string{"--seed", "5", "1", "4"})
-	if err := cmd.Execute(); err != nil {
+	got, err := runWithCapturedStdout(t, cmd.Execute)
+	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
-	if err := out.Close(); err != nil {
-		t.Fatalf("Close() error = %v", err)
-	}
-
-	data, err := os.ReadFile(out.Name())
-	if err != nil {
-		t.Fatalf("ReadFile() error = %v", err)
-	}
-	got := string(data)
 	if !strings.HasPrefix(got, ">1\n") {
 		t.Fatalf("stdout output = %q", got)
 	}

@@ -43,38 +43,13 @@ func TestRemoveDashesTransform(t *testing.T) {
 }
 
 func TestRunToFastaStdinStdout(t *testing.T) {
-	in, err := os.CreateTemp(t.TempDir(), "stdin-*")
+	got, err := runWithCapturedStdinStdout(t, ">r1\nACGT\n", func() error {
+		return seqio.ToFASTAPath("-", "-", seqio.WithCompression(seqio.CompressAuto))
+	})
 	if err != nil {
-		t.Fatalf("CreateTemp(stdin) error = %v", err)
-	}
-	if _, err := in.WriteString(">r1\nACGT\n"); err != nil {
-		t.Fatalf("WriteString() error = %v", err)
-	}
-	if _, err := in.Seek(0, 0); err != nil {
-		t.Fatalf("Seek() error = %v", err)
-	}
-	out, err := os.CreateTemp(t.TempDir(), "stdout-*")
-	if err != nil {
-		t.Fatalf("CreateTemp(stdout) error = %v", err)
-	}
-
-	oldIn, oldOut := os.Stdin, os.Stdout
-	os.Stdin, os.Stdout = in, out
-	defer func() {
-		os.Stdin, os.Stdout = oldIn, oldOut
-	}()
-
-	if err := seqio.ToFASTAPath("-", "-", seqio.WithCompression(seqio.CompressAuto)); err != nil {
 		t.Fatalf("ToFASTAPath() error = %v", err)
 	}
-	if err := out.Close(); err != nil {
-		t.Fatalf("Close() error = %v", err)
-	}
-	data, err := os.ReadFile(out.Name())
-	if err != nil {
-		t.Fatalf("ReadFile() error = %v", err)
-	}
-	if string(data) != ">r1\nACGT\n" {
-		t.Fatalf("stdout output = %q", string(data))
+	if got != ">r1\nACGT\n" {
+		t.Fatalf("stdout output = %q", got)
 	}
 }

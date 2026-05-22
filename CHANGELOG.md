@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Share `seqio` reader setup between path-based and stream-based inputs.
 - Split genome download archive and output-combining helpers by responsibility.
 - Split mapper and minimizer internals into smaller files by responsibility.
+- Share CLI test helpers for stdin and stdout capture.
 - `faqt stats` now reads from stdin when no input files are provided.
 - Genome download GFF3/FASTA combination now streams files instead of reading both fully into memory.
 
