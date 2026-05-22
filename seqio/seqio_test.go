@@ -104,6 +104,17 @@ func TestOpenReaderCloseClosesWrappedSource(t *testing.T) {
 	}
 }
 
+func TestOpenReaderDetectionErrorLeavesCallerSourceOpen(t *testing.T) {
+	raw := &trackedReadCloser{Reader: strings.NewReader("not a sequence file\n")}
+	_, err := seqio.OpenReader(raw)
+	if err == nil {
+		t.Fatal("OpenReader() error = nil, want detection error")
+	}
+	if raw.closed {
+		t.Fatal("OpenReader() closed caller-owned source after detection error")
+	}
+}
+
 func TestOpenPathDashCloseDoesNotCloseStdin(t *testing.T) {
 	in, err := os.CreateTemp(t.TempDir(), "stdin-*")
 	if err != nil {

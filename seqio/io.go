@@ -43,80 +43,65 @@ func (r *readerWithCloser) Close() error {
 
 func OpenReader(r io.Reader) (Reader, error) {
 	rawCloser, _ := r.(io.Closer)
-	raw := bufio.NewReader(r)
-	isBGZF, err := xopen.IsBGZF(raw)
-	if err != nil {
-		return nil, err
-	}
-	if isBGZF {
-		br, err := bam.NewReader(raw)
-		if err != nil {
-			return nil, err
-		}
-		return &readerWithCloser{Reader: br, closer: closeutil.MultiCloser(rawCloser, br)}, nil
-	}
-	rc, err := xopen.WrapReader(raw)
-	if err != nil {
-		return nil, err
-	}
-	br := bufio.NewReaderSize(rc, sniff.PeekSize)
-	detected, err := sniff.Format(br)
-	if err != nil {
-		_ = rc.Close()
-		return nil, err
-	}
-	inner, err := newFormatReader(br, Format(detected))
-	if err != nil {
-		_ = rc.Close()
-		return nil, err
-	}
-	return &readerWithCloser{Reader: inner, closer: closeutil.MultiCloser(rawCloser, rc)}, nil
+	return openBufferedReader(bufio.NewReader(r), rawCloser, false)
 }
 
 func OpenPath(path string) (Reader, error) {
-	var (
-		src io.ReadCloser
-		err error
-	)
-	if path == "-" {
-		src = noCloseReadCloser{Reader: os.Stdin}
-	} else {
-		src, err = os.Open(path)
-		if err != nil {
-			return nil, err
-		}
+	src, err := openPathSource(path)
+	if err != nil {
+		return nil, err
 	}
-	raw := bufio.NewReader(src)
+	return openBufferedReader(bufio.NewReader(src), src, true)
+}
+
+func openPathSource(path string) (io.ReadCloser, error) {
+	if path == "-" {
+		return noCloseReadCloser{Reader: os.Stdin}, nil
+	}
+	return os.Open(path)
+}
+
+func openBufferedReader(raw *bufio.Reader, sourceCloser io.Closer, closeSourceOnError bool) (Reader, error) {
 	isBGZF, err := xopen.IsBGZF(raw)
 	if err != nil {
-		_ = src.Close()
+		closeReaderSetupError(sourceCloser, nil, closeSourceOnError)
 		return nil, err
 	}
 	if isBGZF {
 		br, err := bam.NewReader(raw)
 		if err != nil {
-			_ = src.Close()
+			closeReaderSetupError(sourceCloser, nil, closeSourceOnError)
 			return nil, err
 		}
-		return &readerWithCloser{Reader: br, closer: closeutil.MultiCloser(src, br)}, nil
+		return &readerWithCloser{Reader: br, closer: closeutil.MultiCloser(sourceCloser, br)}, nil
 	}
 	rc, err := xopen.WrapReader(raw)
 	if err != nil {
-		_ = src.Close()
+		closeReaderSetupError(sourceCloser, nil, closeSourceOnError)
 		return nil, err
 	}
 	br := bufio.NewReaderSize(rc, sniff.PeekSize)
 	detected, err := sniff.Format(br)
 	if err != nil {
-		_ = closeutil.MultiCloser(src, rc).Close()
+		closeReaderSetupError(sourceCloser, rc, closeSourceOnError)
 		return nil, err
 	}
 	inner, err := newFormatReader(br, Format(detected))
 	if err != nil {
-		_ = closeutil.MultiCloser(src, rc).Close()
+		closeReaderSetupError(sourceCloser, rc, closeSourceOnError)
 		return nil, err
 	}
-	return &readerWithCloser{Reader: inner, closer: closeutil.MultiCloser(src, rc)}, nil
+	return &readerWithCloser{Reader: inner, closer: closeutil.MultiCloser(sourceCloser, rc)}, nil
+}
+
+func closeReaderSetupError(sourceCloser, wrappedCloser io.Closer, closeSource bool) {
+	if closeSource {
+		_ = closeutil.MultiCloser(sourceCloser, wrappedCloser).Close()
+		return
+	}
+	if wrappedCloser != nil {
+		_ = wrappedCloser.Close()
+	}
 }
 
 type noCloseReadCloser struct {
