@@ -55,6 +55,16 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 	for _, part := range fields[1:] {
 		seq = appendSequenceChars(seq, []byte(part))
 	}
+	for len(seq) < r.seqLen {
+		line, err := readNonEmptyLine(r.r)
+		if err == io.EOF {
+			return nil, fmt.Errorf("unexpected end of phylip sequence %q at length %d, want %d", name, len(seq), r.seqLen)
+		}
+		if err != nil {
+			return nil, err
+		}
+		seq = appendSequenceChars(seq, line)
+	}
 	if len(seq) != r.seqLen {
 		return nil, fmt.Errorf("phylip sequence %q length %d does not match header length %d", name, len(seq), r.seqLen)
 	}
