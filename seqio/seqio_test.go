@@ -86,6 +86,57 @@ func TestOpenReaderDetectsFormats(t *testing.T) {
 	}
 }
 
+func TestOpenReaderCloseClosesWrappedSource(t *testing.T) {
+	raw := &trackedReadCloser{Reader: strings.NewReader(">r1\nACGT\n")}
+	reader, err := seqio.OpenReader(raw)
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+	closer, ok := reader.(io.Closer)
+	if !ok {
+		t.Fatal("OpenReader() did not return an io.Closer")
+	}
+	if err := closer.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+	if !raw.closed {
+		t.Fatal("Close() did not close wrapped source")
+	}
+}
+
+func TestOpenPathDashCloseDoesNotCloseStdin(t *testing.T) {
+	in, err := os.CreateTemp(t.TempDir(), "stdin-*")
+	if err != nil {
+		t.Fatalf("CreateTemp() error = %v", err)
+	}
+	defer in.Close()
+	if _, err := in.WriteString(">r1\nACGT\n"); err != nil {
+		t.Fatalf("WriteString() error = %v", err)
+	}
+	if _, err := in.Seek(0, 0); err != nil {
+		t.Fatalf("Seek() error = %v", err)
+	}
+
+	oldStdin := os.Stdin
+	os.Stdin = in
+	defer func() { os.Stdin = oldStdin }()
+
+	reader, err := seqio.OpenPath("-")
+	if err != nil {
+		t.Fatalf("OpenPath(-) error = %v", err)
+	}
+	closer, ok := reader.(io.Closer)
+	if !ok {
+		t.Fatal("OpenPath(-) did not return an io.Closer")
+	}
+	if err := closer.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+	if _, err := in.Seek(0, 0); err != nil {
+		t.Fatalf("stdin file was closed: %v", err)
+	}
+}
+
 func TestOpenReaderClustalKeepsDashes(t *testing.T) {
 	input := "CLUSTAL W (1.83) multiple sequence alignment\n\nseq1    AC-GT\nseq2    ACGGT\n        ** **\n\nseq1    TT-\nseq2    TTT\n"
 	r, err := seqio.OpenReader(strings.NewReader(input))
@@ -500,4 +551,14 @@ func TestCreateFASTAPathHelper(t *testing.T) {
 	if rec.Name != "r1" || string(rec.Seq) != "ACGT" {
 		t.Fatalf("record = %+v", rec)
 	}
+}
+
+type trackedReadCloser struct {
+	*strings.Reader
+	closed bool
+}
+
+func (r *trackedReadCloser) Close() error {
+	r.closed = true
+	return nil
 }

@@ -69,7 +69,7 @@ func OpenReader(r io.Reader) (Reader, error) {
 		_ = rc.Close()
 		return nil, err
 	}
-	return &readerWithCloser{Reader: inner, closer: rc}, nil
+	return &readerWithCloser{Reader: inner, closer: newMultiCloser(rawCloser, rc)}, nil
 }
 
 func OpenPath(path string) (Reader, error) {
@@ -78,7 +78,7 @@ func OpenPath(path string) (Reader, error) {
 		err error
 	)
 	if path == "-" {
-		src = os.Stdin
+		src = noCloseReadCloser{Reader: os.Stdin}
 	} else {
 		src, err = os.Open(path)
 		if err != nil {
@@ -116,6 +116,14 @@ func OpenPath(path string) (Reader, error) {
 		return nil, err
 	}
 	return &readerWithCloser{Reader: inner, closer: newMultiCloser(src, rc)}, nil
+}
+
+type noCloseReadCloser struct {
+	io.Reader
+}
+
+func (noCloseReadCloser) Close() error {
+	return nil
 }
 
 func newFormatReader(r *bufio.Reader, format Format) (Reader, error) {
