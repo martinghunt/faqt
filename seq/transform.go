@@ -2,7 +2,6 @@ package seq
 
 import (
 	"fmt"
-	"strings"
 )
 
 var complementTable = map[byte]byte{
@@ -92,12 +91,14 @@ func Subseq(in []byte, start, end int) ([]byte, error) {
 func NormalizeDNA(in []byte) []byte {
 	out := make([]byte, len(in))
 	for i, ch := range in {
-		switch ch {
-		case 'u', 'U':
-			out[i] = 'T'
-		default:
-			out[i] = byte(strings.ToUpper(string([]byte{ch}))[0])
+		if ch >= 'a' && ch <= 'z' {
+			ch -= 'a' - 'A'
 		}
+		if ch == 'U' {
+			out[i] = 'T'
+			continue
+		}
+		out[i] = ch
 	}
 	return out
 }

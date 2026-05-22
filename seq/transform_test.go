@@ -52,6 +52,11 @@ func TestNormalizeDNA(t *testing.T) {
 	if string(in) != "acguN-x?" {
 		t.Fatalf("NormalizeDNA() mutated input = %q", in)
 	}
+
+	got = string(seq.NormalizeDNA([]byte("ryswkmbdhvu")))
+	if got != "RYSWKMBDHVT" {
+		t.Fatalf("NormalizeDNA() lowercase ambiguity = %q", got)
+	}
 }
 
 func TestTranslateCodon(t *testing.T) {
