@@ -1,6 +1,6 @@
 # faqt
 
-`faqt` is a command line interface and Go library for reading, writing, and manipulating biological sequence data. It is intentionally sequence-only: every supported input format normalizes into a minimal record with no annotation model, no feature graph, and no sequence reconstruction from annotations. It is a Go reimplementation of the python [Fastaq](https://github.com/sanger-pathogens/Fastaq).
+`faqt` is a command line interface and Go library for reading, writing, and manipulating biological sequence data. It is intentionally sequence-only: every supported input format normalizes into a minimal record with no annotation model, no feature graph, and no sequence reconstruction from annotations. It is a Go reimplementation of the python [Fastaq](https://github.com/sanger-pathogens/Fastaq). This repository was developed with substantial coding assistance from [OpenAI Codex](https://openai.com/codex), which helped with implementation, refactoring, tests, documentation, and benchmarking under human direction and review.
 
 ## Install
 
