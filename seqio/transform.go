@@ -8,6 +8,27 @@ func Identity(rec *SeqRecord) (*SeqRecord, error) {
 	return rec, nil
 }
 
+func RemoveDashes(rec *SeqRecord) (*SeqRecord, error) {
+	if err := rec.ValidateFASTQ(); err != nil {
+		return nil, err
+	}
+	copyRec := *rec
+	copyRec.Seq = make([]byte, 0, len(rec.Seq))
+	if rec.Qual != nil {
+		copyRec.Qual = make([]byte, 0, len(rec.Qual))
+	}
+	for i, base := range rec.Seq {
+		if base == '-' {
+			continue
+		}
+		copyRec.Seq = append(copyRec.Seq, base)
+		if rec.Qual != nil {
+			copyRec.Qual = append(copyRec.Qual, rec.Qual[i])
+		}
+	}
+	return &copyRec, nil
+}
+
 func Process(reader Reader, writer WriteCloser, transform RecordTransform) error {
 	if transform == nil {
 		transform = Identity

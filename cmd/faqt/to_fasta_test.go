@@ -30,12 +30,15 @@ func TestRunToFastaPathToPath(t *testing.T) {
 
 func TestRemoveDashesTransform(t *testing.T) {
 	transform := removeDashesTransform(true)
-	rec, err := transform(&seqio.SeqRecord{Name: "r1", Seq: []byte("AC-G-T")})
+	rec, err := transform(&seqio.SeqRecord{Name: "r1", Seq: []byte("AC-G-T"), Qual: []byte("123456")})
 	if err != nil {
 		t.Fatalf("transform() error = %v", err)
 	}
 	if string(rec.Seq) != "ACGT" {
 		t.Fatalf("transformed seq = %q", string(rec.Seq))
+	}
+	if string(rec.Qual) != "1246" {
+		t.Fatalf("transformed qual = %q", string(rec.Qual))
 	}
 }
 

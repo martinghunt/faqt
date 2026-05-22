@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-
 	"github.com/martinghunt/faqt/seqio"
 	"github.com/spf13/cobra"
 )
@@ -44,9 +42,5 @@ func removeDashesTransform(remove bool) seqio.RecordTransform {
 	if !remove {
 		return nil
 	}
-	return func(rec *seqio.SeqRecord) (*seqio.SeqRecord, error) {
-		copyRec := *rec
-		copyRec.Seq = bytes.ReplaceAll(rec.Seq, []byte("-"), nil)
-		return &copyRec, nil
-	}
+	return seqio.RemoveDashes
 }

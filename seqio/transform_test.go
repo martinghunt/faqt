@@ -36,6 +36,33 @@ func TestProcessAppliesTransform(t *testing.T) {
 	}
 }
 
+func TestRemoveDashesPreservesFASTQValidity(t *testing.T) {
+	rec := &seqio.SeqRecord{Name: "r1", Seq: []byte("A-C--GT"), Qual: []byte("1234567")}
+	got, err := seqio.RemoveDashes(rec)
+	if err != nil {
+		t.Fatalf("RemoveDashes() error = %v", err)
+	}
+	if string(got.Seq) != "ACGT" {
+		t.Fatalf("RemoveDashes() seq = %q, want ACGT", got.Seq)
+	}
+	if string(got.Qual) != "1367" {
+		t.Fatalf("RemoveDashes() qual = %q, want 1367", got.Qual)
+	}
+	if err := got.ValidateFASTQ(); err != nil {
+		t.Fatalf("transformed record is invalid FASTQ: %v", err)
+	}
+	if string(rec.Seq) != "A-C--GT" || string(rec.Qual) != "1234567" {
+		t.Fatalf("RemoveDashes() mutated input to seq=%q qual=%q", rec.Seq, rec.Qual)
+	}
+}
+
+func TestRemoveDashesRejectsInvalidFASTQRecord(t *testing.T) {
+	_, err := seqio.RemoveDashes(&seqio.SeqRecord{Name: "bad", Seq: []byte("A-C"), Qual: []byte("!!")})
+	if err == nil || !strings.Contains(err.Error(), "sequence length") {
+		t.Fatalf("RemoveDashes() error = %v, want FASTQ validation error", err)
+	}
+}
+
 func TestTransformPath(t *testing.T) {
 	dir := t.TempDir()
 	in := filepath.Join(dir, "reads.fa")

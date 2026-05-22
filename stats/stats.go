@@ -1,7 +1,6 @@
 package stats
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"sort"
@@ -201,7 +200,5 @@ func countNsAndGaps(seq []byte) (nCount int, gapCount int) {
 }
 
 func RemoveDashes(rec *seqio.SeqRecord) (*seqio.SeqRecord, error) {
-	copyRec := *rec
-	copyRec.Seq = bytes.ReplaceAll(rec.Seq, []byte("-"), nil)
-	return &copyRec, nil
+	return seqio.RemoveDashes(rec)
 }

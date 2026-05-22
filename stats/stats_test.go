@@ -138,13 +138,16 @@ func TestRenderMany(t *testing.T) {
 }
 
 func TestRemoveDashes(t *testing.T) {
-	rec := &seqio.SeqRecord{Name: "r1", Seq: []byte("A-C--GT"), Qual: []byte("!!!!!!")}
+	rec := &seqio.SeqRecord{Name: "r1", Seq: []byte("A-C--GT"), Qual: []byte("1234567")}
 	got, err := stats.RemoveDashes(rec)
 	if err != nil {
 		t.Fatalf("RemoveDashes() error = %v", err)
 	}
 	if string(got.Seq) != "ACGT" {
 		t.Fatalf("RemoveDashes() seq = %q, want ACGT", got.Seq)
+	}
+	if string(got.Qual) != "1367" {
+		t.Fatalf("RemoveDashes() qual = %q, want 1367", got.Qual)
 	}
 	if string(rec.Seq) != "A-C--GT" {
 		t.Fatalf("original seq mutated = %q", rec.Seq)
