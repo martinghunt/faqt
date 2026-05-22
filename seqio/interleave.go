@@ -44,7 +44,7 @@ func Interleave(reader1, reader2 Reader, writer WriteCloser, opts InterleaveOpti
 	return fmt.Errorf("error getting mate for sequence %q", rec2.Name)
 }
 
-func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts InterleaveOptions, opts ...Option) error {
+func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts InterleaveOptions, opts ...Option) (err error) {
 	reader1, err := OpenPath(inputPath1)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts In
 	if err != nil {
 		return err
 	}
-	defer writer.Close()
+	defer closeWithError(&err, writer)
 
 	if err := writeInterleavedPair(writer, first1, first2, interleaveOpts); err != nil {
 		return err

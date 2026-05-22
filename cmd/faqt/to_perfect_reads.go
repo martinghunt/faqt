@@ -66,7 +66,7 @@ func newToPerfectReadsCmd() *cobra.Command {
 	return cmd
 }
 
-func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev string, opts perfectreads.Options) (perfectreads.Report, error) {
+func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev string, opts perfectreads.Options) (report perfectreads.Report, err error) {
 	switch {
 	case outputPath != "":
 		if outputFwd != "" || outputRev != "" {
@@ -76,7 +76,7 @@ func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev str
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
-		defer w.Close()
+		defer closeWithError(&err, w)
 		return perfectreads.GenerateSingle(reader, w, opts)
 	case outputFwd != "" || outputRev != "":
 		if outputFwd == "" || outputRev == "" {
@@ -89,14 +89,23 @@ func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev str
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
-		defer fw.Close()
+		defer closeWithError(&err, fw)
 		rw, err := seqio.CreateFASTQPath(outputRev)
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
-		defer rw.Close()
+		defer closeWithError(&err, rw)
 		return perfectreads.GeneratePaired(reader, fw, rw, opts)
 	default:
 		return perfectreads.Report{}, fmt.Errorf("must provide either --out or both --forward-out and --reverse-out")
+	}
+}
+
+func closeWithError(errp *error, closer interface{ Close() error }) {
+	if closer == nil {
+		return
+	}
+	if err := closer.Close(); err != nil && *errp == nil {
+		*errp = err
 	}
 }

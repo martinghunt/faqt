@@ -61,16 +61,17 @@ func Generate(writer seqio.WriteCloser, opts Options) error {
 	return nil
 }
 
-func GenerateToPath(path string, opts Options, writerOpts ...seqio.Option) error {
+func GenerateToPath(path string, opts Options, writerOpts ...seqio.Option) (err error) {
 	writer, err := seqio.CreateFASTAPath(path, writerOpts...)
 	if err != nil {
 		return err
 	}
-	if err := Generate(writer, opts); err != nil {
-		_ = writer.Close()
-		return err
-	}
-	return writer.Close()
+	defer func() {
+		if closeErr := writer.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+	return Generate(writer, opts)
 }
 
 func randomSequence(rng *rand.Rand, length int) []byte {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,4 +97,28 @@ func TestToPerfectReadsCommandRejectsMixedOutputs(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "use either --out") {
 		t.Fatalf("Execute() error = %v, want mixed output validation error", err)
 	}
+}
+
+func TestCloseWithErrorPreservesPrimaryError(t *testing.T) {
+	closeErr := errors.New("close failed")
+	var err error
+	closeWithError(&err, closeErrorCloser{err: closeErr})
+	if err != closeErr {
+		t.Fatalf("closeWithError() error = %v, want close error", err)
+	}
+
+	primaryErr := errors.New("primary failed")
+	err = primaryErr
+	closeWithError(&err, closeErrorCloser{err: closeErr})
+	if err != primaryErr {
+		t.Fatalf("closeWithError() error = %v, want primary error", err)
+	}
+}
+
+type closeErrorCloser struct {
+	err error
+}
+
+func (c closeErrorCloser) Close() error {
+	return c.err
 }

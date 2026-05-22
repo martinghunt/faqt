@@ -54,7 +54,7 @@ func Process(reader Reader, writer WriteCloser, transform RecordTransform) error
 	}
 }
 
-func TransformPath(inputPath, outputPath string, format Format, transform RecordTransform, opts ...Option) error {
+func TransformPath(inputPath, outputPath string, format Format, transform RecordTransform, opts ...Option) (err error) {
 	reader, err := OpenPath(inputPath)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func TransformPath(inputPath, outputPath string, format Format, transform Record
 	if err != nil {
 		return err
 	}
-	defer writer.Close()
+	defer closeWithError(&err, writer)
 
 	return Process(reader, writer, transform)
 }
