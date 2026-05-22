@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"strings"
 
 	"github.com/martinghunt/faqt/internal/seqrecord"
 )
@@ -47,7 +46,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 	if header[0] != '>' {
 		return nil, io.ErrUnexpectedEOF
 	}
-	name, desc := parseHeader(header[1:])
+	name, desc := seqrecord.ParseHeader(header[1:])
 	seq := make([]byte, 0, 1024)
 	for {
 		line, err := r.r.ReadBytes('\n')
@@ -66,15 +65,4 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 		}
 	}
 	return &seqrecord.SeqRecord{Name: name, Description: desc, Seq: seq}, nil
-}
-
-func parseHeader(header []byte) (string, string) {
-	parts := strings.Fields(string(header))
-	if len(parts) == 0 {
-		return "", ""
-	}
-	if len(parts) == 1 {
-		return parts[0], ""
-	}
-	return parts[0], strings.Join(parts[1:], " ")
 }

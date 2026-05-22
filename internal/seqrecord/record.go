@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // SeqRecord is the minimal normalized sequence representation used throughout
@@ -13,6 +14,17 @@ type SeqRecord struct {
 	Description string
 	Seq         []byte
 	Qual        []byte
+}
+
+func ParseHeader(header []byte) (string, string) {
+	parts := strings.Fields(string(header))
+	if len(parts) == 0 {
+		return "", ""
+	}
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], strings.Join(parts[1:], " ")
 }
 
 func (r SeqRecord) String() string {

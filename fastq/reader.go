@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/martinghunt/faqt/internal/seqrecord"
 )
@@ -41,7 +40,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	name, desc := parseHeader(header[1:])
+	name, desc := seqrecord.ParseHeader(header[1:])
 	rec := &seqrecord.SeqRecord{Name: name, Description: desc, Seq: append([]byte(nil), seq...), Qual: append([]byte(nil), qual...)}
 	if err := rec.ValidateFASTQ(); err != nil {
 		return nil, err
@@ -59,15 +58,4 @@ func (r *Reader) readLine() ([]byte, error) {
 		return nil, io.EOF
 	}
 	return line, nil
-}
-
-func parseHeader(header []byte) (string, string) {
-	parts := strings.Fields(string(header))
-	if len(parts) == 0 {
-		return "", ""
-	}
-	if len(parts) == 1 {
-		return parts[0], ""
-	}
-	return parts[0], strings.Join(parts[1:], " ")
 }

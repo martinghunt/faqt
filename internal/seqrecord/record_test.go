@@ -27,6 +27,28 @@ func TestHeader(t *testing.T) {
 	}
 }
 
+func TestParseHeader(t *testing.T) {
+	tests := []struct {
+		header string
+		name   string
+		desc   string
+	}{
+		{header: "r1 desc one", name: "r1", desc: "desc one"},
+		{header: "r1", name: "r1"},
+		{header: "  r1\tspaced desc  ", name: "r1", desc: "spaced desc"},
+		{header: ""},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.header, func(t *testing.T) {
+			name, desc := ParseHeader([]byte(tc.header))
+			if name != tc.name || desc != tc.desc {
+				t.Fatalf("ParseHeader() = (%q, %q), want (%q, %q)", name, desc, tc.name, tc.desc)
+			}
+		})
+	}
+}
+
 func TestFASTAFormatting(t *testing.T) {
 	rec := SeqRecord{Name: "r1", Description: "desc", Seq: []byte("ACGT")}
 	if got := rec.String(); got != ">r1 desc\nACGT\n" {
