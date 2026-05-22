@@ -14,6 +14,7 @@ import (
 	htssam "github.com/biogo/hts/sam"
 	dsnetbzip2 "github.com/dsnet/compress/bzip2"
 	"github.com/klauspost/compress/zstd"
+	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/ulikunitz/xz"
 )
 
@@ -229,7 +230,7 @@ func (c *closerStub) Close() error {
 func TestMultiCloserCloseOrderAndError(t *testing.T) {
 	first := &closerStub{err: io.EOF}
 	second := &closerStub{}
-	mc := newMultiCloser(nil, first, second)
+	mc := closeutil.MultiCloser(nil, first, second)
 	if err := mc.Close(); err != io.EOF {
 		t.Fatalf("Close() error = %v, want EOF", err)
 	}

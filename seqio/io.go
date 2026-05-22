@@ -13,6 +13,7 @@ import (
 	"github.com/martinghunt/faqt/fastq"
 	"github.com/martinghunt/faqt/genbank"
 	"github.com/martinghunt/faqt/gff3"
+	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/martinghunt/faqt/internal/sniff"
 	"github.com/martinghunt/faqt/internal/xopen"
 	"github.com/martinghunt/faqt/phylip"
@@ -52,7 +53,7 @@ func OpenReader(r io.Reader) (Reader, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &readerWithCloser{Reader: br, closer: newMultiCloser(rawCloser, br)}, nil
+		return &readerWithCloser{Reader: br, closer: closeutil.MultiCloser(rawCloser, br)}, nil
 	}
 	rc, err := xopen.WrapReader(raw)
 	if err != nil {
@@ -69,7 +70,7 @@ func OpenReader(r io.Reader) (Reader, error) {
 		_ = rc.Close()
 		return nil, err
 	}
-	return &readerWithCloser{Reader: inner, closer: newMultiCloser(rawCloser, rc)}, nil
+	return &readerWithCloser{Reader: inner, closer: closeutil.MultiCloser(rawCloser, rc)}, nil
 }
 
 func OpenPath(path string) (Reader, error) {
@@ -97,7 +98,7 @@ func OpenPath(path string) (Reader, error) {
 			_ = src.Close()
 			return nil, err
 		}
-		return &readerWithCloser{Reader: br, closer: newMultiCloser(src, br)}, nil
+		return &readerWithCloser{Reader: br, closer: closeutil.MultiCloser(src, br)}, nil
 	}
 	rc, err := xopen.WrapReader(raw)
 	if err != nil {
@@ -107,15 +108,15 @@ func OpenPath(path string) (Reader, error) {
 	br := bufio.NewReaderSize(rc, sniff.PeekSize)
 	detected, err := sniff.Format(br)
 	if err != nil {
-		_ = newMultiCloser(src, rc).Close()
+		_ = closeutil.MultiCloser(src, rc).Close()
 		return nil, err
 	}
 	inner, err := newFormatReader(br, Format(detected))
 	if err != nil {
-		_ = newMultiCloser(src, rc).Close()
+		_ = closeutil.MultiCloser(src, rc).Close()
 		return nil, err
 	}
-	return &readerWithCloser{Reader: inner, closer: newMultiCloser(src, rc)}, nil
+	return &readerWithCloser{Reader: inner, closer: closeutil.MultiCloser(src, rc)}, nil
 }
 
 type noCloseReadCloser struct {
@@ -226,7 +227,7 @@ func CreatePath(path string, format Format, opts ...Option) (*Writer, error) {
 	}
 	return &Writer{
 		w:      wrapped,
-		closer: newMultiCloser(closer, wcloser),
+		closer: closeutil.MultiCloser(closer, wcloser),
 		format: format,
 		wrap:   options.wrap,
 	}, nil
@@ -251,31 +252,4 @@ func (w *Writer) Close() error {
 		return w.closer.Close()
 	}
 	return nil
-}
-
-type multiCloser struct {
-	closers []io.Closer
-}
-
-func newMultiCloser(closers ...io.Closer) io.Closer {
-	var filtered []io.Closer
-	for _, closer := range closers {
-		if closer != nil {
-			filtered = append(filtered, closer)
-		}
-	}
-	if len(filtered) == 0 {
-		return nil
-	}
-	return &multiCloser{closers: filtered}
-}
-
-func (m *multiCloser) Close() error {
-	var first error
-	for i := len(m.closers) - 1; i >= 0; i-- {
-		if err := m.closers[i].Close(); err != nil && first == nil {
-			first = err
-		}
-	}
-	return first
 }

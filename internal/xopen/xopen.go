@@ -11,6 +11,7 @@ import (
 
 	dsnetbzip2 "github.com/dsnet/compress/bzip2"
 	"github.com/klauspost/compress/zstd"
+	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/ulikunitz/xz"
 )
 
@@ -51,7 +52,7 @@ func Open(path string) (io.ReadCloser, error) {
 		_ = fh.Close()
 		return nil, err
 	}
-	return &readCloser{Reader: rc, closer: newMultiCloser(fh, rc)}, nil
+	return &readCloser{Reader: rc, closer: closeutil.MultiCloser(fh, rc)}, nil
 }
 
 func WrapReader(r io.Reader) (io.ReadCloser, error) {
@@ -129,28 +130,4 @@ func (r *readCloser) Close() error {
 		return r.closer.Close()
 	}
 	return nil
-}
-
-type multiCloser struct {
-	closers []io.Closer
-}
-
-func newMultiCloser(closers ...io.Closer) io.Closer {
-	var filtered []io.Closer
-	for _, closer := range closers {
-		if closer != nil {
-			filtered = append(filtered, closer)
-		}
-	}
-	return &multiCloser{closers: filtered}
-}
-
-func (m *multiCloser) Close() error {
-	var first error
-	for i := len(m.closers) - 1; i >= 0; i-- {
-		if err := m.closers[i].Close(); err != nil && first == nil {
-			first = err
-		}
-	}
-	return first
 }
