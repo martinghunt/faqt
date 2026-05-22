@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add configurable `genomedl.Downloader` support for custom genome download clients and endpoints.
 - Add `seqio.Interleave` and `seqio.InterleavePath` for streaming interleaving of paired sequence files.
 - Add `faqt interleave`, which alternates records from two input files and supports optional mate suffixes.
 - Add `randomcontigs` library support for generating random FASTA contigs.

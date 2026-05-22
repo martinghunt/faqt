@@ -35,15 +35,12 @@ func TestDownloadGenomeNuccore(t *testing.T) {
 	}))
 	defer server.Close()
 
-	oldFastaURL, oldGFFURL := sviewerFastaURL, sviewerGFF3URL
-	sviewerFastaURL = server.URL + "/viewer?id=%s&report=fasta"
-	sviewerGFF3URL = server.URL + "/viewer?id=%s&report=gff3"
-	defer func() {
-		sviewerFastaURL, sviewerGFF3URL = oldFastaURL, oldGFFURL
-	}()
+	downloader := NewDownloader()
+	downloader.SviewerFastaURL = server.URL + "/viewer?id=%s&report=fasta"
+	downloader.SviewerGFF3URL = server.URL + "/viewer?id=%s&report=gff3"
 
 	outPath := filepath.Join(t.TempDir(), "genome.gff3")
-	gotPath, err := DownloadGenome("NC_000001.1", outPath)
+	gotPath, err := downloader.DownloadGenome("NC_000001.1", outPath)
 	if err != nil {
 		t.Fatalf("DownloadGenome() error = %v", err)
 	}
@@ -76,14 +73,11 @@ func TestDownloadGenomeNuccoreReportsGFFDownloadErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	oldFastaURL, oldGFFURL := sviewerFastaURL, sviewerGFF3URL
-	sviewerFastaURL = server.URL + "/viewer?id=%s&report=fasta"
-	sviewerGFF3URL = server.URL + "/viewer?id=%s&report=gff3"
-	defer func() {
-		sviewerFastaURL, sviewerGFF3URL = oldFastaURL, oldGFFURL
-	}()
+	downloader := NewDownloader()
+	downloader.SviewerFastaURL = server.URL + "/viewer?id=%s&report=fasta"
+	downloader.SviewerGFF3URL = server.URL + "/viewer?id=%s&report=gff3"
 
-	_, err := DownloadGenome("NC_000001.1", filepath.Join(t.TempDir(), "genome.gff3"))
+	_, err := downloader.DownloadGenome("NC_000001.1", filepath.Join(t.TempDir(), "genome.gff3"))
 	if err == nil || !strings.Contains(err.Error(), "download gff3") {
 		t.Fatalf("DownloadGenome() error = %v, want GFF3 download error", err)
 	}

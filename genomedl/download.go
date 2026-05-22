@@ -12,14 +12,42 @@ import (
 	"time"
 )
 
-var (
-	datasetsDownloadURL = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/%s/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF"
-	sviewerFastaURL     = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?id=%s&db=nuccore&report=fasta&retmode=text"
-	sviewerGFF3URL      = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?id=%s&db=nuccore&report=gff3&retmode=text"
-	httpClient          = &http.Client{Timeout: 120 * time.Second}
+const (
+	defaultDatasetsDownloadURL = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/%s/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF"
+	defaultSviewerFastaURL     = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?id=%s&db=nuccore&report=fasta&retmode=text"
+	defaultSviewerGFF3URL      = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?id=%s&db=nuccore&report=gff3&retmode=text"
+	defaultHTTPTimeout         = 120 * time.Second
 )
 
+// Downloader downloads genome sequence files from NCBI endpoints.
+type Downloader struct {
+	// DatasetsDownloadURL is the fmt pattern for assembly genome downloads.
+	DatasetsDownloadURL string
+	// SviewerFastaURL is the fmt pattern for nuccore FASTA downloads.
+	SviewerFastaURL string
+	// SviewerGFF3URL is the fmt pattern for nuccore GFF3 downloads.
+	SviewerGFF3URL string
+	// HTTPClient is used for download requests.
+	HTTPClient *http.Client
+}
+
+// NewDownloader returns a downloader configured with the default NCBI endpoints.
+func NewDownloader() *Downloader {
+	return &Downloader{
+		DatasetsDownloadURL: defaultDatasetsDownloadURL,
+		SviewerFastaURL:     defaultSviewerFastaURL,
+		SviewerGFF3URL:      defaultSviewerGFF3URL,
+		HTTPClient:          &http.Client{Timeout: defaultHTTPTimeout},
+	}
+}
+
+// DownloadGenome downloads accession into outPath using the default downloader.
 func DownloadGenome(accession, outPath string) (string, error) {
+	return NewDownloader().DownloadGenome(accession, outPath)
+}
+
+// DownloadGenome downloads accession into outPath.
+func (d *Downloader) DownloadGenome(accession, outPath string) (string, error) {
 	acc := strings.TrimSpace(accession)
 	if acc == "" {
 		return "", fmt.Errorf("empty accession")
@@ -38,9 +66,9 @@ func DownloadGenome(accession, outPath string) (string, error) {
 
 	var files []string
 	if isAssemblyAccession(acc) {
-		files, err = downloadAssemblyGenome(acc, tmpDir)
+		files, err = d.downloadAssemblyGenome(acc, tmpDir)
 	} else {
-		files, err = downloadNuccoreGenome(acc, tmpDir)
+		files, err = d.downloadNuccoreGenome(acc, tmpDir)
 	}
 	if err != nil {
 		return "", err
@@ -56,24 +84,24 @@ func isAssemblyAccession(accession string) bool {
 	return strings.HasPrefix(upper, "GCF_") || strings.HasPrefix(upper, "GCA_")
 }
 
-func downloadAssemblyGenome(accession, outDir string) ([]string, error) {
+func (d *Downloader) downloadAssemblyGenome(accession, outDir string) ([]string, error) {
 	zipPath := filepath.Join(outDir, sanitizeFilename(accession)+".zip")
-	if err := downloadURLToFile(fmt.Sprintf(datasetsDownloadURL, accession), zipPath); err != nil {
+	if err := d.downloadURLToFile(fmt.Sprintf(d.datasetsDownloadURL(), accession), zipPath); err != nil {
 		return nil, err
 	}
 	return extractGenomeFilesFromZip(zipPath, outDir)
 }
 
-func downloadNuccoreGenome(accession, outDir string) ([]string, error) {
+func (d *Downloader) downloadNuccoreGenome(accession, outDir string) ([]string, error) {
 	base := sanitizeFilename(accession)
 	fastaPath := filepath.Join(outDir, base+".fa")
-	if err := downloadURLToFile(fmt.Sprintf(sviewerFastaURL, accession), fastaPath); err != nil {
+	if err := d.downloadURLToFile(fmt.Sprintf(d.sviewerFastaURL(), accession), fastaPath); err != nil {
 		return nil, err
 	}
 	files := []string{fastaPath}
 
 	gffPath := filepath.Join(outDir, base+".gff3")
-	if err := downloadURLToFile(fmt.Sprintf(sviewerGFF3URL, accession), gffPath); err == nil {
+	if err := d.downloadURLToFile(fmt.Sprintf(d.sviewerGFF3URL(), accession), gffPath); err == nil {
 		files = append(files, gffPath)
 	} else if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("download gff3: %w", err)
@@ -82,8 +110,8 @@ func downloadNuccoreGenome(accession, outDir string) ([]string, error) {
 	return files, nil
 }
 
-func downloadURLToFile(url, outPath string) error {
-	resp, err := httpClient.Get(url)
+func (d *Downloader) downloadURLToFile(url, outPath string) error {
+	resp, err := d.httpClient().Get(url)
 	if err != nil {
 		return err
 	}
@@ -103,6 +131,34 @@ func downloadURLToFile(url, outPath string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func (d *Downloader) datasetsDownloadURL() string {
+	if d != nil && d.DatasetsDownloadURL != "" {
+		return d.DatasetsDownloadURL
+	}
+	return defaultDatasetsDownloadURL
+}
+
+func (d *Downloader) sviewerFastaURL() string {
+	if d != nil && d.SviewerFastaURL != "" {
+		return d.SviewerFastaURL
+	}
+	return defaultSviewerFastaURL
+}
+
+func (d *Downloader) sviewerGFF3URL() string {
+	if d != nil && d.SviewerGFF3URL != "" {
+		return d.SviewerGFF3URL
+	}
+	return defaultSviewerGFF3URL
+}
+
+func (d *Downloader) httpClient() *http.Client {
+	if d != nil && d.HTTPClient != nil {
+		return d.HTTPClient
+	}
+	return &http.Client{Timeout: defaultHTTPTimeout}
 }
 
 func extractGenomeFilesFromZip(zipPath, outDir string) ([]string, error) {
