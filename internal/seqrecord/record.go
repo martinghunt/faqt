@@ -17,6 +17,15 @@ type SeqRecord struct {
 }
 
 func ParseHeader(header []byte) (string, string) {
+	for _, b := range header {
+		if b >= 0x80 {
+			return parseUnicodeHeader(header)
+		}
+	}
+	return parseASCIIHeader(header)
+}
+
+func parseUnicodeHeader(header []byte) (string, string) {
 	parts := strings.Fields(string(header))
 	if len(parts) == 0 {
 		return "", ""
@@ -25,6 +34,79 @@ func ParseHeader(header []byte) (string, string) {
 		return parts[0], ""
 	}
 	return parts[0], strings.Join(parts[1:], " ")
+}
+
+func parseASCIIHeader(header []byte) (string, string) {
+	i := 0
+	for i < len(header) && isHeaderSpace(header[i]) {
+		i++
+	}
+	if i == len(header) {
+		return "", ""
+	}
+
+	nameStart := i
+	for i < len(header) && !isHeaderSpace(header[i]) {
+		i++
+	}
+	name := string(header[nameStart:i])
+
+	for i < len(header) && isHeaderSpace(header[i]) {
+		i++
+	}
+	if i == len(header) {
+		return name, ""
+	}
+
+	descStart := i
+	descEnd := len(header)
+	for descEnd > descStart && isHeaderSpace(header[descEnd-1]) {
+		descEnd--
+	}
+	return name, normalizeHeaderDescription(header[descStart:descEnd])
+}
+
+func normalizeHeaderDescription(in []byte) string {
+	needsNormalize := false
+	prevSpace := false
+	for _, b := range in {
+		if isHeaderSpace(b) {
+			if b != ' ' || prevSpace {
+				needsNormalize = true
+				break
+			}
+			prevSpace = true
+			continue
+		}
+		prevSpace = false
+	}
+	if !needsNormalize {
+		return string(in)
+	}
+
+	out := make([]byte, 0, len(in))
+	prevSpace = false
+	for _, b := range in {
+		if isHeaderSpace(b) {
+			if !prevSpace {
+				out = append(out, ' ')
+				prevSpace = true
+			}
+			continue
+		}
+		out = append(out, b)
+		prevSpace = false
+	}
+	return string(out)
+}
+
+func isHeaderSpace(b byte) bool {
+	switch b {
+	case ' ', '\t', '\n', '\r', '\v', '\f':
+		return true
+	default:
+		return false
+	}
 }
 
 func (r SeqRecord) String() string {

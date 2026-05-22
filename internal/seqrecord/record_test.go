@@ -36,6 +36,7 @@ func TestParseHeader(t *testing.T) {
 		{header: "r1 desc one", name: "r1", desc: "desc one"},
 		{header: "r1", name: "r1"},
 		{header: "  r1\tspaced desc  ", name: "r1", desc: "spaced desc"},
+		{header: "r1\u00a0unicode desc", name: "r1", desc: "unicode desc"},
 		{header: ""},
 	}
 

@@ -28,10 +28,30 @@ func TestReaderMultiRecord(t *testing.T) {
 	if string(first.Seq) != "ACGT" || string(first.Qual) != "ABCD" {
 		t.Fatalf("first record changed after reading second record: %+v", first)
 	}
+	if first.Name != "r1" || first.Description != "desc" {
+		t.Fatalf("first record header changed after reading second record: %+v", first)
+	}
 
 	_, err = r.Read()
 	if err != io.EOF {
 		t.Fatalf("Read() final error = %v, want EOF", err)
+	}
+}
+
+func TestReaderHandlesLongHeaderAndSeparator(t *testing.T) {
+	longName := "read" + strings.Repeat("x", 64)
+	input := "@" + longName + " desc\tone\nAC\n+" + strings.Repeat("q", 64) + "\n!!\n"
+	r := NewReader(bufio.NewReaderSize(strings.NewReader(input), 16))
+
+	rec, err := r.Read()
+	if err != nil {
+		t.Fatalf("Read() error = %v", err)
+	}
+	if rec.Name != longName || rec.Description != "desc one" {
+		t.Fatalf("record header = (%q, %q), want (%q, %q)", rec.Name, rec.Description, longName, "desc one")
+	}
+	if string(rec.Seq) != "AC" || string(rec.Qual) != "!!" {
+		t.Fatalf("record sequence = (%q, %q), want (%q, %q)", string(rec.Seq), string(rec.Qual), "AC", "!!")
 	}
 }
 
