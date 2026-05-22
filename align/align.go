@@ -220,16 +220,7 @@ func smithWatermanAlign(candidate mapper.Candidate, opts Options) (Result, error
 	ref := candidate.RefSeqOriented
 	rows := len(query) + 1
 	cols := len(ref) + 1
-	mm := make([]int, rows*cols)
-	ix := make([]int, rows*cols)
-	iy := make([]int, rows*cols)
-	traceM := make([]byte, rows*cols)
-	traceX := make([]byte, rows*cols)
-	traceY := make([]byte, rows*cols)
-
-	for idx := range mm {
-		mm[idx], ix[idx], iy[idx] = 0, negInf, negInf
-	}
+	dp := newAlignmentDP(rows, cols, 0, negInf)
 
 	bestScore := 0
 	bestI, bestJ := 0, 0
@@ -240,65 +231,56 @@ func smithWatermanAlign(candidate mapper.Candidate, opts Options) (Result, error
 			if !inBand(i, j, len(query), len(ref), opts.BandWidth) {
 				continue
 			}
-			idx := i*cols + j
-			diagIdx := (i-1)*cols + (j - 1)
-			upIdx := (i-1)*cols + j
-			leftIdx := i*cols + (j - 1)
+			idx := dp.index(i, j)
+			diagIdx := dp.index(i-1, j-1)
+			upIdx := dp.index(i-1, j)
+			leftIdx := dp.index(i, j-1)
 
 			bestPrev := 0
-			traceM[idx] = 0
-			if mm[diagIdx] > bestPrev {
-				bestPrev = mm[diagIdx]
-				traceM[idx] = 'M'
+			dp.traceM[idx] = 0
+			if dp.mm[diagIdx] > bestPrev {
+				bestPrev = dp.mm[diagIdx]
+				dp.traceM[idx] = 'M'
 			}
-			if ix[diagIdx] > bestPrev {
-				bestPrev = ix[diagIdx]
-				traceM[idx] = 'X'
+			if dp.ix[diagIdx] > bestPrev {
+				bestPrev = dp.ix[diagIdx]
+				dp.traceM[idx] = 'X'
 			}
-			if iy[diagIdx] > bestPrev {
-				bestPrev = iy[diagIdx]
-				traceM[idx] = 'Y'
+			if dp.iy[diagIdx] > bestPrev {
+				bestPrev = dp.iy[diagIdx]
+				dp.traceM[idx] = 'Y'
 			}
-			mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], opts.Scoring)
+			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], opts.Scoring)
 
 			bestX := 0
-			traceX[idx] = 0
-			openX := mm[upIdx] + opts.Scoring.GapOpen
+			dp.traceX[idx] = 0
+			openX := dp.mm[upIdx] + opts.Scoring.GapOpen
 			if openX > bestX {
 				bestX = openX
-				traceX[idx] = 'M'
+				dp.traceX[idx] = 'M'
 			}
-			extendX := ix[upIdx] + opts.Scoring.GapExtend
+			extendX := dp.ix[upIdx] + opts.Scoring.GapExtend
 			if extendX > bestX {
 				bestX = extendX
-				traceX[idx] = 'X'
+				dp.traceX[idx] = 'X'
 			}
-			ix[idx] = bestX
+			dp.ix[idx] = bestX
 
 			bestY := 0
-			traceY[idx] = 0
-			openY := mm[leftIdx] + opts.Scoring.GapOpen
+			dp.traceY[idx] = 0
+			openY := dp.mm[leftIdx] + opts.Scoring.GapOpen
 			if openY > bestY {
 				bestY = openY
-				traceY[idx] = 'M'
+				dp.traceY[idx] = 'M'
 			}
-			extendY := iy[leftIdx] + opts.Scoring.GapExtend
+			extendY := dp.iy[leftIdx] + opts.Scoring.GapExtend
 			if extendY > bestY {
 				bestY = extendY
-				traceY[idx] = 'Y'
+				dp.traceY[idx] = 'Y'
 			}
-			iy[idx] = bestY
+			dp.iy[idx] = bestY
 
-			score := mm[idx]
-			state := byte('M')
-			if ix[idx] > score {
-				score = ix[idx]
-				state = 'X'
-			}
-			if iy[idx] > score {
-				score = iy[idx]
-				state = 'Y'
-			}
+			score, state := dp.bestState(idx)
 			if score > bestScore {
 				bestScore = score
 				bestI, bestJ = i, j
@@ -318,49 +300,12 @@ func smithWatermanAlign(candidate mapper.Candidate, opts Options) (Result, error
 		}, nil
 	}
 
-	i, j := bestI, bestJ
-	queryEnd, refEnd := i, j
-	ops := make([]byte, 0, queryEnd+refEnd)
-	matches := 0
-	aligned := 0
-	state := bestState
-	for i > 0 && j > 0 {
-		idx := i*cols + j
-		current := mm[idx]
-		if state == 'X' {
-			current = ix[idx]
-		} else if state == 'Y' {
-			current = iy[idx]
-		}
-		if state == 0 || current == 0 {
-			break
-		}
-		switch state {
-		case 'M':
-			ops = append(ops, 'M')
-			if query[i-1] == ref[j-1] {
-				matches++
-			}
-			aligned++
-			state = traceM[idx]
-			i--
-			j--
-		case 'X':
-			ops = append(ops, 'D')
-			aligned++
-			state = traceX[idx]
-			i--
-		case 'Y':
-			ops = append(ops, 'I')
-			aligned++
-			state = traceY[idx]
-			j--
-		default:
-			return Result{}, fmt.Errorf("unexpected traceback state %q", state)
-		}
+	queryEnd, refEnd := bestI, bestJ
+	traceback, err := dp.trace(query, ref, bestI, bestJ, bestState, true, "")
+	if err != nil {
+		return Result{}, err
 	}
-	queryStart, refStart := i, j
-	slices.Reverse(ops)
+	queryStart, refStart := traceback.queryStart, traceback.refStart
 
 	queryRange := seq.Interval{
 		Start: candidate.QueryRange.Start + queryStart,
@@ -369,8 +314,8 @@ func smithWatermanAlign(candidate mapper.Candidate, opts Options) (Result, error
 	refForwardRange := orientedToForwardRange(candidate, refStart, refEnd)
 
 	identity := 0.0
-	if aligned > 0 {
-		identity = float64(matches) / float64(aligned)
+	if traceback.aligned > 0 {
+		identity = float64(traceback.matches) / float64(traceback.aligned)
 	}
 
 	return Result{
@@ -378,9 +323,9 @@ func smithWatermanAlign(candidate mapper.Candidate, opts Options) (Result, error
 		Score:           bestScore,
 		QueryRange:      queryRange,
 		RefRangeForward: refForwardRange,
-		CIGAR:           compressOps(ops),
-		Matches:         matches,
-		AlignedLength:   aligned,
+		CIGAR:           compressOps(traceback.ops),
+		Matches:         traceback.matches,
+		AlignedLength:   traceback.aligned,
 		Identity:        identity,
 	}, nil
 }
@@ -502,6 +447,130 @@ type endAlignment struct {
 
 const negInf = -1 << 29
 
+type alignmentDP struct {
+	cols   int
+	mm     []int
+	ix     []int
+	iy     []int
+	traceM []byte
+	traceX []byte
+	traceY []byte
+}
+
+type alignmentTraceback struct {
+	ops        []byte
+	matches    int
+	aligned    int
+	queryStart int
+	refStart   int
+}
+
+func newAlignmentDP(rows, cols, matchInit, gapInit int) alignmentDP {
+	size := rows * cols
+	dp := alignmentDP{
+		cols:   cols,
+		mm:     make([]int, size),
+		ix:     make([]int, size),
+		iy:     make([]int, size),
+		traceM: make([]byte, size),
+		traceX: make([]byte, size),
+		traceY: make([]byte, size),
+	}
+	for idx := range dp.mm {
+		dp.mm[idx], dp.ix[idx], dp.iy[idx] = matchInit, gapInit, gapInit
+	}
+	return dp
+}
+
+func (dp alignmentDP) index(i, j int) int {
+	return i*dp.cols + j
+}
+
+func (dp alignmentDP) bestState(idx int) (int, byte) {
+	score := dp.mm[idx]
+	state := byte('M')
+	if dp.ix[idx] > score {
+		score = dp.ix[idx]
+		state = 'X'
+	}
+	if dp.iy[idx] > score {
+		score = dp.iy[idx]
+		state = 'Y'
+	}
+	return score, state
+}
+
+func (dp alignmentDP) stateScore(idx int, state byte) (int, bool) {
+	switch state {
+	case 'M':
+		return dp.mm[idx], true
+	case 'X':
+		return dp.ix[idx], true
+	case 'Y':
+		return dp.iy[idx], true
+	default:
+		return 0, false
+	}
+}
+
+func (dp alignmentDP) trace(query, ref []byte, i, j int, state byte, local bool, context string) (alignmentTraceback, error) {
+	ops := make([]byte, 0, i+j)
+	matches := 0
+	aligned := 0
+	for traceContinues(local, i, j) {
+		idx := dp.index(i, j)
+		if local {
+			if state == 0 {
+				break
+			}
+			if score, ok := dp.stateScore(idx, state); ok && score == 0 {
+				break
+			}
+		}
+		switch state {
+		case 'M':
+			ops = append(ops, 'M')
+			if i > 0 && j > 0 && query[i-1] == ref[j-1] {
+				matches++
+			}
+			aligned++
+			state = dp.traceM[idx]
+			i--
+			j--
+		case 'X':
+			ops = append(ops, 'D')
+			aligned++
+			state = dp.traceX[idx]
+			i--
+		case 'Y':
+			ops = append(ops, 'I')
+			aligned++
+			state = dp.traceY[idx]
+			j--
+		default:
+			if context == "" {
+				return alignmentTraceback{}, fmt.Errorf("unexpected traceback state %q", state)
+			}
+			return alignmentTraceback{}, fmt.Errorf("unexpected %s traceback state %q", context, state)
+		}
+	}
+	slices.Reverse(ops)
+	return alignmentTraceback{
+		ops:        ops,
+		matches:    matches,
+		aligned:    aligned,
+		queryStart: i,
+		refStart:   j,
+	}, nil
+}
+
+func traceContinues(local bool, i, j int) bool {
+	if local {
+		return i > 0 && j > 0
+	}
+	return i > 0 || j > 0
+}
+
 func anchorBlocks(candidate mapper.Candidate) []anchorBlock {
 	k := candidate.SeedLength
 	if k <= 0 || len(candidate.Chain.Anchors) == 0 {
@@ -587,28 +656,19 @@ func globalAlign(query, ref []byte, scoring Scoring, xdrop, bandWidth int) (glob
 
 	rows := len(query) + 1
 	cols := len(ref) + 1
-	mm := make([]int, rows*cols)
-	ix := make([]int, rows*cols)
-	iy := make([]int, rows*cols)
-	traceM := make([]byte, rows*cols)
-	traceX := make([]byte, rows*cols)
-	traceY := make([]byte, rows*cols)
-
-	for idx := range mm {
-		mm[idx], ix[idx], iy[idx] = negInf, negInf, negInf
-	}
-	mm[0] = 0
+	dp := newAlignmentDP(rows, cols, negInf, negInf)
+	dp.mm[0] = 0
 	for i := 1; i < rows; i++ {
-		idx := i * cols
+		idx := dp.index(i, 0)
 		if inBand(i, 0, len(query), len(ref), bandWidth) {
-			ix[idx] = scoring.GapOpen + (i-1)*scoring.GapExtend
-			traceX[idx] = 'X'
+			dp.ix[idx] = scoring.GapOpen + (i-1)*scoring.GapExtend
+			dp.traceX[idx] = 'X'
 		}
 	}
 	for j := 1; j < cols; j++ {
 		if inBand(0, j, len(query), len(ref), bandWidth) {
-			iy[j] = scoring.GapOpen + (j-1)*scoring.GapExtend
-			traceY[j] = 'Y'
+			dp.iy[j] = scoring.GapOpen + (j-1)*scoring.GapExtend
+			dp.traceY[j] = 'Y'
 		}
 	}
 
@@ -619,50 +679,44 @@ func globalAlign(query, ref []byte, scoring Scoring, xdrop, bandWidth int) (glob
 			if !inBand(i, j, len(query), len(ref), bandWidth) {
 				continue
 			}
-			idx := i*cols + j
-			diagIdx := (i-1)*cols + (j - 1)
-			upIdx := (i-1)*cols + j
-			leftIdx := i*cols + (j - 1)
+			idx := dp.index(i, j)
+			diagIdx := dp.index(i-1, j-1)
+			upIdx := dp.index(i-1, j)
+			leftIdx := dp.index(i, j-1)
 
-			bestPrev := mm[diagIdx]
-			traceM[idx] = 'M'
-			if ix[diagIdx] > bestPrev {
-				bestPrev = ix[diagIdx]
-				traceM[idx] = 'X'
+			bestPrev := dp.mm[diagIdx]
+			dp.traceM[idx] = 'M'
+			if dp.ix[diagIdx] > bestPrev {
+				bestPrev = dp.ix[diagIdx]
+				dp.traceM[idx] = 'X'
 			}
-			if iy[diagIdx] > bestPrev {
-				bestPrev = iy[diagIdx]
-				traceM[idx] = 'Y'
+			if dp.iy[diagIdx] > bestPrev {
+				bestPrev = dp.iy[diagIdx]
+				dp.traceM[idx] = 'Y'
 			}
-			mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
+			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
 
-			openX := mm[upIdx] + scoring.GapOpen
-			extendX := ix[upIdx] + scoring.GapExtend
+			openX := dp.mm[upIdx] + scoring.GapOpen
+			extendX := dp.ix[upIdx] + scoring.GapExtend
 			if openX >= extendX {
-				ix[idx] = openX
-				traceX[idx] = 'M'
+				dp.ix[idx] = openX
+				dp.traceX[idx] = 'M'
 			} else {
-				ix[idx] = extendX
-				traceX[idx] = 'X'
+				dp.ix[idx] = extendX
+				dp.traceX[idx] = 'X'
 			}
 
-			openY := mm[leftIdx] + scoring.GapOpen
-			extendY := iy[leftIdx] + scoring.GapExtend
+			openY := dp.mm[leftIdx] + scoring.GapOpen
+			extendY := dp.iy[leftIdx] + scoring.GapExtend
 			if openY >= extendY {
-				iy[idx] = openY
-				traceY[idx] = 'M'
+				dp.iy[idx] = openY
+				dp.traceY[idx] = 'M'
 			} else {
-				iy[idx] = extendY
-				traceY[idx] = 'Y'
+				dp.iy[idx] = extendY
+				dp.traceY[idx] = 'Y'
 			}
 
-			cellBest := mm[idx]
-			if ix[idx] > cellBest {
-				cellBest = ix[idx]
-			}
-			if iy[idx] > cellBest {
-				cellBest = iy[idx]
-			}
+			cellBest, _ := dp.bestState(idx)
 			if cellBest > rowBest {
 				rowBest = cellBest
 			}
@@ -676,55 +730,20 @@ func globalAlign(query, ref []byte, scoring Scoring, xdrop, bandWidth int) (glob
 	}
 
 	i, j := len(query), len(ref)
-	ops := make([]byte, 0, i+j)
-	matches := 0
-	aligned := 0
-	state := byte('M')
-	best := mm[i*cols+j]
-	if ix[i*cols+j] > best {
-		best = ix[i*cols+j]
-		state = 'X'
-	}
-	if iy[i*cols+j] > best {
-		best = iy[i*cols+j]
-		state = 'Y'
-	}
+	best, state := dp.bestState(dp.index(i, j))
 	if best == negInf {
 		return globalAlignment{}, nil
 	}
-	for i > 0 || j > 0 {
-		idx := i*cols + j
-		switch state {
-		case 'M':
-			ops = append(ops, 'M')
-			if i > 0 && j > 0 && query[i-1] == ref[j-1] {
-				matches++
-			}
-			aligned++
-			state = traceM[idx]
-			i--
-			j--
-		case 'X':
-			ops = append(ops, 'D')
-			aligned++
-			state = traceX[idx]
-			i--
-		case 'Y':
-			ops = append(ops, 'I')
-			aligned++
-			state = traceY[idx]
-			j--
-		default:
-			return globalAlignment{}, fmt.Errorf("unexpected global traceback state %q", state)
-		}
+	traceback, err := dp.trace(query, ref, i, j, state, false, "global")
+	if err != nil {
+		return globalAlignment{}, err
 	}
-	slices.Reverse(ops)
 
 	return globalAlignment{
-		ops:     ops,
+		ops:     traceback.ops,
 		score:   best,
-		matches: matches,
-		aligned: aligned,
+		matches: traceback.matches,
+		aligned: traceback.aligned,
 	}, nil
 }
 
@@ -734,21 +753,12 @@ func suffixAlign(query, ref []byte, scoring Scoring, xdrop int) (endAlignment, e
 	}
 	rows := len(query) + 1
 	cols := len(ref) + 1
-	mm := make([]int, rows*cols)
-	ix := make([]int, rows*cols)
-	iy := make([]int, rows*cols)
-	traceM := make([]byte, rows*cols)
-	traceX := make([]byte, rows*cols)
-	traceY := make([]byte, rows*cols)
-
-	for idx := range mm {
-		mm[idx], ix[idx], iy[idx] = negInf, negInf, negInf
-	}
+	dp := newAlignmentDP(rows, cols, negInf, negInf)
 	for i := 0; i < rows; i++ {
-		mm[i*cols] = 0
+		dp.mm[dp.index(i, 0)] = 0
 	}
 	for j := 0; j < cols; j++ {
-		mm[j] = 0
+		dp.mm[j] = 0
 	}
 
 	bestScore := 0
@@ -758,65 +768,56 @@ func suffixAlign(query, ref []byte, scoring Scoring, xdrop int) (endAlignment, e
 	for i := 1; i < rows; i++ {
 		rowBest := negInf
 		for j := 1; j < cols; j++ {
-			idx := i*cols + j
-			diagIdx := (i-1)*cols + (j - 1)
-			upIdx := (i-1)*cols + j
-			leftIdx := i*cols + (j - 1)
+			idx := dp.index(i, j)
+			diagIdx := dp.index(i-1, j-1)
+			upIdx := dp.index(i-1, j)
+			leftIdx := dp.index(i, j-1)
 
 			bestPrev := 0
-			traceM[idx] = 0
-			if mm[diagIdx] > bestPrev {
-				bestPrev = mm[diagIdx]
-				traceM[idx] = 'M'
+			dp.traceM[idx] = 0
+			if dp.mm[diagIdx] > bestPrev {
+				bestPrev = dp.mm[diagIdx]
+				dp.traceM[idx] = 'M'
 			}
-			if ix[diagIdx] > bestPrev {
-				bestPrev = ix[diagIdx]
-				traceM[idx] = 'X'
+			if dp.ix[diagIdx] > bestPrev {
+				bestPrev = dp.ix[diagIdx]
+				dp.traceM[idx] = 'X'
 			}
-			if iy[diagIdx] > bestPrev {
-				bestPrev = iy[diagIdx]
-				traceM[idx] = 'Y'
+			if dp.iy[diagIdx] > bestPrev {
+				bestPrev = dp.iy[diagIdx]
+				dp.traceM[idx] = 'Y'
 			}
-			mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
+			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
 
 			bestX := 0
-			traceX[idx] = 0
-			openX := mm[upIdx] + scoring.GapOpen
+			dp.traceX[idx] = 0
+			openX := dp.mm[upIdx] + scoring.GapOpen
 			if openX > bestX {
 				bestX = openX
-				traceX[idx] = 'M'
+				dp.traceX[idx] = 'M'
 			}
-			extendX := ix[upIdx] + scoring.GapExtend
+			extendX := dp.ix[upIdx] + scoring.GapExtend
 			if extendX > bestX {
 				bestX = extendX
-				traceX[idx] = 'X'
+				dp.traceX[idx] = 'X'
 			}
-			ix[idx] = bestX
+			dp.ix[idx] = bestX
 
 			bestY := 0
-			traceY[idx] = 0
-			openY := mm[leftIdx] + scoring.GapOpen
+			dp.traceY[idx] = 0
+			openY := dp.mm[leftIdx] + scoring.GapOpen
 			if openY > bestY {
 				bestY = openY
-				traceY[idx] = 'M'
+				dp.traceY[idx] = 'M'
 			}
-			extendY := iy[leftIdx] + scoring.GapExtend
+			extendY := dp.iy[leftIdx] + scoring.GapExtend
 			if extendY > bestY {
 				bestY = extendY
-				traceY[idx] = 'Y'
+				dp.traceY[idx] = 'Y'
 			}
-			iy[idx] = bestY
+			dp.iy[idx] = bestY
 
-			cellBest := mm[idx]
-			cellState := byte('M')
-			if ix[idx] > cellBest {
-				cellBest = ix[idx]
-				cellState = 'X'
-			}
-			if iy[idx] > cellBest {
-				cellBest = iy[idx]
-				cellState = 'Y'
-			}
+			cellBest, cellState := dp.bestState(idx)
 			if cellBest > rowBest {
 				rowBest = cellBest
 			}
@@ -831,54 +832,17 @@ func suffixAlign(query, ref []byte, scoring Scoring, xdrop int) (endAlignment, e
 		}
 	}
 
-	i, j := bestI, bestJ
-	ops := make([]byte, 0, i+j)
-	matches := 0
-	aligned := 0
-	state := bestState
-	for i > 0 && j > 0 {
-		idx := i*cols + j
-		current := mm[idx]
-		if state == 'X' {
-			current = ix[idx]
-		} else if state == 'Y' {
-			current = iy[idx]
-		}
-		if current == 0 || state == 0 {
-			break
-		}
-		switch state {
-		case 'M':
-			ops = append(ops, 'M')
-			if query[i-1] == ref[j-1] {
-				matches++
-			}
-			aligned++
-			state = traceM[idx]
-			i--
-			j--
-		case 'X':
-			ops = append(ops, 'D')
-			aligned++
-			state = traceX[idx]
-			i--
-		case 'Y':
-			ops = append(ops, 'I')
-			aligned++
-			state = traceY[idx]
-			j--
-		default:
-			return endAlignment{}, fmt.Errorf("unexpected suffix traceback state %q", state)
-		}
+	traceback, err := dp.trace(query, ref, bestI, bestJ, bestState, true, "suffix")
+	if err != nil {
+		return endAlignment{}, err
 	}
-	slices.Reverse(ops)
 	return endAlignment{
-		ops:       ops,
+		ops:       traceback.ops,
 		score:     bestScore,
-		matches:   matches,
-		aligned:   aligned,
-		queryClip: i,
-		refClip:   j + (len(ref) - bestJ),
+		matches:   traceback.matches,
+		aligned:   traceback.aligned,
+		queryClip: traceback.queryStart,
+		refClip:   traceback.refStart + (len(ref) - bestJ),
 	}, nil
 }
 

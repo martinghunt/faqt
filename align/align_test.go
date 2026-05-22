@@ -216,6 +216,62 @@ func TestDefaultAlignerHandlesNonSquareInternalGapWithinBand(t *testing.T) {
 	}
 }
 
+func TestDefaultAlignerTracesAnchoredInternalGaps(t *testing.T) {
+	tests := []struct {
+		name       string
+		query      string
+		ref        string
+		secondQPos int
+		secondRPos int
+		wantCIGAR  string
+	}{
+		{
+			name:       "query gap",
+			query:      "AAAGGG",
+			ref:        "AAACCCGGG",
+			secondQPos: 3,
+			secondRPos: 6,
+			wantCIGAR:  "3M3I3M",
+		},
+		{
+			name:       "reference gap",
+			query:      "AAACCCGGG",
+			ref:        "AAAGGG",
+			secondQPos: 6,
+			secondRPos: 3,
+			wantCIGAR:  "3M3D3M",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			candidate := mapper.Candidate{
+				SeedLength:     3,
+				QueryRange:     seq.Interval{Start: 0, End: len(tc.query)},
+				RefRange:       seq.Interval{Start: 0, End: len(tc.ref)},
+				QuerySeq:       []byte(tc.query),
+				RefSeqForward:  []byte(tc.ref),
+				RefSeqOriented: []byte(tc.ref),
+				RelativeStrand: 0,
+				Chain: mapper.Chain{
+					Anchors: []minimizer.Anchor{
+						{QueryPos: 0, RefPos: 0, QueryStrand: 0, RefStrand: 0},
+						{QueryPos: tc.secondQPos, RefPos: tc.secondRPos, QueryStrand: 0, RefStrand: 0},
+					},
+				},
+			}
+
+			result, err := align.DefaultAligner().Align(candidate)
+			if err != nil {
+				t.Fatalf("Align() error = %v", err)
+			}
+			if result.CIGAR != tc.wantCIGAR {
+				t.Fatalf("Align() CIGAR = %q, want %s", result.CIGAR, tc.wantCIGAR)
+			}
+		})
+	}
+}
+
 func TestSmithWatermanFallbackUsesBandedXDrop(t *testing.T) {
 	a := align.SmithWatermanAligner{
 		Options: align.Options{
