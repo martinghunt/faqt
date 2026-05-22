@@ -95,3 +95,45 @@ func TestGenerateNoNSkipsPairs(t *testing.T) {
 		t.Fatalf("PairsWritten = %d, want 0", report.PairsWritten)
 	}
 }
+
+func TestGeneratePairedRejectsMeanInsertShorterThanRead(t *testing.T) {
+	reader, err := seqio.OpenReader(strings.NewReader(">chr1\nACGTACGTACGT\n"))
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+	var fwd, rev bytes.Buffer
+	_, err = GeneratePaired(reader, seqio.NewFASTQWriter(&fwd), seqio.NewFASTQWriter(&rev), Options{
+		MeanInsert: 3,
+		InsertStd:  0,
+		Coverage:   1,
+		ReadLength: 4,
+		Seed:       1,
+	})
+	if err == nil || !strings.Contains(err.Error(), "mean insert must be >= read length") {
+		t.Fatalf("GeneratePaired() error = %v, want mean insert/read length validation", err)
+	}
+}
+
+func TestGeneratePairedAllowsOddInsertSpanningWholeSequence(t *testing.T) {
+	reader, err := seqio.OpenReader(strings.NewReader(">chr1\nACGTA\n"))
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+	var fwd, rev bytes.Buffer
+	report, err := GeneratePaired(reader, seqio.NewFASTQWriter(&fwd), seqio.NewFASTQWriter(&rev), Options{
+		MeanInsert: 5,
+		InsertStd:  0,
+		Coverage:   2,
+		ReadLength: 3,
+		Seed:       1,
+	})
+	if err != nil {
+		t.Fatalf("GeneratePaired() error = %v", err)
+	}
+	if report.PairsWritten != 1 {
+		t.Fatalf("PairsWritten = %d, want 1", report.PairsWritten)
+	}
+	if !strings.Contains(fwd.String(), "@chr1:1:1:3/1") || !strings.Contains(rev.String(), "@chr1:1:1:3/2") {
+		t.Fatalf("paired outputs = %q / %q", fwd.String(), rev.String())
+	}
+}

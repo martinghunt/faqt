@@ -3,7 +3,6 @@ package perfectreads
 import (
 	"fmt"
 	"io"
-	"math"
 	"math/rand"
 
 	"github.com/martinghunt/faqt/seq"
@@ -38,6 +37,9 @@ func GeneratePaired(reader seqio.Reader, forwardWriter, reverseWriter seqio.Writ
 	if opts.ReadLength <= 0 {
 		return Report{}, fmt.Errorf("read length must be > 0")
 	}
+	if opts.MeanInsert < opts.ReadLength {
+		return Report{}, fmt.Errorf("mean insert must be >= read length")
+	}
 
 	rng := rand.New(rand.NewSource(opts.Seed))
 	report := Report{}
@@ -69,15 +71,14 @@ func GeneratePaired(reader seqio.Reader, forwardWriter, reverseWriter seqio.Writ
 				break
 			}
 			isize := int(rng.NormFloat64()*opts.InsertStd + float64(opts.MeanInsert))
-			for isize > len(ref.Seq) || isize < opts.ReadLength {
-				isize = int(rng.NormFloat64()*opts.InsertStd + float64(opts.MeanInsert))
+			if isize > len(ref.Seq) || isize < opts.ReadLength {
+				continue
 			}
-			middlePos := rng.Intn(int(math.Floor(float64(len(ref.Seq))-0.5*float64(isize)))-int(math.Ceil(0.5*float64(isize)))+1) + int(math.Ceil(0.5*float64(isize)))
-			readStart1 := middlePos - int(math.Ceil(0.5*float64(isize)))
+			readStart1 := rng.Intn(len(ref.Seq) - isize + 1)
 			readStart2 := readStart1 + isize - opts.ReadLength
 
 			name := fmt.Sprintf("%s:%d:%d:%d", ref.Name, pairCounter, readStart1+1, readStart2+1)
-			fragment := [2]int{middlePos, isize}
+			fragment := [2]int{readStart1, isize}
 			if count, ok := usedFragments[fragment]; ok {
 				count++
 				usedFragments[fragment] = count
