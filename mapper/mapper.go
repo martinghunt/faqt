@@ -152,33 +152,11 @@ func ExtractCandidates(index *minimizer.Index, query []byte, chains []Chain, opt
 		}
 		ref := index.Refs[chain.RefID]
 
-		queryRange := paddedRange(chain.QueryStart, chain.QueryEnd+index.K, len(query), opts.QueryPadding)
-		refRange := paddedRange(chain.RefStart, chain.RefEnd+index.K, len(ref.Seq), opts.RefPadding)
-
-		querySeq, err := seq.Subseq(query, queryRange.Start, queryRange.End)
+		candidate, err := CandidateFromChain(ref, query, index.K, chain, opts)
 		if err != nil {
 			return nil, err
 		}
-		refSeqForward, err := seq.Subseq(ref.Seq, refRange.Start, refRange.End)
-		if err != nil {
-			return nil, err
-		}
-		refSeqOriented := append([]byte(nil), refSeqForward...)
-		if chain.RelativeStrand == 1 {
-			refSeqOriented = seq.ReverseComplement(refSeqOriented)
-		}
-
-		candidates = append(candidates, Candidate{
-			Chain:          chain,
-			SeedLength:     index.K,
-			RefName:        ref.Name,
-			QueryRange:     queryRange,
-			RefRange:       refRange,
-			QuerySeq:       querySeq,
-			RefSeqForward:  refSeqForward,
-			RefSeqOriented: refSeqOriented,
-			RelativeStrand: chain.RelativeStrand,
-		})
+		candidates = append(candidates, candidate)
 	}
 	return candidates, nil
 }

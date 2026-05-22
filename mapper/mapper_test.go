@@ -2,6 +2,7 @@ package mapper_test
 
 import (
 	"io"
+	"reflect"
 	"testing"
 
 	"github.com/martinghunt/faqt/mapper"
@@ -308,6 +309,37 @@ func TestExtractCandidatesLimitsAndRanks(t *testing.T) {
 	}
 	if candidates[0].RefName != "r2" {
 		t.Fatalf("ExtractCandidates() top ref = %q, want r2", candidates[0].RefName)
+	}
+}
+
+func TestExtractCandidatesMatchesCandidateFromChain(t *testing.T) {
+	index := &minimizer.Index{
+		K: 2,
+		Refs: []seqio.SeqRecord{
+			{Name: "r1", Seq: []byte("AACCGGTTAACC")},
+		},
+	}
+	query := []byte("GGTT")
+	chain := mapper.Chain{
+		RefID:          0,
+		RelativeStrand: 1,
+		QueryStart:     0,
+		QueryEnd:       1,
+		RefStart:       4,
+		RefEnd:         5,
+	}
+	opts := mapper.CandidateOptions{QueryPadding: 1, RefPadding: 2}
+
+	got, err := mapper.ExtractCandidates(index, query, []mapper.Chain{chain}, opts)
+	if err != nil {
+		t.Fatalf("ExtractCandidates() error = %v", err)
+	}
+	want, err := mapper.CandidateFromChain(index.Refs[0], query, index.K, chain, opts)
+	if err != nil {
+		t.Fatalf("CandidateFromChain() error = %v", err)
+	}
+	if len(got) != 1 || !reflect.DeepEqual(got[0], want) {
+		t.Fatalf("ExtractCandidates() = %#v, want %#v", got, want)
 	}
 }
 
