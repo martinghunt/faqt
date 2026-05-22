@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/martinghunt/faqt/internal/closeutil"
 )
 
 const (
@@ -110,12 +112,12 @@ func (d *Downloader) downloadNuccoreGenome(accession, outDir string) ([]string, 
 	return files, nil
 }
 
-func (d *Downloader) downloadURLToFile(url, outPath string) error {
+func (d *Downloader) downloadURLToFile(url, outPath string) (err error) {
 	resp, err := d.httpClient().Get(url)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer closeutil.CloseWithError(&err, resp.Body)
 	if resp.StatusCode == http.StatusNotFound {
 		return os.ErrNotExist
 	}
@@ -127,7 +129,7 @@ func (d *Downloader) downloadURLToFile(url, outPath string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer closeutil.CloseWithError(&err, out)
 
 	_, err = io.Copy(out, resp.Body)
 	return err
@@ -161,14 +163,14 @@ func (d *Downloader) httpClient() *http.Client {
 	return &http.Client{Timeout: defaultHTTPTimeout}
 }
 
-func extractGenomeFilesFromZip(zipPath, outDir string) ([]string, error) {
+func extractGenomeFilesFromZip(zipPath, outDir string) (files []string, err error) {
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer closeutil.CloseWithError(&err, reader)
 
-	files := make([]string, 0, 2)
+	files = make([]string, 0, 2)
 	var seenFASTA bool
 	for _, file := range reader.File {
 		lowerName := strings.ToLower(file.Name)
@@ -200,18 +202,18 @@ func extractGenomeFilesFromZip(zipPath, outDir string) ([]string, error) {
 	return files, nil
 }
 
-func extractZipFile(file *zip.File, outPath string) error {
+func extractZipFile(file *zip.File, outPath string) (err error) {
 	src, err := file.Open()
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer closeutil.CloseWithError(&err, src)
 
 	dst, err := os.Create(outPath)
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer closeutil.CloseWithError(&err, dst)
 
 	_, err = io.Copy(dst, src)
 	return err
@@ -258,18 +260,18 @@ func writeDownloadedGenome(files []string, outPath string) error {
 	return fmt.Errorf("download produced multiple files that cannot be combined into one output: %v", files)
 }
 
-func copyFile(src, dst string) error {
+func copyFile(src, dst string) (err error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer closeutil.CloseWithError(&err, in)
 
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer closeutil.CloseWithError(&err, out)
 
 	_, err = io.Copy(out, in)
 	return err
@@ -280,11 +282,7 @@ func combineGFF3AndFASTA(gffPath, fastaPath, outPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if closeErr := out.Close(); err == nil {
-			err = closeErr
-		}
-	}()
+	defer closeutil.CloseWithError(&err, out)
 
 	gffBytes, err := copyFileTrimTrailingNewlines(out, gffPath)
 	if err != nil {
@@ -311,12 +309,12 @@ func combineGFF3AndFASTA(gffPath, fastaPath, outPath string) (err error) {
 	return nil
 }
 
-func copyFileTrimTrailingNewlines(w io.Writer, path string) (int64, error) {
+func copyFileTrimTrailingNewlines(w io.Writer, path string) (written int64, err error) {
 	in, err := os.Open(path)
 	if err != nil {
 		return 0, err
 	}
-	defer in.Close()
+	defer closeutil.CloseWithError(&err, in)
 
 	info, err := in.Stat()
 	if err != nil {
@@ -359,12 +357,12 @@ func trimmedFileSize(file *os.File, size int64) (int64, error) {
 	return size, nil
 }
 
-func copyFileTrackingLastByte(w io.Writer, path string) (int64, byte, error) {
+func copyFileTrackingLastByte(w io.Writer, path string) (written int64, last byte, err error) {
 	in, err := os.Open(path)
 	if err != nil {
 		return 0, 0, err
 	}
-	defer in.Close()
+	defer closeutil.CloseWithError(&err, in)
 
 	tracker := &lastByteWriter{w: w}
 	n, err := io.Copy(tracker, in)

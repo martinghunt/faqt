@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/martinghunt/faqt/seqio"
 )
 
@@ -88,13 +89,13 @@ func Build(reader seqio.Reader, opts Options) (*Index, error) {
 	return idx, nil
 }
 
-func BuildFromPath(path string, opts Options) (*Index, error) {
+func BuildFromPath(path string, opts Options) (idx *Index, err error) {
 	reader, err := seqio.OpenPath(path)
 	if err != nil {
 		return nil, err
 	}
 	if closer, ok := reader.(io.Closer); ok {
-		defer closer.Close()
+		defer closeutil.CloseWithError(&err, closer)
 	}
 	return Build(reader, opts)
 }

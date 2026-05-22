@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Close wrapped `seqio.OpenReader` sources correctly without closing stdin for `-`.
 - Preserve multi-line descriptions from GenBank and EMBL input records.
 - Propagate output writer close errors from path-based conversion and read-generation helpers.
+- Propagate remaining close errors from path helpers and genome download file writes.
 - Support wrapped relaxed sequential PHYLIP records.
 - Report non-404 GFF3 download failures instead of silently producing FASTA-only output.
 

@@ -28,14 +28,14 @@ func newToPerfectReadsCmd() *cobra.Command {
 		Use:   "to-perfect-reads INPUT",
 		Short: "Make perfect FASTQ reads from a reference sequence file",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			inputPath = args[0]
 			reader, err := seqio.OpenPath(inputPath)
 			if err != nil {
 				return err
 			}
 			if closer, ok := reader.(io.Closer); ok {
-				defer closer.Close()
+				defer closeutil.CloseWithError(&err, closer)
 			}
 			opts := perfectreads.Options{
 				MeanInsert: meanInsert,

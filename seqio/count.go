@@ -1,6 +1,10 @@
 package seqio
 
-import "io"
+import (
+	"io"
+
+	"github.com/martinghunt/faqt/internal/closeutil"
+)
 
 func CountRecords(reader Reader) (int, error) {
 	count := 0
@@ -16,13 +20,13 @@ func CountRecords(reader Reader) (int, error) {
 	}
 }
 
-func CountRecordsPath(path string) (int, error) {
+func CountRecordsPath(path string) (count int, err error) {
 	reader, err := OpenPath(path)
 	if err != nil {
 		return 0, err
 	}
 	if closer, ok := reader.(io.Closer); ok {
-		defer closer.Close()
+		defer closeutil.CloseWithError(&err, closer)
 	}
 	return CountRecords(reader)
 }

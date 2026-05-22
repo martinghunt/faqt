@@ -52,7 +52,7 @@ func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts In
 		return err
 	}
 	if closer, ok := reader1.(io.Closer); ok {
-		defer closer.Close()
+		defer closeutil.CloseWithError(&err, closer)
 	}
 
 	reader2, err := OpenPath(inputPath2)
@@ -60,7 +60,7 @@ func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts In
 		return err
 	}
 	if closer, ok := reader2.(io.Closer); ok {
-		defer closer.Close()
+		defer closeutil.CloseWithError(&err, closer)
 	}
 
 	first1, err := reader1.Read()

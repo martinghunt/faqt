@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/martinghunt/faqt/seqio"
 )
 
@@ -31,16 +32,16 @@ type Stats struct {
 	nxxn        [9]int
 }
 
-func FromPath(path string, minimumLength int) (Stats, error) {
+func FromPath(path string, minimumLength int) (s Stats, err error) {
 	reader, err := seqio.OpenPath(path)
 	if err != nil {
 		return Stats{}, err
 	}
 	if closer, ok := reader.(io.Closer); ok {
-		defer closer.Close()
+		defer closeutil.CloseWithError(&err, closer)
 	}
 
-	s := Stats{Filename: path}
+	s = Stats{Filename: path}
 	lengths := make([]int, 0, 128)
 	for {
 		rec, err := reader.Read()

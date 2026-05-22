@@ -64,7 +64,7 @@ func TransformPath(inputPath, outputPath string, format Format, transform Record
 		return err
 	}
 	if closer, ok := reader.(io.Closer); ok {
-		defer closer.Close()
+		defer closeutil.CloseWithError(&err, closer)
 	}
 
 	writer, err := CreatePath(outputPath, format, opts...)

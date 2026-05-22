@@ -2,6 +2,7 @@ package genomedl
 
 import (
 	"archive/zip"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -83,6 +84,28 @@ func TestDownloadGenomeNuccoreReportsGFFDownloadErrors(t *testing.T) {
 	}
 }
 
+func TestDownloadURLToFileReportsBodyCloseError(t *testing.T) {
+	closeErr := errors.New("close failed")
+	downloader := &Downloader{
+		HTTPClient: &http.Client{
+			Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Status:     "200 OK",
+					Body:       closeErrorBody{Reader: strings.NewReader(">chr1\nACGT\n"), err: closeErr},
+					Header:     make(http.Header),
+					Request:    r,
+				}, nil
+			}),
+		},
+	}
+
+	err := downloader.downloadURLToFile("https://example.test/genome.fa", filepath.Join(t.TempDir(), "genome.fa"))
+	if !errors.Is(err, closeErr) {
+		t.Fatalf("downloadURLToFile() error = %v, want close error", err)
+	}
+}
+
 func TestExtractGenomeFilesFromZipPreservesOriginalFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	zipPath := filepath.Join(tmpDir, "test.zip")
@@ -119,6 +142,21 @@ func TestExtractGenomeFilesFromZipPreservesOriginalFiles(t *testing.T) {
 	if filepath.Ext(files[0]) != ".gbk" && filepath.Ext(files[1]) != ".gbk" {
 		t.Fatalf("expected preserved .gbk file, got %v", files)
 	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+type closeErrorBody struct {
+	*strings.Reader
+	err error
+}
+
+func (b closeErrorBody) Close() error {
+	return b.err
 }
 
 func TestWriteDownloadedGenomeSingleFilePreservesOriginalType(t *testing.T) {
