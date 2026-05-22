@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-22
+
 ### Added
 - Add configurable `genomedl.Downloader` support for custom genome download clients and endpoints.
 - Add `seqio.Interleave` and `seqio.InterleavePath` for streaming interleaving of paired sequence files.
@@ -51,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/martinghunt/faqt/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/martinghunt/faqt/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/martinghunt/faqt/releases/tag/v0.1.0
