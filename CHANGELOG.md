@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Split alignment internals into focused API, anchor, DP, Smith-Waterman, and result helper files.
 - Split mapper and minimizer internals into smaller files by responsibility.
 - Share CLI test helpers for stdin and stdout capture.
+- Reduce FASTQ reader allocations by reusing owned line buffers for sequence and quality data.
 - `faqt stats` now reads from stdin when no input files are provided.
 - Genome download GFF3/FASTA combination now streams files instead of reading both fully into memory.
 

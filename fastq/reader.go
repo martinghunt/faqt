@@ -41,7 +41,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 		return nil, err
 	}
 	name, desc := seqrecord.ParseHeader(header[1:])
-	rec := &seqrecord.SeqRecord{Name: name, Description: desc, Seq: append([]byte(nil), seq...), Qual: append([]byte(nil), qual...)}
+	rec := &seqrecord.SeqRecord{Name: name, Description: desc, Seq: seq, Qual: qual}
 	if err := rec.ValidateFASTQ(); err != nil {
 		return nil, err
 	}

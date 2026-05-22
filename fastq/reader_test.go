@@ -10,20 +10,23 @@ import (
 func TestReaderMultiRecord(t *testing.T) {
 	r := NewReader(bufio.NewReader(strings.NewReader("@r1 desc\nACGT\n+\nABCD\n@r2\nNNNN\n+\n!!!!\n")))
 
-	rec, err := r.Read()
+	first, err := r.Read()
 	if err != nil {
 		t.Fatalf("Read() first error = %v", err)
 	}
-	if rec.Name != "r1" || rec.Description != "desc" || string(rec.Seq) != "ACGT" || string(rec.Qual) != "ABCD" {
-		t.Fatalf("first record = %+v", rec)
+	if first.Name != "r1" || first.Description != "desc" || string(first.Seq) != "ACGT" || string(first.Qual) != "ABCD" {
+		t.Fatalf("first record = %+v", first)
 	}
 
-	rec, err = r.Read()
+	second, err := r.Read()
 	if err != nil {
 		t.Fatalf("Read() second error = %v", err)
 	}
-	if rec.Name != "r2" || string(rec.Seq) != "NNNN" || string(rec.Qual) != "!!!!" {
-		t.Fatalf("second record = %+v", rec)
+	if second.Name != "r2" || string(second.Seq) != "NNNN" || string(second.Qual) != "!!!!" {
+		t.Fatalf("second record = %+v", second)
+	}
+	if string(first.Seq) != "ACGT" || string(first.Qual) != "ABCD" {
+		t.Fatalf("first record changed after reading second record: %+v", first)
 	}
 
 	_, err = r.Read()
