@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `seqio.CountRecords` and `seqio.CountRecordsPath` for counting records in supported sequence files.
 - Add `seq.TranslateCodon` and `seq.Translate` for standard genetic-code translation.
 
+### Changed
+- `faqt stats` now reads from stdin when no input files are provided.
+- Genome download GFF3/FASTA combination now streams files instead of reading both fully into memory.
+
+### Fixed
+- Avoid hangs and panics in paired perfect-read generation for invalid or edge-case insert sizes.
+- Return an error for GFF3 inputs with `##FASTA` but no sequence records.
+- Close wrapped `seqio.OpenReader` sources correctly without closing stdin for `-`.
+- Support wrapped relaxed sequential PHYLIP records.
+- Report non-404 GFF3 download failures instead of silently producing FASTA-only output.
+
 ## [0.1.1] - 2026-04-10
 
 ### Changed
