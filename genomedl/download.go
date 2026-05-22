@@ -2,7 +2,6 @@ package genomedl
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -220,30 +219,111 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-func combineGFF3AndFASTA(gffPath, fastaPath, outPath string) error {
-	gffData, err := os.ReadFile(gffPath)
+func combineGFF3AndFASTA(gffPath, fastaPath, outPath string) (err error) {
+	out, err := os.Create(outPath)
 	if err != nil {
 		return err
 	}
-	fastaData, err := os.ReadFile(fastaPath)
+	defer func() {
+		if closeErr := out.Close(); err == nil {
+			err = closeErr
+		}
+	}()
+
+	gffBytes, err := copyFileTrimTrailingNewlines(out, gffPath)
 	if err != nil {
 		return err
 	}
-	gffData = trimTrailingBlankLines(gffData)
-	var buf bytes.Buffer
-	buf.Write(gffData)
-	if len(gffData) > 0 && gffData[len(gffData)-1] != '\n' {
-		buf.WriteByte('\n')
+	if gffBytes > 0 {
+		if _, err := out.Write([]byte{'\n'}); err != nil {
+			return err
+		}
 	}
-	buf.WriteString("##FASTA\n")
-	buf.Write(fastaData)
-	if len(fastaData) > 0 && fastaData[len(fastaData)-1] != '\n' {
-		buf.WriteByte('\n')
+	if _, err := io.WriteString(out, "##FASTA\n"); err != nil {
+		return err
 	}
-	return os.WriteFile(outPath, buf.Bytes(), 0o644)
+
+	fastaBytes, lastByte, err := copyFileTrackingLastByte(out, fastaPath)
+	if err != nil {
+		return err
+	}
+	if fastaBytes > 0 && lastByte != '\n' {
+		if _, err := out.Write([]byte{'\n'}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func trimTrailingBlankLines(data []byte) []byte {
-	data = bytes.TrimRight(data, "\r\n")
-	return data
+func copyFileTrimTrailingNewlines(w io.Writer, path string) (int64, error) {
+	in, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer in.Close()
+
+	info, err := in.Stat()
+	if err != nil {
+		return 0, err
+	}
+	trimmedSize, err := trimmedFileSize(in, info.Size())
+	if err != nil {
+		return 0, err
+	}
+	if _, err := in.Seek(0, io.SeekStart); err != nil {
+		return 0, err
+	}
+	if trimmedSize == 0 {
+		return 0, nil
+	}
+	return io.CopyN(w, in, trimmedSize)
+}
+
+func trimmedFileSize(file *os.File, size int64) (int64, error) {
+	buf := make([]byte, 32*1024)
+	for size > 0 {
+		readSize := int64(len(buf))
+		if size < readSize {
+			readSize = size
+		}
+		offset := size - readSize
+		n, err := file.ReadAt(buf[:readSize], offset)
+		if err != nil && err != io.EOF {
+			return 0, err
+		}
+		i := n - 1
+		for i >= 0 && (buf[i] == '\n' || buf[i] == '\r') {
+			i--
+		}
+		size = offset + int64(i+1)
+		if i >= 0 {
+			break
+		}
+	}
+	return size, nil
+}
+
+func copyFileTrackingLastByte(w io.Writer, path string) (int64, byte, error) {
+	in, err := os.Open(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer in.Close()
+
+	tracker := &lastByteWriter{w: w}
+	n, err := io.Copy(tracker, in)
+	return n, tracker.last, err
+}
+
+type lastByteWriter struct {
+	w    io.Writer
+	last byte
+}
+
+func (w *lastByteWriter) Write(p []byte) (int, error) {
+	n, err := w.w.Write(p)
+	if n > 0 {
+		w.last = p[n-1]
+	}
+	return n, err
 }

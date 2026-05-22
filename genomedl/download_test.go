@@ -145,3 +145,28 @@ func TestWriteDownloadedGenomeSingleFilePreservesOriginalType(t *testing.T) {
 		t.Fatalf("output = %q", string(data))
 	}
 }
+
+func TestCombineGFF3AndFASTATrimsAndTerminatesOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	gffPath := filepath.Join(tmpDir, "annot.gff3")
+	fastaPath := filepath.Join(tmpDir, "genome.fa")
+	outPath := filepath.Join(tmpDir, "combined.gff3")
+	if err := os.WriteFile(gffPath, []byte("##gff-version 3\nchr1\tsrc\tgene\t1\t4\t.\t+\t.\tID=g1\n\n\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(gff) error = %v", err)
+	}
+	if err := os.WriteFile(fastaPath, []byte(">chr1\nACGT"), 0o644); err != nil {
+		t.Fatalf("WriteFile(fasta) error = %v", err)
+	}
+
+	if err := combineGFF3AndFASTA(gffPath, fastaPath, outPath); err != nil {
+		t.Fatalf("combineGFF3AndFASTA() error = %v", err)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("ReadFile(out) error = %v", err)
+	}
+	want := "##gff-version 3\nchr1\tsrc\tgene\t1\t4\t.\t+\t.\tID=g1\n##FASTA\n>chr1\nACGT\n"
+	if string(data) != want {
+		t.Fatalf("combined output = %q, want %q", string(data), want)
+	}
+}
