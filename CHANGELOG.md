@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add genetic-code-aware translation helpers for NCBI codes 1, 4, and 11.
+- Add `orf.MakeIntoGene` for Fastaq-compatible gene normalization across strands and reading frames.
+
 ## [0.2.0] - 2026-05-22
 
 ### Added
