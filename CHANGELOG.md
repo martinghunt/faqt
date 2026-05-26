@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add `seqio.ReadAll` and name-keyed variants for loading sequence records into memory.
 - Add genetic-code-aware translation helpers for NCBI codes 1, 4, and 11.
 - Add `orf.MakeIntoGene` for Fastaq-compatible gene normalization across strands and reading frames.
 

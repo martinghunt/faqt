@@ -155,6 +155,16 @@ func main() {
 
 Use `seqio.OpenReader` when you already have an `io.Reader`.
 
+For small inputs where an in-memory representation is useful, `seqio.ReadAllPath` returns records in file order and `seqio.ReadAllByNamePath` returns records keyed by name:
+
+```go
+records, err := seqio.ReadAllByNamePath("refs.fa.gz")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(len(records["ref1"].Seq))
+```
+
 Supported input formats are FASTA, FASTQ, Clustal, PHYLIP, SAM, BAM, GenBank, EMBL, and GFF3 sequence from the `##FASTA` section. For SAM and BAM, alignment data are ignored except for the reverse-strand flag, which causes sequence and quality to be reversed back to original read orientation. GFF3 inputs without a `##FASTA` section return an error.
 
 ### Writing Records

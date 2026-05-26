@@ -340,6 +340,67 @@ func TestCountRecordsPath(t *testing.T) {
 	}
 }
 
+func TestReadAllPath(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "records.fa.gz")
+	w, err := seqio.CreateFASTAPath(path)
+	if err != nil {
+		t.Fatalf("CreateFASTAPath() error = %v", err)
+	}
+	for _, rec := range []*seqio.SeqRecord{
+		{Name: "one", Description: "alpha", Seq: []byte("ACGT")},
+		{Name: "two", Seq: []byte("TTAA")},
+	} {
+		if err := w.Write(rec); err != nil {
+			t.Fatalf("Write() error = %v", err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
+	records, err := seqio.ReadAllPath(path)
+	if err != nil {
+		t.Fatalf("ReadAllPath() error = %v", err)
+	}
+	if len(records) != 2 {
+		t.Fatalf("ReadAllPath() returned %d records, want 2", len(records))
+	}
+	if records[0].Name != "one" || records[0].Description != "alpha" || string(records[0].Seq) != "ACGT" {
+		t.Fatalf("first record = %+v", records[0])
+	}
+	if records[1].Name != "two" || string(records[1].Seq) != "TTAA" {
+		t.Fatalf("second record = %+v", records[1])
+	}
+}
+
+func TestReadAllByName(t *testing.T) {
+	reader, err := seqio.OpenReader(strings.NewReader(">one\nACGT\n>two\nTTAA\n"))
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+	records, err := seqio.ReadAllByName(reader)
+	if err != nil {
+		t.Fatalf("ReadAllByName() error = %v", err)
+	}
+	if len(records) != 2 {
+		t.Fatalf("ReadAllByName() returned %d records, want 2", len(records))
+	}
+	if string(records["one"].Seq) != "ACGT" || string(records["two"].Seq) != "TTAA" {
+		t.Fatalf("records = %+v", records)
+	}
+}
+
+func TestReadAllByNameDuplicateErrors(t *testing.T) {
+	reader, err := seqio.OpenReader(strings.NewReader(">same\nACGT\n>same\nTTAA\n"))
+	if err != nil {
+		t.Fatalf("OpenReader() error = %v", err)
+	}
+	_, err = seqio.ReadAllByName(reader)
+	if err == nil || !strings.Contains(err.Error(), `duplicate record name "same"`) {
+		t.Fatalf("ReadAllByName() error = %v, want duplicate name", err)
+	}
+}
+
 func TestCreatePathCompressionByExtension(t *testing.T) {
 	paths := []string{"out.fa.gz", "out.fa.bz2", "out.fa.xz", "out.fa.zst"}
 	for _, name := range paths {
