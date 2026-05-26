@@ -79,10 +79,38 @@ func TestTranslateCodon(t *testing.T) {
 	}
 }
 
+func TestTranslateCodonWithCode(t *testing.T) {
+	if got := seq.TranslateCodonWithCode([]byte("TGA"), 1); got != '*' {
+		t.Fatalf("TranslateCodonWithCode(TGA, 1) = %q, want *", got)
+	}
+	if got := seq.TranslateCodonWithCode([]byte("TGA"), 4); got != 'W' {
+		t.Fatalf("TranslateCodonWithCode(TGA, 4) = %q, want W", got)
+	}
+	if got := seq.TranslateCodonWithCode([]byte("ATG"), 999); got != 'X' {
+		t.Fatalf("TranslateCodonWithCode(unknown code) = %q, want X", got)
+	}
+}
+
 func TestTranslate(t *testing.T) {
 	got := string(seq.Translate([]byte("GATCGCGAATGAN")))
 	if got != "DRE*" {
 		t.Fatalf("Translate() = %q", got)
+	}
+}
+
+func TestTranslateWithCode(t *testing.T) {
+	got := string(seq.TranslateWithCode([]byte("ATGTGATAA"), 4))
+	if got != "MW*" {
+		t.Fatalf("TranslateWithCode() = %q", got)
+	}
+}
+
+func TestIsStartCodon(t *testing.T) {
+	if !seq.IsStartCodon([]byte("ATT"), 11) {
+		t.Fatal("IsStartCodon(ATT, 11) = false, want true")
+	}
+	if seq.IsStartCodon([]byte("ATT"), 1) {
+		t.Fatal("IsStartCodon(ATT, 1) = true, want false")
 	}
 }
 
