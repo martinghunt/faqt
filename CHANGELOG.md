@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-27
+
 ### Added
 - Add `seqio.ReadAll` and name-keyed variants for loading sequence records into memory.
 - Add genetic-code-aware translation helpers for NCBI codes 1, 4, and 11.
@@ -58,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/martinghunt/faqt/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/martinghunt/faqt/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/martinghunt/faqt/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/martinghunt/faqt/releases/tag/v0.1.0
