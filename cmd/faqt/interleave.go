@@ -7,11 +7,9 @@ import (
 
 func newInterleaveCmd() *cobra.Command {
 	var (
-		outputPath string
-		suffix1    string
-		suffix2    string
-		compress   string
-		wrap       int
+		output  sequenceOutputOptions
+		suffix1 string
+		suffix2 string
 	)
 	cmd := &cobra.Command{
 		Use:   "interleave [options] INPUT_1 INPUT_2",
@@ -21,17 +19,14 @@ func newInterleaveCmd() *cobra.Command {
 			return seqio.InterleavePath(
 				args[0],
 				args[1],
-				outputPath,
+				output.path,
 				seqio.InterleaveOptions{Suffix1: suffix1, Suffix2: suffix2},
-				seqio.WithCompression(seqio.Compression(compress)),
-				seqio.WithWrap(wrap),
+				output.seqioOptions()...,
 			)
 		},
 	}
-	cmd.Flags().StringVarP(&outputPath, "output", "o", "-", "Output path or - for stdout")
+	addSequenceOutputFlags(cmd, &output)
 	cmd.Flags().StringVar(&suffix1, "suffix1", "", "Suffix to add to names from INPUT_1 if missing")
 	cmd.Flags().StringVar(&suffix2, "suffix2", "", "Suffix to add to names from INPUT_2 if missing")
-	cmd.Flags().StringVar(&compress, "compress", string(seqio.CompressAuto), "Output compression: auto, none, gzip, bzip2, xz, zstd")
-	cmd.Flags().IntVar(&wrap, "wrap", 0, "FASTA wrap width; 0 disables wrapping")
 	return cmd
 }

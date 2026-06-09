@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Warn when `faqt download-genome` writes content whose biological format conflicts with the output path suffix.
 - Release builds now write a SHA-256 checksum file for packaged binary artifacts.
 
+### Changed
+- Clarify CLI `--wrap` help text to state that the default `0` disables wrapping.
+
 ### Fixed
 - Apply extension-based output compression to genome downloads.
 - Let genome downloads fall back to FASTA output when no annotation file is available.

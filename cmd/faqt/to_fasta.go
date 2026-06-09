@@ -8,9 +8,7 @@ import (
 func newToFastaCmd() *cobra.Command {
 	var (
 		inputPath    string
-		outputPath   string
-		wrap         int
-		compress     string
+		output       sequenceOutputOptions
 		removeDashes bool
 	)
 	cmd := &cobra.Command{
@@ -23,17 +21,14 @@ func newToFastaCmd() *cobra.Command {
 			}
 			return seqio.ToFASTAPathWithTransform(
 				inputPath,
-				outputPath,
+				output.path,
 				removeDashesTransform(removeDashes),
-				seqio.WithWrap(wrap),
-				seqio.WithCompression(seqio.Compression(compress)),
+				output.seqioOptions()...,
 			)
 		},
 	}
 	cmd.Flags().StringVarP(&inputPath, "input", "i", "-", "Input path or - for stdin")
-	cmd.Flags().StringVarP(&outputPath, "output", "o", "-", "Output path or - for stdout")
-	cmd.Flags().IntVar(&wrap, "wrap", 0, "FASTA wrap width; 0 disables wrapping")
-	cmd.Flags().StringVar(&compress, "compress", string(seqio.CompressAuto), "Output compression: auto, none, gzip, bzip2, xz, zstd")
+	addSequenceOutputFlags(cmd, &output)
 	cmd.Flags().BoolVar(&removeDashes, "remove-dashes", false, "Remove '-' characters from output sequences")
 	return cmd
 }
