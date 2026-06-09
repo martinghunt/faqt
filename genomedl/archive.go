@@ -30,6 +30,7 @@ func extractGenomeFilesFromZip(zipPath, outDir string) (files []string, err erro
 			strings.HasSuffix(lowerName, ".gff3"),
 			strings.HasSuffix(lowerName, ".gb"),
 			strings.HasSuffix(lowerName, ".gbk"),
+			strings.HasSuffix(lowerName, ".gbff"),
 			strings.HasSuffix(lowerName, ".genbank"),
 			strings.HasSuffix(lowerName, ".embl"):
 		default:
@@ -73,6 +74,7 @@ func isSequenceFile(name string) bool {
 		strings.HasSuffix(name, ".fasta") ||
 		strings.HasSuffix(name, ".gb") ||
 		strings.HasSuffix(name, ".gbk") ||
+		strings.HasSuffix(name, ".gbff") ||
 		strings.HasSuffix(name, ".genbank") ||
 		strings.HasSuffix(name, ".embl")
 }

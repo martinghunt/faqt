@@ -36,7 +36,7 @@ Local builds report version `dev` unless you pass an explicit release version.
 - `faqt to-perfect-reads`: simulate perfect FASTQ reads from a reference
 - `faqt make-random-contigs`: make random FASTA contigs
 - `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats))
-- `faqt download-genome`: download a genome and save it to one output file
+- `faqt download-genome`: download a genome and save annotation or FASTA output
 
 Use `faqt -h` or `faqt --help` for top-level help. Use `-h` or `--help` after a command name to see command-specific flags and examples, for example:
 
@@ -91,11 +91,15 @@ faqt to-perfect-reads ref.fa --out reads.fq --coverage 50 --read-length 150
 faqt to-perfect-reads ref.fa --forward-out reads_1.fq --reverse-out reads_2.fq --mean-insert 300 --insert-std 30 --coverage 50 --read-length 150
 faqt make-random-contigs 10 500 -o contigs.fa --seed 1
 faqt download-genome GCF_000001405.40 -o genome.gff3
+faqt download-genome GCF_000001405.40 -o genome.gff3.gz
+faqt download-genome GCF_000001405.40 -o genome.fa --fasta
 cat reads.gb | faqt to-fasta
 faqt to-fasta -i - -o out.fa < reads.embl
 faqt stats assembly.fa
 faqt stats -t assembly.fa
 ```
+
+`download-genome` treats compression suffixes separately from biological format suffixes. For example, `.gz`, `.bz2`, `.xz`, and `.zst` choose output compression. If the selected downloaded content conflicts with a recognized biological suffix such as `.fa`, `.gff3`, `.gbff`, or `.embl`, the command writes the requested path and prints a non-fatal warning.
 
 ## Public API
 
@@ -331,7 +335,7 @@ if err != nil {
 _ = report
 ```
 
-The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for downloading one genome accession into one output file.
+The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for downloading one genome accession. By default it writes an available annotation file (GFF3 with embedded FASTA, GenBank/GBFF, or EMBL), and falls back to FASTA when no annotation file is available. Use `genomedl.DownloadGenomeWithOptions` with `genomedl.DownloadOptions{FastaOnly: true}` to force FASTA output.
 
 ### Minimizers, Mapping, and Alignment
 

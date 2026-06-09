@@ -4,36 +4,213 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/martinghunt/faqt/internal/closeutil"
+	"github.com/martinghunt/faqt/internal/xopen"
 )
 
 func writeDownloadedGenome(files []string, outPath string) error {
+	_, err := writeDownloadedGenomeWithOptions(files, outPath, DownloadOptions{})
+	return err
+}
+
+func writeDownloadedGenomeWithOptions(files []string, outPath string, opts DownloadOptions) (string, error) {
 	if len(files) == 0 {
-		return fmt.Errorf("download produced no files")
+		return "", fmt.Errorf("download produced no files")
 	}
 	sort.Strings(files)
-	if len(files) == 1 {
-		return copyFile(files[0], outPath)
+	if opts.FastaOnly {
+		return writeFASTAOutput(files, outPath, opts)
 	}
+	return writeBestDownloadedOutput(files, outPath, opts)
+}
 
-	var fastaPath string
-	var gffPath string
-	for _, path := range files {
-		lower := strings.ToLower(path)
-		switch {
-		case strings.HasSuffix(lower, ".fa"), strings.HasSuffix(lower, ".fasta"), strings.HasSuffix(lower, ".fna"):
-			fastaPath = path
-		case strings.HasSuffix(lower, ".gff"), strings.HasSuffix(lower, ".gff3"):
-			gffPath = path
+func writeFASTAOutput(files []string, outPath string, opts DownloadOptions) (string, error) {
+	fastaPath, err := singleMatchingFile(files, "FASTA", isFASTAFile)
+	if err != nil {
+		return "", err
+	}
+	if fastaPath == "" {
+		return "", fmt.Errorf("download produced no FASTA file")
+	}
+	if err := copyFile(fastaPath, outPath); err != nil {
+		return "", err
+	}
+	warnOutputExtensionMismatch(outPath, outputFASTA, opts.WarningWriter)
+	return outPath, nil
+}
+
+func writeBestDownloadedOutput(files []string, outPath string, opts DownloadOptions) (string, error) {
+	annotationPath, annotationKind, err := selectAnnotationFile(files)
+	if err != nil {
+		return "", err
+	}
+	if annotationPath == "" {
+		return writeFASTAOutput(files, outPath, opts)
+	}
+	if annotationKind == annotationGFF3 {
+		fastaPath, err := singleMatchingFile(files, "FASTA", isFASTAFile)
+		if err != nil {
+			return "", err
+		}
+		if fastaPath != "" {
+			if err := combineGFF3AndFASTA(annotationPath, fastaPath, outPath); err != nil {
+				return "", err
+			}
+			warnOutputExtensionMismatch(outPath, outputGFF3, opts.WarningWriter)
+			return outPath, nil
 		}
 	}
-	if fastaPath != "" && gffPath != "" && len(files) == 2 {
-		return combineGFF3AndFASTA(gffPath, fastaPath, outPath)
+	if err := copyFile(annotationPath, outPath); err != nil {
+		return "", err
 	}
-	return fmt.Errorf("download produced multiple files that cannot be combined into one output: %v", files)
+	warnOutputExtensionMismatch(outPath, outputFormatFromAnnotationKind(annotationKind), opts.WarningWriter)
+	return outPath, nil
+}
+
+type outputFormat int
+
+const (
+	outputUnknown outputFormat = iota
+	outputFASTA
+	outputGFF3
+	outputGenBank
+	outputEMBL
+)
+
+func outputFormatFromAnnotationKind(kind annotationKind) outputFormat {
+	switch kind {
+	case annotationGFF3:
+		return outputGFF3
+	case annotationGenBank:
+		return outputGenBank
+	case annotationEMBL:
+		return outputEMBL
+	default:
+		return outputUnknown
+	}
+}
+
+func warnOutputExtensionMismatch(outPath string, actual outputFormat, w io.Writer) {
+	if w == nil || outPath == "-" || actual == outputUnknown {
+		return
+	}
+	pathFormat, ok := outputFormatFromPath(outPath)
+	if !ok || pathFormat == actual {
+		return
+	}
+	_, _ = fmt.Fprintf(w, "warning: writing %s content to output path with %s extension: %s\n", actual.label(), pathFormat.label(), outPath)
+}
+
+func outputFormatFromPath(path string) (outputFormat, bool) {
+	base := xopen.BasePathWithoutCompression(path)
+	switch strings.ToLower(filepath.Ext(base)) {
+	case ".fna", ".fa", ".fasta":
+		return outputFASTA, true
+	case ".gff", ".gff3":
+		return outputGFF3, true
+	case ".gb", ".gbk", ".gbff", ".genbank":
+		return outputGenBank, true
+	case ".embl":
+		return outputEMBL, true
+	default:
+		return outputUnknown, false
+	}
+}
+
+func (f outputFormat) label() string {
+	switch f {
+	case outputFASTA:
+		return "FASTA"
+	case outputGFF3:
+		return "GFF3"
+	case outputGenBank:
+		return "GenBank"
+	case outputEMBL:
+		return "EMBL"
+	default:
+		return "unknown"
+	}
+}
+
+type annotationKind int
+
+const (
+	annotationNone annotationKind = iota
+	annotationGFF3
+	annotationGenBank
+	annotationEMBL
+)
+
+func selectAnnotationFile(files []string) (string, annotationKind, error) {
+	for _, kind := range []annotationKind{annotationGFF3, annotationGenBank, annotationEMBL} {
+		path, err := singleMatchingFile(files, annotationKindLabel(kind), func(name string) bool {
+			return annotationFileKind(name) == kind
+		})
+		if err != nil {
+			return "", annotationNone, err
+		}
+		if path != "" {
+			return path, kind, nil
+		}
+	}
+	return "", annotationNone, nil
+}
+
+func annotationKindLabel(kind annotationKind) string {
+	switch kind {
+	case annotationGFF3:
+		return "GFF3"
+	case annotationGenBank:
+		return "GenBank"
+	case annotationEMBL:
+		return "EMBL"
+	default:
+		return "annotation"
+	}
+}
+
+func annotationFileKind(name string) annotationKind {
+	lower := strings.ToLower(name)
+	switch {
+	case strings.HasSuffix(lower, ".gff"), strings.HasSuffix(lower, ".gff3"):
+		return annotationGFF3
+	case strings.HasSuffix(lower, ".gb"),
+		strings.HasSuffix(lower, ".gbk"),
+		strings.HasSuffix(lower, ".gbff"),
+		strings.HasSuffix(lower, ".genbank"):
+		return annotationGenBank
+	case strings.HasSuffix(lower, ".embl"):
+		return annotationEMBL
+	default:
+		return annotationNone
+	}
+}
+
+func singleMatchingFile(files []string, label string, match func(string) bool) (string, error) {
+	matches := make([]string, 0, 1)
+	for _, path := range files {
+		if match(strings.ToLower(path)) {
+			matches = append(matches, path)
+		}
+	}
+	if len(matches) == 0 {
+		return "", nil
+	}
+	if len(matches) > 1 {
+		return "", fmt.Errorf("download produced multiple %s files: %v", label, matches)
+	}
+	return matches[0], nil
+}
+
+func isFASTAFile(name string) bool {
+	lower := strings.ToLower(name)
+	return strings.HasSuffix(lower, ".fna") ||
+		strings.HasSuffix(lower, ".fa") ||
+		strings.HasSuffix(lower, ".fasta")
 }
 
 func copyFile(src, dst string) (err error) {
@@ -43,22 +220,48 @@ func copyFile(src, dst string) (err error) {
 	}
 	defer closeutil.CloseWithError(&err, in)
 
-	out, err := os.Create(dst)
+	out, outCloser, err := createOutputWriter(dst)
 	if err != nil {
 		return err
 	}
-	defer closeutil.CloseWithError(&err, out)
+	defer closeutil.CloseWithError(&err, outCloser)
 
 	_, err = io.Copy(out, in)
 	return err
 }
 
+func createOutputWriter(path string) (io.Writer, io.Closer, error) {
+	var (
+		base   io.Writer
+		closer io.Closer
+	)
+	if path == "-" {
+		base = os.Stdout
+	} else {
+		fh, err := os.Create(path)
+		if err != nil {
+			return nil, nil, err
+		}
+		base = fh
+		closer = fh
+	}
+
+	wrapped, wrappedCloser, err := xopen.WrapWriter(base, xopen.CompressionFromPath(path))
+	if err != nil {
+		if closer != nil {
+			_ = closer.Close()
+		}
+		return nil, nil, err
+	}
+	return wrapped, closeutil.MultiCloser(closer, wrappedCloser), nil
+}
+
 func combineGFF3AndFASTA(gffPath, fastaPath, outPath string) (err error) {
-	out, err := os.Create(outPath)
+	out, outCloser, err := createOutputWriter(outPath)
 	if err != nil {
 		return err
 	}
-	defer closeutil.CloseWithError(&err, out)
+	defer closeutil.CloseWithError(&err, outCloser)
 
 	gffBytes, err := copyFileTrimTrailingNewlines(out, gffPath)
 	if err != nil {

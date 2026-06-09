@@ -1,9 +1,6 @@
 package seqio
 
-import (
-	"path/filepath"
-	"strings"
-)
+import "github.com/martinghunt/faqt/internal/xopen"
 
 type Format string
 
@@ -59,28 +56,9 @@ func newOptions(opts ...Option) options {
 }
 
 func CompressionFromPath(path string) Compression {
-	switch {
-	case strings.HasSuffix(strings.ToLower(path), ".gz"):
-		return CompressGzip
-	case strings.HasSuffix(strings.ToLower(path), ".bz2"):
-		return CompressBzip2
-	case strings.HasSuffix(strings.ToLower(path), ".xz"):
-		return CompressXZ
-	case strings.HasSuffix(strings.ToLower(path), ".zst"):
-		return CompressZstd
-	default:
-		return CompressNone
-	}
+	return Compression(xopen.CompressionFromPath(path))
 }
 
 func BasePathWithoutCompression(path string) string {
-	ext := strings.ToLower(filepath.Ext(path))
-	switch ext {
-	case ".gz", ".xz", ".zst":
-		return strings.TrimSuffix(path, filepath.Ext(path))
-	case ".bz2":
-		return strings.TrimSuffix(path, ".bz2")
-	default:
-		return path
-	}
+	return xopen.BasePathWithoutCompression(path)
 }

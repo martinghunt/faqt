@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	dsnetbzip2 "github.com/dsnet/compress/bzip2"
 	"github.com/klauspost/compress/zstd"
@@ -17,6 +18,31 @@ import (
 
 const sniffSize = 16
 const bgzfHeaderSize = 18
+
+func CompressionFromPath(path string) string {
+	switch {
+	case strings.HasSuffix(strings.ToLower(path), ".gz"):
+		return "gzip"
+	case strings.HasSuffix(strings.ToLower(path), ".bz2"):
+		return "bzip2"
+	case strings.HasSuffix(strings.ToLower(path), ".xz"):
+		return "xz"
+	case strings.HasSuffix(strings.ToLower(path), ".zst"):
+		return "zstd"
+	default:
+		return "none"
+	}
+}
+
+func BasePathWithoutCompression(path string) string {
+	lower := strings.ToLower(path)
+	for _, suffix := range []string{".gz", ".bz2", ".xz", ".zst"} {
+		if strings.HasSuffix(lower, suffix) {
+			return path[:len(path)-len(suffix)]
+		}
+	}
+	return path
+}
 
 func IsBGZF(r *bufio.Reader) (bool, error) {
 	header, err := r.Peek(bgzfHeaderSize)

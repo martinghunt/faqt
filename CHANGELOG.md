@@ -8,7 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add `faqt download-genome --fasta` to force genomic FASTA downloads.
+- Warn when `faqt download-genome` writes content whose biological format conflicts with the output path suffix.
 - Release builds now write a SHA-256 checksum file for packaged binary artifacts.
+
+### Fixed
+- Apply extension-based output compression to genome downloads.
+- Let genome downloads fall back to FASTA output when no annotation file is available.
 
 ## [0.2.1] - 2026-05-27
 
