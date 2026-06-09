@@ -17,6 +17,6 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newToPerfectReadsCmd())
 	cmd.AddCommand(newMakeRandomContigsCmd())
 	cmd.AddCommand(newStatsCmd())
-	cmd.AddCommand(newDownloadGenomeCmd())
+	cmd.AddCommand(newDownloadCmd())
 	return cmd
 }

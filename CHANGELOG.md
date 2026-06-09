@@ -8,16 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Add `faqt download-genome --fasta` to force genomic FASTA downloads.
-- Warn when `faqt download-genome` writes content whose biological format conflicts with the output path suffix.
+- Add unified `faqt download` command for genome assembly downloads and accession FASTA downloads.
+- Add `faqt download --fasta` to force genomic FASTA downloads for genome assembly accessions.
+- Add `faqt download` support for protein and nucleotide sequence accessions through NCBI EFetch.
+- Add `faqt download --nucleotide`, `--source`, and `--assembly` for downloading CDS nucleotide sequences linked from protein accessions.
+- Add `seqdl` package for sequence accession downloads from NCBI EFetch.
+- Warn when `faqt download` writes genome content whose biological format conflicts with the output path suffix.
 - Release builds now write a SHA-256 checksum file for packaged binary artifacts.
 
 ### Changed
+- Replace separate download CLI commands with accession-based routing in `faqt download`.
 - Clarify CLI `--wrap` help text to state that the default `0` disables wrapping.
 
 ### Fixed
 - Apply extension-based output compression to genome downloads.
 - Let genome downloads fall back to FASTA output when no annotation file is available.
+
+### Removed
+- Remove `faqt download-genome` and `faqt download-seq` as root commands.
 
 ## [0.2.1] - 2026-05-27
 
