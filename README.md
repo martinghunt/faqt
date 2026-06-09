@@ -9,6 +9,8 @@ The simplest way to install `faqt` is to download the latest prebuilt binary fro
 - https://github.com/martinghunt/faqt/releases/latest
 
 Choose the archive or binary matching your OS and CPU architecture.
+Release pages also include a SHA-256 checksum file named like `faqt-v0.2.1-checksums.txt`.
+Use it to verify downloaded archives before installing.
 
 After installing, check the version with:
 

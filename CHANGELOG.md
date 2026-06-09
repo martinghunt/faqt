@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Release builds now write a SHA-256 checksum file for packaged binary artifacts.
+
 ## [0.2.1] - 2026-05-27
 
 ### Added
