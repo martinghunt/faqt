@@ -57,6 +57,76 @@ func TestDownloadAccessionInfersProteinForWPAccession(t *testing.T) {
 	}
 }
 
+func TestDownloadAccessionInfersNuccoreForINSDCNucleotideAccession(t *testing.T) {
+	tests := []string{"U49845.1", "AF086833.2", "AB12345678.1"}
+	for _, accession := range tests {
+		t.Run(accession, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if got := r.URL.Query().Get("db"); got != "nuccore" {
+					t.Fatalf("db = %q, want nuccore", got)
+				}
+				if got := r.URL.Query().Get("id"); got != accession {
+					t.Fatalf("id = %q, want %s", got, accession)
+				}
+				_, _ = fmt.Fprintf(w, ">%s test nucleotide\nACGT\n", accession)
+			}))
+			defer server.Close()
+
+			downloader := NewDownloader()
+			downloader.EFetchURL = server.URL
+
+			outPath := filepath.Join(t.TempDir(), "insdc.fa")
+			err := downloader.DownloadAccessions([]string{accession}, outPath, DownloadOptions{})
+			if err != nil {
+				t.Fatalf("DownloadAccessions() error = %v", err)
+			}
+			data, err := os.ReadFile(outPath)
+			if err != nil {
+				t.Fatalf("ReadFile() error = %v", err)
+			}
+			want := fmt.Sprintf(">%s test nucleotide\nACGT\n", accession)
+			if string(data) != want {
+				t.Fatalf("output = %q, want %q", string(data), want)
+			}
+		})
+	}
+}
+
+func TestDownloadAccessionInfersProteinForINSDCProteinAccession(t *testing.T) {
+	tests := []string{"AAA98665.1", "ABC1234567.1"}
+	for _, accession := range tests {
+		t.Run(accession, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if got := r.URL.Query().Get("db"); got != "protein" {
+					t.Fatalf("db = %q, want protein", got)
+				}
+				if got := r.URL.Query().Get("id"); got != accession {
+					t.Fatalf("id = %q, want %s", got, accession)
+				}
+				_, _ = fmt.Fprintf(w, ">%s test protein\nMKT\n", accession)
+			}))
+			defer server.Close()
+
+			downloader := NewDownloader()
+			downloader.EFetchURL = server.URL
+
+			outPath := filepath.Join(t.TempDir(), "insdc-protein.fa")
+			err := downloader.DownloadAccessions([]string{accession}, outPath, DownloadOptions{})
+			if err != nil {
+				t.Fatalf("DownloadAccessions() error = %v", err)
+			}
+			data, err := os.ReadFile(outPath)
+			if err != nil {
+				t.Fatalf("ReadFile() error = %v", err)
+			}
+			want := fmt.Sprintf(">%s test protein\nMKT\n", accession)
+			if string(data) != want {
+				t.Fatalf("output = %q, want %q", string(data), want)
+			}
+		})
+	}
+}
+
 func TestDownloadAccessionsUsesRequestedDatabaseAndOptions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("db"); got != "nuccore" {
@@ -101,6 +171,123 @@ func TestDownloadAccessionsUsesRequestedDatabaseAndOptions(t *testing.T) {
 	want := ">NC_000001.1\nACG\nTAC\n>NM_000002.2\nGGG\nG\n"
 	if string(data) != want {
 		t.Fatalf("output = %q, want %q", string(data), want)
+	}
+}
+
+func TestDownloadWGSProjectAccessionWritesComponentFASTA(t *testing.T) {
+	var (
+		sawMasterRequest bool
+		componentIDs     string
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		switch query.Get("rettype") {
+		case "gbc":
+			sawMasterRequest = true
+			if got := query.Get("db"); got != "nuccore" {
+				t.Fatalf("master db = %q, want nuccore", got)
+			}
+			if got := query.Get("id"); got != "JABRPF000000000.1" {
+				t.Fatalf("master id = %q, want JABRPF000000000.1", got)
+			}
+			if got := query.Get("retmode"); got != "xml" {
+				t.Fatalf("master retmode = %q, want xml", got)
+			}
+			_, _ = w.Write([]byte(strings.Join([]string{
+				`<?xml version="1.0" encoding="UTF-8"?>`,
+				`<INSDSet><INSDSeq>`,
+				`<INSDSeq_locus>JABRPF010000000</INSDSeq_locus>`,
+				`<INSDSeq_length>3</INSDSeq_length>`,
+				`<INSDSeq_alt-seq><INSDAltSeqData><INSDAltSeqData_items><INSDAltSeqItem>`,
+				`<INSDAltSeqItem_first-accn>JABRPF010000001</INSDAltSeqItem_first-accn>`,
+				`<INSDAltSeqItem_last-accn>JABRPF010000003</INSDAltSeqItem_last-accn>`,
+				`</INSDAltSeqItem></INSDAltSeqData_items></INSDAltSeqData></INSDSeq_alt-seq>`,
+				`</INSDSeq></INSDSet>`,
+			}, "")))
+		case "fasta":
+			componentIDs = query.Get("id")
+			if got := query.Get("db"); got != "nuccore" {
+				t.Fatalf("component db = %q, want nuccore", got)
+			}
+			if componentIDs != "JABRPF010000001,JABRPF010000002,JABRPF010000003" {
+				t.Fatalf("component ids = %q, want expanded component accessions", componentIDs)
+			}
+			_, _ = w.Write([]byte(strings.Join([]string{
+				">JABRPF010000001.1 contig 1",
+				"ACGT",
+				">JABRPF010000002.1 contig 2",
+				"GGGG",
+				">JABRPF010000003.1 contig 3",
+				"TTAA",
+				"",
+			}, "\n")))
+		default:
+			t.Fatalf("unexpected request query: %s", r.URL.RawQuery)
+		}
+	}))
+	defer server.Close()
+
+	downloader := NewDownloader()
+	downloader.EFetchURL = server.URL
+
+	outPath := filepath.Join(t.TempDir(), "wgs.fa")
+	err := downloader.DownloadAccessions([]string{"JABRPF000000000.1"}, outPath, DownloadOptions{})
+	if err != nil {
+		t.Fatalf("DownloadAccessions() error = %v", err)
+	}
+	if !sawMasterRequest {
+		t.Fatal("master XML request was not made")
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	want := strings.Join([]string{
+		">JABRPF010000001.1 contig 1",
+		"ACGT",
+		">JABRPF010000002.1 contig 2",
+		"GGGG",
+		">JABRPF010000003.1 contig 3",
+		"TTAA",
+		"",
+	}, "\n")
+	if string(data) != want {
+		t.Fatalf("output = %q, want %q", string(data), want)
+	}
+}
+
+func TestDownloadWGSProjectAccessionFallsBackToLocusAndLength(t *testing.T) {
+	var componentIDs string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		switch query.Get("rettype") {
+		case "gbc":
+			_, _ = w.Write([]byte(strings.Join([]string{
+				`<?xml version="1.0" encoding="UTF-8"?>`,
+				`<INSDSet><INSDSeq>`,
+				`<INSDSeq_locus>AGQU01000000</INSDSeq_locus>`,
+				`<INSDSeq_length>2</INSDSeq_length>`,
+				`</INSDSeq></INSDSet>`,
+			}, "")))
+		case "fasta":
+			componentIDs = query.Get("id")
+			_, _ = w.Write([]byte(">AGQU01000001.1 contig 1\nACGT\n>AGQU01000002.1 contig 2\nGGGG\n"))
+		default:
+			t.Fatalf("unexpected request query: %s", r.URL.RawQuery)
+		}
+	}))
+	defer server.Close()
+
+	downloader := NewDownloader()
+	downloader.EFetchURL = server.URL
+
+	outPath := filepath.Join(t.TempDir(), "wgs.fa")
+	err := downloader.DownloadAccessions([]string{"AGQU00000000.1"}, outPath, DownloadOptions{})
+	if err != nil {
+		t.Fatalf("DownloadAccessions() error = %v", err)
+	}
+	if componentIDs != "AGQU01000001,AGQU01000002" {
+		t.Fatalf("component ids = %q, want fallback range", componentIDs)
 	}
 }
 
@@ -359,5 +546,24 @@ func TestInferDatabaseMixedAccessionsUsesSequences(t *testing.T) {
 	got := inferDatabase([]string{"WP_002248791.1", "NC_000001.1"})
 	if got != DatabaseSequences {
 		t.Fatalf("inferDatabase() = %q, want %q", got, DatabaseSequences)
+	}
+}
+
+func TestInferDatabaseRecognizesWGSProjectAndComponentAccessions(t *testing.T) {
+	tests := []string{
+		"AGQU00000000.1",
+		"AGQU01",
+		"AGQU01000001.1",
+		"JABRPF000000000.1",
+		"JABRPF01",
+		"JABRPF010000001.1",
+	}
+	for _, accession := range tests {
+		t.Run(accession, func(t *testing.T) {
+			got := inferDatabase([]string{accession})
+			if got != DatabaseNuccore {
+				t.Fatalf("inferDatabase() = %q, want %q", got, DatabaseNuccore)
+			}
+		})
 	}
 }

@@ -163,6 +163,37 @@ func TestDownloadCommandRoutesSequenceToSeqDownloader(t *testing.T) {
 	}
 }
 
+func TestDownloadCommandRoutesWGSMasterToSeqDownloader(t *testing.T) {
+	oldGenome := downloadGenomeWithOptions
+	oldSeq := downloadSeqAccessions
+	defer func() {
+		downloadGenomeWithOptions = oldGenome
+		downloadSeqAccessions = oldSeq
+	}()
+
+	var gotAccessions []string
+	downloadGenomeWithOptions = func(accession, outPath string, opts genomedl.DownloadOptions) (string, error) {
+		t.Fatalf("genome downloader should not be called")
+		return "", nil
+	}
+	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+		gotAccessions = append([]string(nil), accessions...)
+		return nil
+	}
+
+	cmd := newDownloadCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"JABRPF000000000.1"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if !reflect.DeepEqual(gotAccessions, []string{"JABRPF000000000.1"}) {
+		t.Fatalf("accessions = %v, want JABRPF000000000.1", gotAccessions)
+	}
+}
+
 func TestDownloadCommandBareNucleotideMeansFirst(t *testing.T) {
 	oldSeq := downloadSeqAccessions
 	defer func() { downloadSeqAccessions = oldSeq }()

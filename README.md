@@ -93,6 +93,9 @@ faqt make-random-contigs 10 500 -o contigs.fa --seed 1
 faqt download GCF_000001405.40 -o genome.gff3
 faqt download GCF_000001405.40 -o genome.gff3.gz
 faqt download GCF_000001405.40 -o genome.fa --fasta
+faqt download U49845.1 -o genbank-sequence.fa
+faqt download AAA98665.1 -o genbank-protein.fa
+faqt download JABRPF000000000.1 -o wgs-contigs.fa
 faqt download WP_002248791.1 -o protein.fa
 faqt download WP_002248791.1 --nucleotide -o cds.fa
 faqt download WP_002248791.1 --nucleotide=all --source all -o all-cds.fa
@@ -105,7 +108,7 @@ faqt stats -t assembly.fa
 
 `download` routes `GCA_` and `GCF_` accessions to genome download, and other accessions to sequence FASTA download. Genome downloads treat compression suffixes separately from biological format suffixes. For example, `.gz`, `.bz2`, `.xz`, and `.zst` choose output compression. If the selected downloaded genome content conflicts with a recognized biological suffix such as `.fa`, `.gff3`, `.gbff`, or `.embl`, the command writes the requested path and prints a non-fatal warning.
 
-For sequence accessions, `download` writes FASTA only. Its `--db` flag accepts `auto`, `protein`, `nuccore`, `nucleotide`, or `sequences`; `auto` routes common protein accessions such as `WP_002248791.1` to NCBI Protein, so `faqt download WP_002248791.1` downloads the protein sequence by default. Use `--nucleotide` to download the first RefSeq CDS nucleotide sequence linked from a protein accession, or `--nucleotide=all` to write all matching CDS records. `--source` accepts `refseq`, `insdc`, or `all` and defaults to `refseq`; `--assembly` filters nucleotide CDS rows to one assembly accession. Set `NCBI_API_KEY` and `NCBI_EMAIL`, or pass `--api-key` and `--email`, when you want those values sent with sequence requests.
+For sequence accessions, `download` writes FASTA only. Its `--db` flag accepts `auto`, `protein`, `nuccore`, `nucleotide`, or `sequences`; `auto` routes common protein accessions such as `WP_002248791.1` and INSDC protein accessions such as `AAA98665.1` to NCBI Protein, so `faqt download WP_002248791.1` downloads the protein sequence by default. It also routes INSDC nucleotide accessions such as `U49845.1` and `AF086833.2` to NCBI Nucleotide. WGS/TSA/TLS master accessions such as `JABRPF000000000.1` are expanded to their component contig/scaffold accessions and written as multi-record FASTA. Use `--nucleotide` to download the first RefSeq CDS nucleotide sequence linked from a protein accession, or `--nucleotide=all` to write all matching CDS records. `--source` accepts `refseq`, `insdc`, or `all` and defaults to `refseq`; `--assembly` filters nucleotide CDS rows to one assembly accession. Set `NCBI_API_KEY` and `NCBI_EMAIL`, or pass `--api-key` and `--email`, when you want those values sent with sequence requests.
 
 ## Public API
 

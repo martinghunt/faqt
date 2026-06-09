@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add unified `faqt download` command for genome assembly downloads and accession FASTA downloads.
 - Add `faqt download --fasta` to force genomic FASTA downloads for genome assembly accessions.
 - Add `faqt download` support for protein and nucleotide sequence accessions through NCBI EFetch.
+- Add `faqt download` support for INSDC GenBank/ENA/DDBJ nucleotide and protein accession formats.
+- Add `faqt download` support for WGS/TSA/TLS master accessions by expanding them to component contig/scaffold FASTA records.
 - Add `faqt download --nucleotide`, `--source`, and `--assembly` for downloading CDS nucleotide sequences linked from protein accessions.
 - Add `seqdl` package for sequence accession downloads from NCBI EFetch.
 - Warn when `faqt download` writes genome content whose biological format conflicts with the output path suffix.
