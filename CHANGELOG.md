@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `faqt download-reads` for downloading run FASTQ files from ENA or `sracha`.
+- Add `readdl` package for ENA read metadata-driven FASTQ downloads with MD5 and gzip validation.
+- Add configurable randomized retry delays for read FASTQ download attempts, defaulting to 5-20 seconds.
+- Add `faqt download-reads --prefix` for custom FASTQ output filename prefixes.
+- Add `faqt download-reads --ena-meta` for optional ENA metadata JSON output.
+- Add `faqt download-reads --verbose` for progress reporting to stderr.
+- Add rate-limited direct ENA byte progress to `faqt download-reads --verbose`.
+- Add `faqt download-reads` options for `sracha` threads and connections.
+- Add `faqt download-reads --download-stall-timeout` for progress-based direct ENA download timeouts.
+- Allow `faqt download-reads` to reuse existing output directories when target files do not already exist.
+
+### Fixed
+- Make `faqt download-reads` fail before retrying or downloading when output files already exist.
+- Write `faqt download-reads` outputs directly under `--output-dir` instead of creating a run accession subdirectory.
+- Use a single ENA `ALL` query for `faqt download-reads --ena-meta` instead of querying ENA separately for FASTQ URLs and metadata.
+- Include the exact `sracha` command in `faqt download-reads --verbose` output.
+- Remove the fixed whole-file timeout from direct ENA FASTQ downloads; large files can continue while bytes are arriving.
+- Choose `sracha` split mode from the ENA FASTQ manifest so single-end and unpaired reads use ENA-compatible output filenames.
+
 ## [0.3.0] - 2026-06-09
 
 ### Added
