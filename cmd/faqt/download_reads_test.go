@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -22,7 +23,7 @@ func TestDownloadReadsCommandExists(t *testing.T) {
 	if found == nil || found.Name() != "download-reads" {
 		t.Fatalf("unexpected command = %v", found)
 	}
-	for _, name := range []string{"output-dir", "prefix", "ena-meta", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "verbose"} {
+	for _, name := range []string{"output-dir", "prefix", "accessions-file", "ena-meta", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "verbose"} {
 		if found.Flags().Lookup(name) == nil {
 			t.Fatalf("download-reads command missing --%s flag", name)
 		}
@@ -104,6 +105,102 @@ func TestDownloadReadsCommandRoutesToDownloader(t *testing.T) {
 	}
 	if gotOpts.ProgressWriter == nil {
 		t.Fatal("progress writer = nil, want stderr writer")
+	}
+}
+
+func TestDownloadReadsCommandRoutesCommaSeparatedRunsToDownloader(t *testing.T) {
+	old := downloadReads
+	defer func() { downloadReads = old }()
+
+	var gotRuns []string
+	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
+		gotRuns = append(gotRuns, runAccession)
+		return readdl.Result{}, nil
+	}
+
+	cmd := newDownloadReadsCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ERR123456, ERR123457"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	wantRuns := []string{"ERR123456", "ERR123457"}
+	if !reflect.DeepEqual(gotRuns, wantRuns) {
+		t.Fatalf("run accessions = %#v, want %#v", gotRuns, wantRuns)
+	}
+}
+
+func TestDownloadReadsCommandRoutesAccessionsFileToDownloader(t *testing.T) {
+	old := downloadReads
+	defer func() { downloadReads = old }()
+
+	var gotRuns []string
+	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
+		gotRuns = append(gotRuns, runAccession)
+		return readdl.Result{}, nil
+	}
+
+	path := filepath.Join(t.TempDir(), "runs.txt")
+	if err := os.WriteFile(path, []byte("ERR123456\n\n ERR123457 \n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	cmd := newDownloadReadsCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"--accessions-file", path})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	wantRuns := []string{"ERR123456", "ERR123457"}
+	if !reflect.DeepEqual(gotRuns, wantRuns) {
+		t.Fatalf("run accessions = %#v, want %#v", gotRuns, wantRuns)
+	}
+}
+
+func TestDownloadReadsCommandUsesRunSpecificPrefixWithMultipleRuns(t *testing.T) {
+	old := downloadReads
+	defer func() { downloadReads = old }()
+
+	var (
+		gotRuns     []string
+		gotPrefixes []string
+	)
+	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
+		gotRuns = append(gotRuns, runAccession)
+		gotPrefixes = append(gotPrefixes, opts.OutputPrefix)
+		return readdl.Result{}, nil
+	}
+
+	cmd := newDownloadReadsCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ERR123456,ERR123457", "--prefix", "sampleA"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	wantRuns := []string{"ERR123456", "ERR123457"}
+	if !reflect.DeepEqual(gotRuns, wantRuns) {
+		t.Fatalf("run accessions = %#v, want %#v", gotRuns, wantRuns)
+	}
+	wantPrefixes := []string{"sampleA_ERR123456", "sampleA_ERR123457"}
+	if !reflect.DeepEqual(gotPrefixes, wantPrefixes) {
+		t.Fatalf("output prefixes = %#v, want %#v", gotPrefixes, wantPrefixes)
+	}
+}
+
+func TestDownloadReadsCommandRejectsEmptyRunInCommaSeparatedList(t *testing.T) {
+	cmd := newDownloadReadsCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ERR123456,"})
+
+	err := cmd.Execute()
+	if err == nil || err.Error() != "download-reads accession list contains an empty run accession" {
+		t.Fatalf("Execute() error = %v, want empty accession error", err)
 	}
 }
 

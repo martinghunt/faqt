@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Allow `faqt download-reads` to accept comma-separated run accession lists or `--accessions-file` with one run accession per line.
+- Use `PREFIX_RUN_ACCESSION` output prefixes when `faqt download-reads --prefix` is used with multiple run accessions.
+
 ## [0.4.0] - 2026-06-10
 
 ### Added

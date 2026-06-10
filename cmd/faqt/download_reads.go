@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/martinghunt/faqt/readdl"
@@ -14,6 +18,7 @@ func newDownloadReadsCmd() *cobra.Command {
 	var (
 		outputDir         string
 		prefix            string
+		accessionsFile    string
 		enaMeta           bool
 		methods           string
 		attempts          int
@@ -31,10 +36,18 @@ func newDownloadReadsCmd() *cobra.Command {
 	srachaThreads = readdl.DefaultSrachaThreads
 	srachaConnections = readdl.DefaultSrachaConnections
 	cmd := &cobra.Command{
-		Use:   "download-reads RUN_ACCESSION",
-		Short: "Download read FASTQ files for a run accession",
-		Args:  cobra.ExactArgs(1),
+		Use:   "download-reads [RUN_ACCESSION[,RUN_ACCESSION...]]",
+		Short: "Download read FASTQ files for run accessions",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			runArg := ""
+			if len(args) > 0 {
+				runArg = args[0]
+			}
+			runAccessions, err := downloadReadRunAccessions(runArg, accessionsFile, cmd.InOrStdin())
+			if err != nil {
+				return err
+			}
 			parsedMethods, err := readdl.ParseMethods(methods)
 			if err != nil {
 				return err
@@ -73,12 +86,21 @@ func newDownloadReadsCmd() *cobra.Command {
 			if verbose {
 				opts.ProgressWriter = cmd.ErrOrStderr()
 			}
-			_, err = downloadReads(cmd.Context(), args[0], opts)
-			return err
+			for _, runAccession := range runAccessions {
+				runOpts := opts
+				if prefix != "" && len(runAccessions) > 1 {
+					runOpts.OutputPrefix = prefix + "_" + runAccession
+				}
+				if _, err := downloadReads(cmd.Context(), runAccession, runOpts); err != nil {
+					return err
+				}
+			}
+			return nil
 		},
 	}
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", ".", "Directory where FASTQ files are written")
 	cmd.Flags().StringVar(&prefix, "prefix", "", "Output FASTQ filename prefix; default uses ENA filenames")
+	cmd.Flags().StringVar(&accessionsFile, "accessions-file", "", "File containing run accessions, one per line; use - for stdin")
 	cmd.Flags().BoolVar(&enaMeta, "ena-meta", false, "Write ENA read metadata JSON alongside FASTQ files")
 	cmd.Flags().StringVar(&methods, "method", string(readdl.MethodENA), "Download method(s), comma-separated: ena, sracha")
 	cmd.Flags().IntVar(&attempts, "attempts", readdl.DefaultAttempts, "Download attempts per method")
@@ -90,4 +112,69 @@ func newDownloadReadsCmd() *cobra.Command {
 	cmd.Flags().DurationVar(&stallTimeout, "download-stall-timeout", stallTimeout, "Abort direct ENA downloads if no bytes arrive for this duration")
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Report download progress to stderr")
 	return cmd
+}
+
+func downloadReadRunAccessions(runArg, accessionsFile string, stdin io.Reader) ([]string, error) {
+	runArg = strings.TrimSpace(runArg)
+	accessionsFile = strings.TrimSpace(accessionsFile)
+	if runArg == "" && accessionsFile == "" {
+		return nil, fmt.Errorf("download-reads requires a run accession or --accessions-file")
+	}
+	if runArg != "" && accessionsFile != "" {
+		return nil, fmt.Errorf("download-reads accepts either run accessions or --accessions-file, not both")
+	}
+	if accessionsFile != "" {
+		return readDownloadReadAccessionsFile(accessionsFile, stdin)
+	}
+	return splitDownloadReadAccessions(runArg)
+}
+
+func splitDownloadReadAccessions(value string) ([]string, error) {
+	parts := strings.Split(value, ",")
+	accessions := make([]string, 0, len(parts))
+	for _, part := range parts {
+		accession := strings.TrimSpace(part)
+		if accession == "" {
+			return nil, fmt.Errorf("download-reads accession list contains an empty run accession")
+		}
+		accessions = append(accessions, accession)
+	}
+	return accessions, nil
+}
+
+func readDownloadReadAccessionsFile(path string, stdin io.Reader) ([]string, error) {
+	var (
+		r     io.Reader
+		close func() error
+	)
+	if path == "-" {
+		r = stdin
+	} else {
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("open accessions file %q: %w", path, err)
+		}
+		r = f
+		close = f.Close
+	}
+	if close != nil {
+		defer close()
+	}
+
+	scanner := bufio.NewScanner(r)
+	var accessions []string
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		accessions = append(accessions, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("read accessions file %q: %w", path, err)
+	}
+	if len(accessions) == 0 {
+		return nil, fmt.Errorf("download-reads accession file contains no run accessions")
+	}
+	return accessions, nil
 }
