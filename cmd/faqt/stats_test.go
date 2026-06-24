@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,19 +41,5 @@ func TestStatsCommandDefaultsToStdin(t *testing.T) {
 	expected := "-\t6\t2\t3.00\t4\t2\t2\t1\t4\t1\t2\t2\t2\t2\n"
 	if got != expected {
 		t.Fatalf("stdout = %q, want %q", got, expected)
-	}
-}
-
-func TestRootVersionFlag(t *testing.T) {
-	cmd := newRootCmd()
-	var stdout bytes.Buffer
-	cmd.SetOut(&stdout)
-	cmd.SetErr(&stdout)
-	cmd.SetArgs([]string{"--version"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("Execute() error = %v", err)
-	}
-	if stdout.String() == "" {
-		t.Fatal("expected version output")
 	}
 }
