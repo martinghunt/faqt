@@ -18,6 +18,15 @@ After installing, check the version with:
 faqt --version
 ```
 
+To update an installed release binary in place:
+
+```bash
+faqt update
+faqt update --check
+```
+
+`faqt update` checks the latest GitHub release, verifies the downloaded release archive against the published SHA-256 checksum file, and replaces the installed binary when a newer release is available. Local `dev` builds are not updated unless you pass `--force`.
+
 If you want to build locally instead:
 
 ```bash
@@ -38,6 +47,7 @@ Local builds report version `dev` unless you pass an explicit release version.
 - `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats))
 - `faqt download`: download genome or sequence data by accession
 - `faqt download-reads`: download run FASTQ files from ENA or with `sracha`
+- `faqt update`: update the installed `faqt` binary from the latest GitHub release
 
 Use `faqt -h` or `faqt --help` for top-level help. Use `-h` or `--help` after a command name to see command-specific flags and examples, for example:
 
@@ -466,9 +476,10 @@ That produces binaries for:
 
 Release artifact names include the version, for example:
 
-- `faqt-v1.2.3-darwin-arm64`
-- `faqt-v1.2.3-linux-amd64`
-- `faqt-v1.2.3-windows-amd64.exe`
+- `faqt-v1.2.3-darwin-arm64.tar.gz`
+- `faqt-v1.2.3-linux-amd64.tar.gz`
+- `faqt-v1.2.3-windows-amd64.exe.zip`
+- `faqt-v1.2.3-checksums.txt`
 
 You can also build a specific target without using release mode:
 

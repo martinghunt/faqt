@@ -19,6 +19,7 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newStatsCmd())
 	cmd.AddCommand(newDownloadCmd())
 	cmd.AddCommand(newDownloadReadsCmd())
+	cmd.AddCommand(newUpdateCmd())
 	return cmd
 }
 
