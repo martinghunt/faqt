@@ -17,31 +17,36 @@ var (
 
 func newDownloadCmd() *cobra.Command {
 	var (
-		output   sequenceOutputOptions
-		fasta    bool
-		db       string
-		nuc      string
-		source   string
-		assembly string
-		apiKey   string
-		email    string
+		output       sequenceOutputOptions
+		genomeFormat string
+		fasta        bool
+		db           string
+		nuc          string
+		source       string
+		assembly     string
+		apiKey       string
+		email        string
 	)
 	cmd := &cobra.Command{
 		Use:   "download ACCESSION...",
 		Short: "Download genome or sequence data by accession",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			format, err := genomeDownloadFormat(genomeFormat, fasta)
+			if err != nil {
+				return err
+			}
 			if isGenomeDownload(args) {
 				if err := validateGenomeDownloadArgs(args, output.compress, db, nuc, source, assembly, apiKey, email); err != nil {
 					return err
 				}
 				_, err := downloadGenomeWithOptions(args[0], output.path, genomedl.DownloadOptions{
-					FastaOnly:     fasta,
+					Format:        format,
 					WarningWriter: cmd.ErrOrStderr(),
 				})
 				return err
 			}
-			if err := validateSequenceDownloadArgs(args); err != nil {
+			if err := validateSequenceDownloadArgs(args, format); err != nil {
 				return err
 			}
 			if apiKey == "" {
@@ -62,7 +67,8 @@ func newDownloadCmd() *cobra.Command {
 		},
 	}
 	addSequenceOutputFlags(cmd, &output)
-	cmd.Flags().BoolVar(&fasta, "fasta", false, "For genome accessions, write genomic FASTA only")
+	cmd.Flags().StringVar(&genomeFormat, "format", string(genomedl.GenomeFormatAuto), "Genome output format: auto, fasta, gff3, embl")
+	cmd.Flags().BoolVar(&fasta, "fasta", false, "Deprecated alias for --format fasta")
 	cmd.Flags().StringVar(&db, "db", string(seqdl.DatabaseAuto), "NCBI sequence database: auto, protein, nuccore, nucleotide, sequences")
 	cmd.Flags().StringVar(&nuc, "nucleotide", string(seqdl.NucleotideNone), "Download nucleotide CDS linked from protein accessions: first or all")
 	cmd.Flags().StringVar(&source, "source", string(seqdl.SourceRefSeq), "Nucleotide CDS source: refseq, insdc, all")
@@ -70,6 +76,7 @@ func newDownloadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&apiKey, "api-key", "", "NCBI API key; defaults to NCBI_API_KEY")
 	cmd.Flags().StringVar(&email, "email", "", "Email sent to NCBI; defaults to NCBI_EMAIL")
 	cmd.Flags().Lookup("nucleotide").NoOptDefVal = string(seqdl.NucleotideFirst)
+	_ = cmd.Flags().MarkDeprecated("fasta", "use --format fasta")
 	return cmd
 }
 
@@ -102,7 +109,24 @@ func validateGenomeDownloadArgs(accessions []string, compress, db, nuc, source, 
 	return nil
 }
 
-func validateSequenceDownloadArgs(accessions []string) error {
+func genomeDownloadFormat(value string, fasta bool) (genomedl.GenomeFormat, error) {
+	format, err := genomedl.ParseGenomeFormat(value)
+	if err != nil {
+		return "", err
+	}
+	if fasta {
+		if format != genomedl.GenomeFormatAuto && format != genomedl.GenomeFormatFASTA {
+			return "", fmt.Errorf("--fasta cannot be used with --format %s", format)
+		}
+		format = genomedl.GenomeFormatFASTA
+	}
+	return format, nil
+}
+
+func validateSequenceDownloadArgs(accessions []string, format genomedl.GenomeFormat) error {
+	if format != genomedl.GenomeFormatAuto && format != genomedl.GenomeFormatFASTA {
+		return fmt.Errorf("--format %s is only valid for genome downloads", format)
+	}
 	for _, accession := range accessions {
 		if isGenomeAssemblyAccession(accession) {
 			return fmt.Errorf("mixed genome assembly and sequence accessions are not supported")

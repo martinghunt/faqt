@@ -98,7 +98,7 @@ func TestDownloadGenomeNuccoreReportsGFFDownloadErrors(t *testing.T) {
 
 func TestDatasetsDownloadURLRequestsSupportedAnnotationByDefault(t *testing.T) {
 	downloader := NewDownloader()
-	url := downloader.datasetsDownloadURL(false)
+	url := downloader.datasetsDownloadURL(GenomeFormatAuto)
 	for _, want := range []string{"GENOME_FASTA", "GENOME_GFF", "GENOME_GBFF"} {
 		if !strings.Contains(url, want) {
 			t.Fatalf("datasetsDownloadURL(false) = %q, missing %s", url, want)
@@ -108,7 +108,7 @@ func TestDatasetsDownloadURLRequestsSupportedAnnotationByDefault(t *testing.T) {
 
 func TestDatasetsDownloadURLFastaOnly(t *testing.T) {
 	downloader := NewDownloader()
-	url := downloader.datasetsDownloadURL(true)
+	url := downloader.datasetsDownloadURL(GenomeFormatFASTA)
 	if !strings.Contains(url, "GENOME_FASTA") {
 		t.Fatalf("datasetsDownloadURL(true) = %q, missing GENOME_FASTA", url)
 	}
@@ -116,6 +116,19 @@ func TestDatasetsDownloadURLFastaOnly(t *testing.T) {
 		if strings.Contains(url, unwanted) {
 			t.Fatalf("datasetsDownloadURL(true) = %q, contains %s", url, unwanted)
 		}
+	}
+}
+
+func TestDatasetsDownloadURLGFF3(t *testing.T) {
+	downloader := NewDownloader()
+	url := downloader.datasetsDownloadURL(GenomeFormatGFF3)
+	for _, want := range []string{"GENOME_FASTA", "GENOME_GFF"} {
+		if !strings.Contains(url, want) {
+			t.Fatalf("datasetsDownloadURL(gff3) = %q, missing %s", url, want)
+		}
+	}
+	if strings.Contains(url, "GENOME_GBFF") {
+		t.Fatalf("datasetsDownloadURL(gff3) = %q, contains GENOME_GBFF", url)
 	}
 }
 
@@ -278,6 +291,109 @@ func TestDownloadGenomeAssemblyWritesGBFFWhenAvailable(t *testing.T) {
 	}
 }
 
+func TestDownloadGenomeAssemblyWritesRequestedGFF3WhenGBFFAlsoAvailable(t *testing.T) {
+	var zipData bytes.Buffer
+	zw := zip.NewWriter(&zipData)
+	writeEntry := func(name, content string) {
+		w, err := zw.Create(name)
+		if err != nil {
+			t.Fatalf("Create(zip entry) error = %v", err)
+		}
+		if _, err := w.Write([]byte(content)); err != nil {
+			t.Fatalf("Write(zip entry) error = %v", err)
+		}
+	}
+	writeEntry("ncbi_dataset/data/GCF_1/GCF_1_genomic.fna", ">chr1\nACGT\n")
+	writeEntry("ncbi_dataset/data/GCF_1/genomic.gff3", "##gff-version 3\nchr1\tsrc\tgene\t1\t4\t.\t+\t.\tID=g1\n")
+	writeEntry("ncbi_dataset/data/GCF_1/genomic.gbff", "LOCUS       REC1\nORIGIN\n        1 acgt\n//\n")
+	if err := zw.Close(); err != nil {
+		t.Fatalf("Close(zip writer) error = %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write(zipData.Bytes())
+	}))
+	defer server.Close()
+
+	downloader := NewDownloader()
+	downloader.DatasetsDownloadURL = server.URL + "/download/%s"
+
+	outPath := filepath.Join(t.TempDir(), "genome.gff3")
+	gotPath, err := downloader.DownloadGenomeWithOptions("GCF_000191525.1", outPath, DownloadOptions{
+		Format: GenomeFormatGFF3,
+	})
+	if err != nil {
+		t.Fatalf("DownloadGenomeWithOptions() error = %v", err)
+	}
+	if gotPath != outPath {
+		t.Fatalf("path = %q, want %q", gotPath, outPath)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	text := string(data)
+	if strings.Contains(text, "LOCUS") || !strings.Contains(text, "##FASTA\n>chr1") {
+		t.Fatalf("output = %q", text)
+	}
+}
+
+func TestDownloadGenomeAssemblyWritesRequestedEMBLFromENA(t *testing.T) {
+	var datasetsRequested bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/embl/"):
+			_, _ = w.Write([]byte("ID   REC1; SV 1; linear; genomic DNA; STD; BCT; 4 BP.\nXX\nSQ   Sequence 4 BP;\n     acgt\n//\n"))
+		default:
+			datasetsRequested = true
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	downloader := NewDownloader()
+	downloader.DatasetsDownloadURL = server.URL + "/download/%s"
+	downloader.ENAEmblURL = server.URL + "/embl/%s?download=true"
+
+	outPath := filepath.Join(t.TempDir(), "genome.embl")
+	gotPath, err := downloader.DownloadGenomeWithOptions("GCA_009834985.1", outPath, DownloadOptions{
+		Format: GenomeFormatEMBL,
+	})
+	if err != nil {
+		t.Fatalf("DownloadGenomeWithOptions() error = %v", err)
+	}
+	if datasetsRequested {
+		t.Fatal("EMBL download should not request NCBI datasets archive")
+	}
+	if gotPath != outPath {
+		t.Fatalf("path = %q, want %q", gotPath, outPath)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if !strings.HasPrefix(string(data), "ID   REC1") {
+		t.Fatalf("output = %q", string(data))
+	}
+}
+
+func TestDownloadGenomeAssemblyEMBLRejectsENAErrorBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ERROR: No EMBL file found for GCA_1\n"))
+	}))
+	defer server.Close()
+
+	downloader := NewDownloader()
+	downloader.ENAEmblURL = server.URL + "/embl/%s?download=true"
+
+	_, err := downloader.DownloadGenomeWithOptions("GCA_1", filepath.Join(t.TempDir(), "genome.embl"), DownloadOptions{
+		Format: GenomeFormatEMBL,
+	})
+	if err == nil || !strings.Contains(err.Error(), "ENA EMBL download failed: ERROR: No EMBL file found for GCA_1") {
+		t.Fatalf("DownloadGenomeWithOptions() error = %v, want ENA error body", err)
+	}
+}
+
 func TestDownloadURLToFileReportsBodyCloseError(t *testing.T) {
 	closeErr := errors.New("close failed")
 	downloader := &Downloader{
@@ -393,6 +509,22 @@ func TestWriteDownloadedGenomeUsesEMBLAnnotationOverFASTA(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "ID   REC1") {
 		t.Fatalf("output = %q", string(data))
+	}
+}
+
+func TestWriteDownloadedGenomeRequestedEMBLRequiresEMBL(t *testing.T) {
+	tmpDir := t.TempDir()
+	fastaPath := filepath.Join(tmpDir, "genome.fa")
+	outPath := filepath.Join(tmpDir, "out.embl")
+	if err := os.WriteFile(fastaPath, []byte(">chr1\nACGT\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(fasta) error = %v", err)
+	}
+
+	_, err := writeDownloadedGenomeWithOptions([]string{fastaPath}, outPath, DownloadOptions{
+		Format: GenomeFormatEMBL,
+	})
+	if err == nil || err.Error() != "download produced no EMBL file" {
+		t.Fatalf("writeDownloadedGenomeWithOptions() error = %v, want missing EMBL error", err)
 	}
 }
 

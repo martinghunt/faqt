@@ -22,10 +22,20 @@ func writeDownloadedGenomeWithOptions(files []string, outPath string, opts Downl
 		return "", fmt.Errorf("download produced no files")
 	}
 	sort.Strings(files)
-	if opts.FastaOnly {
-		return writeFASTAOutput(files, outPath, opts)
+	format, err := normalizeGenomeFormat(opts)
+	if err != nil {
+		return "", err
 	}
-	return writeBestDownloadedOutput(files, outPath, opts)
+	switch format {
+	case GenomeFormatFASTA:
+		return writeFASTAOutput(files, outPath, opts)
+	case GenomeFormatGFF3:
+		return writeAnnotationOutput(files, outPath, annotationGFF3, opts)
+	case GenomeFormatEMBL:
+		return writeAnnotationOutput(files, outPath, annotationEMBL, opts)
+	default:
+		return writeBestDownloadedOutput(files, outPath, opts)
+	}
 }
 
 func writeFASTAOutput(files []string, outPath string, opts DownloadOptions) (string, error) {
@@ -68,6 +78,36 @@ func writeBestDownloadedOutput(files []string, outPath string, opts DownloadOpti
 		return "", err
 	}
 	warnOutputExtensionMismatch(outPath, outputFormatFromAnnotationKind(annotationKind), opts.WarningWriter)
+	return outPath, nil
+}
+
+func writeAnnotationOutput(files []string, outPath string, kind annotationKind, opts DownloadOptions) (string, error) {
+	annotationPath, err := singleMatchingFile(files, annotationKindLabel(kind), func(name string) bool {
+		return annotationFileKind(name) == kind
+	})
+	if err != nil {
+		return "", err
+	}
+	if annotationPath == "" {
+		return "", fmt.Errorf("download produced no %s file", annotationKindLabel(kind))
+	}
+	if kind == annotationGFF3 {
+		fastaPath, err := singleMatchingFile(files, "FASTA", isFASTAFile)
+		if err != nil {
+			return "", err
+		}
+		if fastaPath != "" {
+			if err := combineGFF3AndFASTA(annotationPath, fastaPath, outPath); err != nil {
+				return "", err
+			}
+			warnOutputExtensionMismatch(outPath, outputGFF3, opts.WarningWriter)
+			return outPath, nil
+		}
+	}
+	if err := copyFile(annotationPath, outPath); err != nil {
+		return "", err
+	}
+	warnOutputExtensionMismatch(outPath, outputFormatFromAnnotationKind(kind), opts.WarningWriter)
 	return outPath, nil
 }
 

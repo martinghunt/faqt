@@ -25,7 +25,7 @@ func TestDownloadCommandExists(t *testing.T) {
 		"output",
 		"wrap",
 		"compress",
-		"fasta",
+		"format",
 		"db",
 		"nucleotide",
 		"source",
@@ -73,7 +73,7 @@ func TestDownloadCommandRoutesAssemblyToGenomeDownloader(t *testing.T) {
 	cmd := newDownloadCmd()
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
-	cmd.SetArgs([]string{"GCF_000191525.1", "-o", outPath, "--fasta"})
+	cmd.SetArgs([]string{"GCF_000191525.1", "-o", outPath, "--format", "fasta"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)
@@ -84,11 +84,86 @@ func TestDownloadCommandRoutesAssemblyToGenomeDownloader(t *testing.T) {
 	if gotOutPath != outPath {
 		t.Fatalf("outPath = %q, want %q", gotOutPath, outPath)
 	}
-	if !gotOptions.FastaOnly {
-		t.Fatal("FastaOnly = false, want true")
+	if gotOptions.Format != genomedl.GenomeFormatFASTA {
+		t.Fatalf("format = %q, want %q", gotOptions.Format, genomedl.GenomeFormatFASTA)
 	}
 	if gotOptions.WarningWriter == nil {
 		t.Fatal("WarningWriter was not set")
+	}
+}
+
+func TestDownloadCommandDeprecatedFastaAliasRoutesToGenomeDownloader(t *testing.T) {
+	oldGenome := downloadGenomeWithOptions
+	oldSeq := downloadSeqAccessions
+	defer func() {
+		downloadGenomeWithOptions = oldGenome
+		downloadSeqAccessions = oldSeq
+	}()
+
+	var gotOptions genomedl.DownloadOptions
+	downloadGenomeWithOptions = func(accession, outPath string, opts genomedl.DownloadOptions) (string, error) {
+		gotOptions = opts
+		return outPath, nil
+	}
+	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+		t.Fatalf("sequence downloader should not be called")
+		return nil
+	}
+
+	cmd := newDownloadCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"GCF_000191525.1", "--fasta"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if gotOptions.Format != genomedl.GenomeFormatFASTA {
+		t.Fatalf("format = %q, want %q", gotOptions.Format, genomedl.GenomeFormatFASTA)
+	}
+}
+
+func TestDownloadCommandRoutesGenomeFormatToDownloader(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  string
+		want genomedl.GenomeFormat
+	}{
+		{name: "gff3", arg: "gff3", want: genomedl.GenomeFormatGFF3},
+		{name: "embl", arg: "embl", want: genomedl.GenomeFormatEMBL},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldGenome := downloadGenomeWithOptions
+			oldSeq := downloadSeqAccessions
+			defer func() {
+				downloadGenomeWithOptions = oldGenome
+				downloadSeqAccessions = oldSeq
+			}()
+
+			var gotOptions genomedl.DownloadOptions
+			downloadGenomeWithOptions = func(accession, outPath string, opts genomedl.DownloadOptions) (string, error) {
+				gotOptions = opts
+				return outPath, nil
+			}
+			downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+				t.Fatalf("sequence downloader should not be called")
+				return nil
+			}
+
+			cmd := newDownloadCmd()
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+			cmd.SetArgs([]string{"GCF_000191525.1", "--format", tt.arg})
+
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("Execute() error = %v", err)
+			}
+			if gotOptions.Format != tt.want {
+				t.Fatalf("format = %q, want %q", gotOptions.Format, tt.want)
+			}
+		})
 	}
 }
 
@@ -343,19 +418,43 @@ func TestDownloadCommandReturnsDownloadError(t *testing.T) {
 	}
 }
 
-func TestDownloadCommandRejectsRemovedFormatFlag(t *testing.T) {
+func TestDownloadCommandRejectsUnknownGenomeFormat(t *testing.T) {
 	cmd := newDownloadCmd()
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
 	cmd.SetArgs([]string{
-		"NC_000001.1",
+		"GCF_000191525.1",
 		"-o", filepath.Join(t.TempDir(), "genome.fa"),
 		"--format", "bad",
 	})
 
 	err := cmd.Execute()
-	if err == nil || err.Error() != "unknown flag: --format" {
-		t.Fatalf("Execute() error = %v, want unknown --format flag", err)
+	if err == nil || err.Error() != `unsupported genome format "bad"; allowed values: auto, fasta, gff3, embl` {
+		t.Fatalf("Execute() error = %v, want unsupported format error", err)
+	}
+}
+
+func TestDownloadCommandRejectsAnnotationFormatForSequenceDownload(t *testing.T) {
+	cmd := newDownloadCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"WP_002248791.1", "--format", "embl"})
+
+	err := cmd.Execute()
+	if err == nil || err.Error() != "--format embl is only valid for genome downloads" {
+		t.Fatalf("Execute() error = %v, want genome-only format error", err)
+	}
+}
+
+func TestDownloadCommandRejectsConflictingFastaAliasAndFormat(t *testing.T) {
+	cmd := newDownloadCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"GCF_000191525.1", "--format", "gff3", "--fasta"})
+
+	err := cmd.Execute()
+	if err == nil || err.Error() != "--fasta cannot be used with --format gff3" {
+		t.Fatalf("Execute() error = %v, want conflicting format error", err)
 	}
 }
 
