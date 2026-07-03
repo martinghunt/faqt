@@ -16,6 +16,7 @@ const (
 	defaultDatasetsDownloadURL = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/%s/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF&include_annotation_type=GENOME_GBFF"
 	defaultDatasetsFastaURL    = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/%s/download?include_annotation_type=GENOME_FASTA"
 	defaultDatasetsGFF3URL     = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/%s/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF"
+	defaultDatasetsGenBankURL  = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/%s/download?include_annotation_type=GENOME_GBFF"
 	defaultENAEmblURL          = "https://www.ebi.ac.uk/ena/browser/api/embl/%s?download=true"
 	defaultSviewerFastaURL     = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?id=%s&db=nuccore&report=fasta&retmode=text"
 	defaultSviewerGFF3URL      = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi?id=%s&db=nuccore&report=gff3&retmode=text"
@@ -26,10 +27,11 @@ const (
 type GenomeFormat string
 
 const (
-	GenomeFormatAuto  GenomeFormat = "auto"
-	GenomeFormatFASTA GenomeFormat = "fasta"
-	GenomeFormatGFF3  GenomeFormat = "gff3"
-	GenomeFormatEMBL  GenomeFormat = "embl"
+	GenomeFormatAuto    GenomeFormat = "auto"
+	GenomeFormatFASTA   GenomeFormat = "fasta"
+	GenomeFormatGFF3    GenomeFormat = "gff3"
+	GenomeFormatGenBank GenomeFormat = "genbank"
+	GenomeFormatEMBL    GenomeFormat = "embl"
 )
 
 // ParseGenomeFormat parses a genome download format name.
@@ -38,10 +40,12 @@ func ParseGenomeFormat(value string) (GenomeFormat, error) {
 	switch format {
 	case "", GenomeFormatAuto:
 		return GenomeFormatAuto, nil
-	case GenomeFormatFASTA, GenomeFormatGFF3, GenomeFormatEMBL:
+	case GenomeFormatFASTA, GenomeFormatGFF3, GenomeFormatGenBank, GenomeFormatEMBL:
 		return format, nil
+	case "gb", "gbk", "gbff":
+		return GenomeFormatGenBank, nil
 	default:
-		return "", fmt.Errorf("unsupported genome format %q; allowed values: auto, fasta, gff3, embl", value)
+		return "", fmt.Errorf("unsupported genome format %q; allowed values: auto, fasta, gff3, genbank, gb, gbk, gbff, embl", value)
 	}
 }
 
@@ -264,6 +268,8 @@ func (d *Downloader) datasetsDownloadURL(format GenomeFormat) string {
 				return defaultDatasetsFastaURL
 			case GenomeFormatGFF3:
 				return defaultDatasetsGFF3URL
+			case GenomeFormatGenBank:
+				return defaultDatasetsGenBankURL
 			}
 		}
 		return d.DatasetsDownloadURL
@@ -273,6 +279,8 @@ func (d *Downloader) datasetsDownloadURL(format GenomeFormat) string {
 		return defaultDatasetsFastaURL
 	case GenomeFormatGFF3:
 		return defaultDatasetsGFF3URL
+	case GenomeFormatGenBank:
+		return defaultDatasetsGenBankURL
 	default:
 		return defaultDatasetsDownloadURL
 	}

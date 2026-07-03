@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Add `faqt download --format` for genome downloads with `auto`, `fasta`, `gff3`, and `embl` choices, including ENA EMBL downloads.
+- Add `faqt download --format` for genome downloads with `auto`, `fasta`, `gff3`, `genbank`, and `embl` choices, including `gb`/`gbk`/`gbff` aliases and ENA EMBL downloads.
 
 ### Changed
 - Make `faqt --version` print `faqt X.Y.Z`, normalizing release tags like `vX.Y.Z` for display.

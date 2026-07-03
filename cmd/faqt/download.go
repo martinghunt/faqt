@@ -68,7 +68,7 @@ func newDownloadCmd() *cobra.Command {
 		},
 	}
 	addSequenceOutputFlags(cmd, &output)
-	cmd.Flags().StringVar(&genomeFormat, "format", string(genomedl.GenomeFormatAuto), "Genome output format: auto, fasta, gff3, embl")
+	cmd.Flags().StringVar(&genomeFormat, "format", string(genomedl.GenomeFormatAuto), "Genome output format: auto, fasta, gff3, genbank, gb, gbk, gbff, embl")
 	cmd.Flags().BoolVar(&fasta, "fasta", false, "Deprecated alias for --format fasta")
 	cmd.Flags().StringVar(&db, "db", string(seqdl.DatabaseAuto), "NCBI sequence database: auto, protein, nuccore, nucleotide, sequences")
 	cmd.Flags().StringVar(&nuc, "nucleotide", string(seqdl.NucleotideNone), "Download nucleotide CDS linked from protein accessions: first or all")

@@ -32,6 +32,8 @@ func writeDownloadedGenomeWithOptions(files []string, outPath string, opts Downl
 		return writeFASTAOutput(files, outPath, opts)
 	case GenomeFormatGFF3:
 		return writeAnnotationOutput(files, outPath, annotationGFF3, opts)
+	case GenomeFormatGenBank:
+		return writeAnnotationOutput(files, outPath, annotationGenBank, opts)
 	case GenomeFormatEMBL:
 		return writeAnnotationOutput(files, outPath, annotationEMBL, opts)
 	default:

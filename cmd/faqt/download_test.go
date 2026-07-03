@@ -133,6 +133,9 @@ func TestDownloadCommandRoutesGenomeFormatToDownloader(t *testing.T) {
 		want genomedl.GenomeFormat
 	}{
 		{name: "gff3", arg: "gff3", want: genomedl.GenomeFormatGFF3},
+		{name: "genbank", arg: "genbank", want: genomedl.GenomeFormatGenBank},
+		{name: "gbk alias", arg: "gbk", want: genomedl.GenomeFormatGenBank},
+		{name: "gbff alias", arg: "gbff", want: genomedl.GenomeFormatGenBank},
 		{name: "embl", arg: "embl", want: genomedl.GenomeFormatEMBL},
 	}
 
@@ -432,7 +435,7 @@ func TestDownloadCommandRejectsUnknownGenomeFormat(t *testing.T) {
 	})
 
 	err := cmd.Execute()
-	if err == nil || err.Error() != `unsupported genome format "bad"; allowed values: auto, fasta, gff3, embl` {
+	if err == nil || err.Error() != `unsupported genome format "bad"; allowed values: auto, fasta, gff3, genbank, gb, gbk, gbff, embl` {
 		t.Fatalf("Execute() error = %v, want unsupported format error", err)
 	}
 }
@@ -441,10 +444,10 @@ func TestDownloadCommandRejectsAnnotationFormatForSequenceDownload(t *testing.T)
 	cmd := newDownloadCmd()
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
-	cmd.SetArgs([]string{"WP_002248791.1", "--format", "embl"})
+	cmd.SetArgs([]string{"WP_002248791.1", "--format", "gbk"})
 
 	err := cmd.Execute()
-	if err == nil || err.Error() != "--format embl is only valid for genome downloads" {
+	if err == nil || err.Error() != "--format genbank is only valid for genome downloads" {
 		t.Fatalf("Execute() error = %v, want genome-only format error", err)
 	}
 }

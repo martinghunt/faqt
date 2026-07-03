@@ -94,6 +94,7 @@ faqt make-random-contigs 10 500 -o contigs.fa --seed 1
 faqt download GCF_000001405.40 -o genome.gff3
 faqt download GCF_000001405.40 -o genome.gff3.gz
 faqt download GCF_000001405.40 -o genome.fa --format fasta
+faqt download GCF_000001405.40 -o genome.gbff --format genbank
 faqt download GCA_009834985.1 -o genome.embl --format embl
 faqt download U49845.1 -o genbank-sequence.fa
 faqt download AAA98665.1 -o genbank-protein.fa
@@ -115,7 +116,7 @@ faqt stats assembly.fa
 faqt stats -t assembly.fa
 ```
 
-`download` routes `GCA_` and `GCF_` accessions to genome download, and other accessions to sequence FASTA download. Genome downloads support `--format auto`, `--format fasta`, `--format gff3`, and `--format embl`; `auto` is the default and writes an available annotation file before falling back to FASTA. EMBL genome downloads are fetched from ENA. FASTA genome output uses `--wrap`, with default `0` producing unwrapped sequence lines. Genome downloads treat compression suffixes separately from biological format suffixes. For example, `.gz`, `.bz2`, `.xz`, and `.zst` choose output compression. If the selected downloaded genome content conflicts with a recognized biological suffix such as `.fa`, `.gff3`, `.gbff`, or `.embl`, the command writes the requested path and prints a non-fatal warning.
+`download` routes `GCA_` and `GCF_` accessions to genome download, and other accessions to sequence FASTA download. Genome downloads support `--format auto`, `--format fasta`, `--format gff3`, `--format genbank`, and `--format embl`; `gb`, `gbk`, and `gbff` are accepted as aliases for `genbank`. `auto` is the default and writes an available annotation file before falling back to FASTA. EMBL genome downloads are fetched from ENA. FASTA genome output uses `--wrap`, with default `0` producing unwrapped sequence lines. Genome downloads treat compression suffixes separately from biological format suffixes. For example, `.gz`, `.bz2`, `.xz`, and `.zst` choose output compression. If the selected downloaded genome content conflicts with a recognized biological suffix such as `.fa`, `.gff3`, `.gbff`, or `.embl`, the command writes the requested path and prints a non-fatal warning.
 
 For sequence accessions, `download` writes FASTA only. Its `--db` flag accepts `auto`, `protein`, `nuccore`, `nucleotide`, or `sequences`; `auto` routes common protein accessions such as `WP_002248791.1` and INSDC protein accessions such as `AAA98665.1` to NCBI Protein, so `faqt download WP_002248791.1` downloads the protein sequence by default. It also routes INSDC nucleotide accessions such as `U49845.1` and `AF086833.2` to NCBI Nucleotide. WGS/TSA/TLS master accessions such as `JABRPF000000000.1` are expanded to their component contig/scaffold accessions and written as multi-record FASTA. Use `--nucleotide` to download the first RefSeq CDS nucleotide sequence linked from a protein accession, or `--nucleotide=all` to write all matching CDS records. `--source` accepts `refseq`, `insdc`, or `all` and defaults to `refseq`; `--assembly` filters nucleotide CDS rows to one assembly accession. Set `NCBI_API_KEY` and `NCBI_EMAIL`, or pass `--api-key` and `--email`, when you want those values sent with sequence requests.
 
@@ -355,7 +356,7 @@ if err != nil {
 _ = report
 ```
 
-The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for downloading one genome accession. By default it writes an available annotation file (GFF3 with embedded FASTA, GenBank/GBFF, or EMBL), and falls back to FASTA when no annotation file is available. Use `genomedl.DownloadGenomeWithOptions` with `genomedl.DownloadOptions{Format: genomedl.GenomeFormatFASTA}` to force FASTA output, or `GenomeFormatGFF3` or `GenomeFormatEMBL` to request those formats. Set `DownloadOptions.Wrap` to control FASTA wrapping; the zero value disables wrapping.
+The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for downloading one genome accession. By default it writes an available annotation file (GFF3 with embedded FASTA, GenBank/GBFF, or EMBL), and falls back to FASTA when no annotation file is available. Use `genomedl.DownloadGenomeWithOptions` with `genomedl.DownloadOptions{Format: genomedl.GenomeFormatFASTA}` to force FASTA output, or `GenomeFormatGFF3`, `GenomeFormatGenBank`, or `GenomeFormatEMBL` to request those formats. Set `DownloadOptions.Wrap` to control FASTA wrapping; the zero value disables wrapping.
 
 The `seqdl` package exposes `seqdl.DownloadAccession(accession, outPath, options)` and `seqdl.DownloadAccessions(accessions, outPath, options)` for downloading accession FASTA from NCBI EFetch. Downloaded content is streamed through `seqio` and written as FASTA.
 
