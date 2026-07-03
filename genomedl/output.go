@@ -10,6 +10,7 @@ import (
 
 	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/martinghunt/faqt/internal/xopen"
+	"github.com/martinghunt/faqt/seqio"
 )
 
 func writeDownloadedGenome(files []string, outPath string) error {
@@ -46,11 +47,40 @@ func writeFASTAOutput(files []string, outPath string, opts DownloadOptions) (str
 	if fastaPath == "" {
 		return "", fmt.Errorf("download produced no FASTA file")
 	}
-	if err := copyFile(fastaPath, outPath); err != nil {
+	if err := rewriteFASTAOutput(fastaPath, outPath, opts); err != nil {
 		return "", err
 	}
 	warnOutputExtensionMismatch(outPath, outputFASTA, opts.WarningWriter)
 	return outPath, nil
+}
+
+func rewriteFASTAOutput(src, dst string, opts DownloadOptions) (err error) {
+	reader, err := seqio.OpenPath(src)
+	if err != nil {
+		return err
+	}
+	if closer, ok := reader.(io.Closer); ok {
+		defer closeutil.CloseWithError(&err, closer)
+	}
+
+	writer, err := seqio.CreatePath(dst, seqio.FASTA, seqio.WithWrap(opts.Wrap))
+	if err != nil {
+		return err
+	}
+	defer closeutil.CloseWithError(&err, writer)
+
+	for {
+		rec, readErr := reader.Read()
+		if readErr == io.EOF {
+			return nil
+		}
+		if readErr != nil {
+			return readErr
+		}
+		if err := writer.Write(rec); err != nil {
+			return err
+		}
+	}
 }
 
 func writeBestDownloadedOutput(files []string, outPath string, opts DownloadOptions) (string, error) {

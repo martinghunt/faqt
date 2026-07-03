@@ -73,7 +73,7 @@ func TestDownloadCommandRoutesAssemblyToGenomeDownloader(t *testing.T) {
 	cmd := newDownloadCmd()
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
-	cmd.SetArgs([]string{"GCF_000191525.1", "-o", outPath, "--format", "fasta"})
+	cmd.SetArgs([]string{"GCF_000191525.1", "-o", outPath, "--format", "fasta", "--wrap", "37"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)
@@ -86,6 +86,9 @@ func TestDownloadCommandRoutesAssemblyToGenomeDownloader(t *testing.T) {
 	}
 	if gotOptions.Format != genomedl.GenomeFormatFASTA {
 		t.Fatalf("format = %q, want %q", gotOptions.Format, genomedl.GenomeFormatFASTA)
+	}
+	if gotOptions.Wrap != 37 {
+		t.Fatalf("wrap = %d, want 37", gotOptions.Wrap)
 	}
 	if gotOptions.WarningWriter == nil {
 		t.Fatal("WarningWriter was not set")

@@ -488,6 +488,46 @@ func TestWriteDownloadedGenomeSingleFilePreservesOriginalType(t *testing.T) {
 	}
 }
 
+func TestWriteDownloadedGenomeFASTARespectsWrapOption(t *testing.T) {
+	tests := []struct {
+		name string
+		opts DownloadOptions
+		want string
+	}{
+		{
+			name: "default unwrapped",
+			opts: DownloadOptions{Format: GenomeFormatFASTA},
+			want: ">chr1\nACGTACGT\n>chr2\nTTTT\n",
+		},
+		{
+			name: "explicit wrap",
+			opts: DownloadOptions{Format: GenomeFormatFASTA, Wrap: 4},
+			want: ">chr1\nACGT\nACGT\n>chr2\nTTTT\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			src := filepath.Join(tmpDir, "genome.fa")
+			dst := filepath.Join(tmpDir, "out.fa")
+			if err := os.WriteFile(src, []byte(">chr1\nACGT\nACGT\n>chr2\nTT\nTT\n"), 0o644); err != nil {
+				t.Fatalf("WriteFile(src) error = %v", err)
+			}
+			if _, err := writeDownloadedGenomeWithOptions([]string{src}, dst, tt.opts); err != nil {
+				t.Fatalf("writeDownloadedGenomeWithOptions() error = %v", err)
+			}
+			data, err := os.ReadFile(dst)
+			if err != nil {
+				t.Fatalf("ReadFile(dst) error = %v", err)
+			}
+			if string(data) != tt.want {
+				t.Fatalf("output = %q, want %q", string(data), tt.want)
+			}
+		})
+	}
+}
+
 func TestWriteDownloadedGenomeUsesEMBLAnnotationOverFASTA(t *testing.T) {
 	tmpDir := t.TempDir()
 	fastaPath := filepath.Join(tmpDir, "genome.fa")

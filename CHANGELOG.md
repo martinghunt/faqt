@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `faqt --version` print `faqt X.Y.Z`, normalizing release tags like `vX.Y.Z` for display.
 - Deprecate `faqt download --fasta` in favor of `--format fasta`.
 
+### Fixed
+- Apply the default unwrapped FASTA output behavior to genome downloads.
+
 ## [0.5.0] - 2026-06-10
 
 ### Added

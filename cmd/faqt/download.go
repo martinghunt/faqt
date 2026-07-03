@@ -42,6 +42,7 @@ func newDownloadCmd() *cobra.Command {
 				}
 				_, err := downloadGenomeWithOptions(args[0], output.path, genomedl.DownloadOptions{
 					Format:        format,
+					Wrap:          output.wrap,
 					WarningWriter: cmd.ErrOrStderr(),
 				})
 				return err

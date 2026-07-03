@@ -50,6 +50,8 @@ type DownloadOptions struct {
 	// Format chooses the biological format to write. The zero value behaves as
 	// GenomeFormatAuto.
 	Format GenomeFormat
+	// Wrap controls FASTA line wrapping. The default 0 disables wrapping.
+	Wrap int
 	// FastaOnly downloads and writes genomic FASTA even when annotation is
 	// available.
 	//
