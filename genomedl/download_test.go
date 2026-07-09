@@ -3,6 +3,7 @@ package genomedl
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -482,6 +483,54 @@ func TestDownloadGenomeAssemblyEMBLRejectsENAErrorBody(t *testing.T) {
 	}
 }
 
+func TestDownloadGenomeContextUsesRequestContext(t *testing.T) {
+	type contextKey string
+	key := contextKey("download-test")
+	ctx := context.WithValue(context.Background(), key, "request-context")
+	var gotContext bool
+
+	downloader := &Downloader{
+		SviewerFastaURL: "https://example.test/viewer?id=%s&report=fasta",
+		HTTPClient: &http.Client{
+			Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				if got := r.Context().Value(key); got != "request-context" {
+					t.Errorf("request context value = %v, want request-context", got)
+				} else {
+					gotContext = true
+				}
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Status:     "200 OK",
+					Body:       io.NopCloser(strings.NewReader(">chr1\nACGT\n")),
+					Header:     make(http.Header),
+					Request:    r,
+				}, nil
+			}),
+		},
+	}
+
+	outPath := filepath.Join(t.TempDir(), "genome.fa")
+	gotPath, err := downloader.DownloadGenomeContext(ctx, "NC_000001.1", outPath, DownloadOptions{
+		Format: GenomeFormatFASTA,
+	})
+	if err != nil {
+		t.Fatalf("DownloadGenomeContext() error = %v", err)
+	}
+	if !gotContext {
+		t.Fatal("DownloadGenomeContext() did not attach caller context to request")
+	}
+	if gotPath != outPath {
+		t.Fatalf("path = %q, want %q", gotPath, outPath)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if string(data) != ">chr1\nACGT\n" {
+		t.Fatalf("output = %q", string(data))
+	}
+}
+
 func TestDownloadURLToFileReportsBodyCloseError(t *testing.T) {
 	closeErr := errors.New("close failed")
 	downloader := &Downloader{
@@ -498,7 +547,7 @@ func TestDownloadURLToFileReportsBodyCloseError(t *testing.T) {
 		},
 	}
 
-	err := downloader.downloadURLToFile("https://example.test/genome.fa", filepath.Join(t.TempDir(), "genome.fa"))
+	err := downloader.downloadURLToFile(context.Background(), "https://example.test/genome.fa", filepath.Join(t.TempDir(), "genome.fa"))
 	if !errors.Is(err, closeErr) {
 		t.Fatalf("downloadURLToFile() error = %v, want close error", err)
 	}

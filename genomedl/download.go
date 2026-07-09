@@ -1,6 +1,7 @@
 package genomedl
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -102,6 +103,12 @@ func DownloadGenomeWithOptions(accession, outPath string, opts DownloadOptions) 
 	return NewDownloader().DownloadGenomeWithOptions(accession, outPath, opts)
 }
 
+// DownloadGenomeContext downloads accession into outPath using the default
+// downloader and ctx for download requests.
+func DownloadGenomeContext(ctx context.Context, accession, outPath string, opts DownloadOptions) (string, error) {
+	return NewDownloader().DownloadGenomeContext(ctx, accession, outPath, opts)
+}
+
 // DownloadGenome downloads accession into outPath.
 func (d *Downloader) DownloadGenome(accession, outPath string) (string, error) {
 	return d.DownloadGenomeWithOptions(accession, outPath, DownloadOptions{})
@@ -109,6 +116,15 @@ func (d *Downloader) DownloadGenome(accession, outPath string) (string, error) {
 
 // DownloadGenomeWithOptions downloads accession into outPath.
 func (d *Downloader) DownloadGenomeWithOptions(accession, outPath string, opts DownloadOptions) (string, error) {
+	return d.DownloadGenomeContext(context.Background(), accession, outPath, opts)
+}
+
+// DownloadGenomeContext downloads accession into outPath, using ctx for
+// download requests.
+func (d *Downloader) DownloadGenomeContext(ctx context.Context, accession, outPath string, opts DownloadOptions) (string, error) {
+	if ctx == nil {
+		return "", fmt.Errorf("nil context")
+	}
 	acc := strings.TrimSpace(accession)
 	if acc == "" {
 		return "", fmt.Errorf("empty accession")
@@ -132,11 +148,11 @@ func (d *Downloader) DownloadGenomeWithOptions(accession, outPath string, opts D
 
 	var files []string
 	if format == GenomeFormatEMBL {
-		files, err = d.downloadEMBLGenome(acc, tmpDir)
+		files, err = d.downloadEMBLGenome(ctx, acc, tmpDir)
 	} else if isAssemblyAccession(acc) {
-		files, err = d.downloadAssemblyGenome(acc, tmpDir, format)
+		files, err = d.downloadAssemblyGenome(ctx, acc, tmpDir, format)
 	} else {
-		files, err = d.downloadNuccoreGenome(acc, tmpDir, format)
+		files, err = d.downloadNuccoreGenome(ctx, acc, tmpDir, format)
 	}
 	if err != nil {
 		return "", err
@@ -168,18 +184,18 @@ func sanitizeFilename(name string) string {
 	return replacer.Replace(name)
 }
 
-func (d *Downloader) downloadAssemblyGenome(accession, outDir string, format GenomeFormat) ([]string, error) {
+func (d *Downloader) downloadAssemblyGenome(ctx context.Context, accession, outDir string, format GenomeFormat) ([]string, error) {
 	zipPath := filepath.Join(outDir, sanitizeFilename(accession)+".zip")
-	if err := d.downloadURLToFile(fmt.Sprintf(d.datasetsDownloadURL(format), accession), zipPath); err != nil {
+	if err := d.downloadURLToFile(ctx, fmt.Sprintf(d.datasetsDownloadURL(format), accession), zipPath); err != nil {
 		return nil, err
 	}
 	return extractGenomeFilesFromZip(zipPath, outDir)
 }
 
-func (d *Downloader) downloadNuccoreGenome(accession, outDir string, format GenomeFormat) ([]string, error) {
+func (d *Downloader) downloadNuccoreGenome(ctx context.Context, accession, outDir string, format GenomeFormat) ([]string, error) {
 	base := sanitizeFilename(accession)
 	fastaPath := filepath.Join(outDir, base+".fa")
-	if err := d.downloadURLToFile(fmt.Sprintf(d.sviewerFastaURL(), accession), fastaPath); err != nil {
+	if err := d.downloadURLToFile(ctx, fmt.Sprintf(d.sviewerFastaURL(), accession), fastaPath); err != nil {
 		return nil, err
 	}
 	files := []string{fastaPath}
@@ -188,7 +204,7 @@ func (d *Downloader) downloadNuccoreGenome(accession, outDir string, format Geno
 	}
 
 	gffPath := filepath.Join(outDir, base+".gff3")
-	if err := d.downloadURLToFile(fmt.Sprintf(d.sviewerGFF3URL(), accession), gffPath); err == nil {
+	if err := d.downloadURLToFile(ctx, fmt.Sprintf(d.sviewerGFF3URL(), accession), gffPath); err == nil {
 		files = append(files, gffPath)
 	} else if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("download gff3: %w", err)
@@ -197,9 +213,9 @@ func (d *Downloader) downloadNuccoreGenome(accession, outDir string, format Geno
 	return files, nil
 }
 
-func (d *Downloader) downloadEMBLGenome(accession, outDir string) ([]string, error) {
+func (d *Downloader) downloadEMBLGenome(ctx context.Context, accession, outDir string) ([]string, error) {
 	emblPath := filepath.Join(outDir, sanitizeFilename(accession)+".embl")
-	if err := d.downloadURLToFile(fmt.Sprintf(d.enaEmblURL(), accession), emblPath); err != nil {
+	if err := d.downloadURLToFile(ctx, fmt.Sprintf(d.enaEmblURL(), accession), emblPath); err != nil {
 		return nil, fmt.Errorf("download EMBL from ENA: %w", err)
 	}
 	if err := validateDownloadedENAEMBL(emblPath); err != nil {
@@ -237,8 +253,12 @@ func firstLine(text string) string {
 	return text
 }
 
-func (d *Downloader) downloadURLToFile(url, outPath string) (err error) {
-	resp, err := d.httpClient().Get(url)
+func (d *Downloader) downloadURLToFile(ctx context.Context, url, outPath string) (err error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := d.httpClient().Do(req)
 	if err != nil {
 		return err
 	}
