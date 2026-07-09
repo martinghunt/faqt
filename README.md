@@ -46,7 +46,7 @@ Local builds report version `dev` unless you pass an explicit release version.
 - `faqt make-random-contigs`: make random FASTA contigs
 - `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats))
 - `faqt download`: download genome or sequence data by accession
-- `faqt download-reads`: download run FASTQ files from ENA or with `sracha`
+- `faqt download-reads`: download run FASTQ files from ENA or with [`sracha`](https://rnabioco.github.io/sracha-rs/)
 - `faqt update`: update the installed `faqt` binary from the latest GitHub release
 
 Use `faqt -h` or `faqt --help` for top-level help. Use `-h` or `--help` after a command name to see command-specific flags and examples, for example:
@@ -370,7 +370,7 @@ The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for
 
 The `seqdl` package exposes `seqdl.DownloadAccession(accession, outPath, options)` and `seqdl.DownloadAccessions(accessions, outPath, options)` for downloading accession FASTA from NCBI EFetch. Downloaded content is streamed through `seqio` and written as FASTA.
 
-The `readdl` package exposes `readdl.DownloadReads(ctx, runAccession, options)` for downloading gzipped run FASTQ files. It uses `ichsm` for ENA read metadata lookup and supports direct ENA downloads with MD5 validation or `sracha` downloads with gzip validation. Set `DownloadOptions.WriteMetadata` to write ENA metadata JSON. Set `DownloadOptions.DownloadStallTimeout` to tune the direct ENA idle timeout. Set `DownloadOptions.DownloadProgressInterval` to tune verbose direct ENA progress cadence.
+The `readdl` package exposes `readdl.DownloadReads(ctx, runAccession, options)` for downloading gzipped run FASTQ files. It uses `ichsm` for ENA read metadata lookup and supports direct ENA downloads with MD5 validation or [`sracha`](https://rnabioco.github.io/sracha-rs/) downloads with gzip validation. Set `DownloadOptions.WriteMetadata` to write ENA metadata JSON. Set `DownloadOptions.DownloadStallTimeout` to tune the direct ENA idle timeout. Set `DownloadOptions.DownloadProgressInterval` to tune verbose direct ENA progress cadence.
 
 ### Minimizers, Mapping, and Alignment
 
