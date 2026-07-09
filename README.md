@@ -366,7 +366,7 @@ if err != nil {
 _ = report
 ```
 
-The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for downloading one genome accession. Use `genomedl.DownloadGenomeContext(ctx, accession, outPath, options)` when callers need cancellation or request deadlines. By default it writes an available annotation file (GFF3 with embedded FASTA, GenBank/GBFF, or EMBL), and falls back to FASTA when no annotation file is available. Use `genomedl.DownloadGenomeWithOptions` with `genomedl.DownloadOptions{Format: genomedl.GenomeFormatFASTA}` to force FASTA output, or `GenomeFormatGFF3`, `GenomeFormatGenBank`, or `GenomeFormatEMBL` to request those formats. Set `DownloadOptions.Wrap` to control FASTA wrapping; the zero value disables wrapping.
+The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for downloading one genome accession. Use `genomedl.DownloadGenomeContext(ctx, accession, outPath, options)` when callers need cancellation or request deadlines. By default it writes an available annotation file (GFF3 with embedded FASTA, GenBank/GBFF, or EMBL), and falls back to FASTA when no annotation file is available. Use `genomedl.DownloadGenomeFASTA(accession, outPath, options)` when downstream code expects sequence-only FASTA output. Use `genomedl.DownloadGenomeWithOptions` with `GenomeFormatGFF3`, `GenomeFormatGenBank`, or `GenomeFormatEMBL` to request annotation formats. Set `DownloadOptions.Wrap` to control FASTA wrapping; the zero value disables wrapping.
 
 The `seqdl` package exposes `seqdl.DownloadAccession(accession, outPath, options)` and `seqdl.DownloadAccessions(accessions, outPath, options)` for downloading accession FASTA from NCBI EFetch. Downloaded content is streamed through `seqio` and written as FASTA.
 

@@ -216,6 +216,55 @@ func TestDownloadGenomeNuccoreFastaOnlySkipsGFF3(t *testing.T) {
 	}
 }
 
+func TestDownloadGenomeFASTASkipsGFF3(t *testing.T) {
+	var gffRequested bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.RawQuery, "report=fasta"):
+			_, _ = w.Write([]byte(">chr1\nACGT\n"))
+		case strings.Contains(r.URL.RawQuery, "report=gff3"):
+			gffRequested = true
+			http.Error(w, "temporary failure", http.StatusInternalServerError)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	downloader := NewDownloader()
+	downloader.SviewerFastaURL = server.URL + "/viewer?id=%s&report=fasta"
+	downloader.SviewerGFF3URL = server.URL + "/viewer?id=%s&report=gff3"
+
+	outPath := filepath.Join(t.TempDir(), "genome.fa")
+	gotPath, err := downloader.DownloadGenomeFASTA("NC_000001.1", outPath, DownloadOptions{})
+	if err != nil {
+		t.Fatalf("DownloadGenomeFASTA() error = %v", err)
+	}
+	if gffRequested {
+		t.Fatal("FASTA helper should not request GFF3")
+	}
+	if gotPath != outPath {
+		t.Fatalf("path = %q, want %q", gotPath, outPath)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if string(data) != ">chr1\nACGT\n" {
+		t.Fatalf("output = %q", string(data))
+	}
+}
+
+func TestDownloadGenomeFASTARejectsAnnotationFormat(t *testing.T) {
+	downloader := NewDownloader()
+	_, err := downloader.DownloadGenomeFASTA("NC_000001.1", filepath.Join(t.TempDir(), "genome.fa"), DownloadOptions{
+		Format: GenomeFormatGFF3,
+	})
+	if err == nil || err.Error() != `download genome FASTA cannot be used with genome format "gff3"` {
+		t.Fatalf("DownloadGenomeFASTA() error = %v, want annotation format error", err)
+	}
+}
+
 func TestDownloadGenomeNuccoreFallsBackToFASTAWhenGFF3Missing(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {

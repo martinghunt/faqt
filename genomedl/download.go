@@ -109,6 +109,19 @@ func DownloadGenomeContext(ctx context.Context, accession, outPath string, opts 
 	return NewDownloader().DownloadGenomeContext(ctx, accession, outPath, opts)
 }
 
+// DownloadGenomeFASTA downloads accession as genomic FASTA using the default
+// downloader. It rejects annotation formats in opts.
+func DownloadGenomeFASTA(accession, outPath string, opts DownloadOptions) (string, error) {
+	return NewDownloader().DownloadGenomeFASTA(accession, outPath, opts)
+}
+
+// DownloadGenomeFASTAContext downloads accession as genomic FASTA using the
+// default downloader and ctx for download requests. It rejects annotation
+// formats in opts.
+func DownloadGenomeFASTAContext(ctx context.Context, accession, outPath string, opts DownloadOptions) (string, error) {
+	return NewDownloader().DownloadGenomeFASTAContext(ctx, accession, outPath, opts)
+}
+
 // DownloadGenome downloads accession into outPath.
 func (d *Downloader) DownloadGenome(accession, outPath string) (string, error) {
 	return d.DownloadGenomeWithOptions(accession, outPath, DownloadOptions{})
@@ -158,6 +171,35 @@ func (d *Downloader) DownloadGenomeContext(ctx context.Context, accession, outPa
 		return "", err
 	}
 	return writeDownloadedGenomeWithOptions(files, outPath, opts)
+}
+
+// DownloadGenomeFASTA downloads accession as genomic FASTA. It rejects
+// annotation formats in opts.
+func (d *Downloader) DownloadGenomeFASTA(accession, outPath string, opts DownloadOptions) (string, error) {
+	return d.DownloadGenomeFASTAContext(context.Background(), accession, outPath, opts)
+}
+
+// DownloadGenomeFASTAContext downloads accession as genomic FASTA, using ctx
+// for download requests. It rejects annotation formats in opts.
+func (d *Downloader) DownloadGenomeFASTAContext(ctx context.Context, accession, outPath string, opts DownloadOptions) (string, error) {
+	fastaOpts, err := fastaDownloadOptions(opts)
+	if err != nil {
+		return "", err
+	}
+	return d.DownloadGenomeContext(ctx, accession, outPath, fastaOpts)
+}
+
+func fastaDownloadOptions(opts DownloadOptions) (DownloadOptions, error) {
+	format, err := ParseGenomeFormat(string(opts.Format))
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	if format != GenomeFormatAuto && format != GenomeFormatFASTA {
+		return DownloadOptions{}, fmt.Errorf("download genome FASTA cannot be used with genome format %q", format)
+	}
+	opts.Format = GenomeFormatFASTA
+	opts.FastaOnly = false
+	return opts, nil
 }
 
 func normalizeGenomeFormat(opts DownloadOptions) (GenomeFormat, error) {

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add context-aware and FASTA-only `genomedl` helpers for library callers.
 - Add `faqt update` to check the latest GitHub release, verify the matching archive checksum, and replace the installed binary when a newer release is available.
 
 ## [0.6.0] - 2026-07-03
