@@ -126,11 +126,52 @@ faqt stats assembly.fa
 faqt stats -t assembly.fa
 ```
 
-`download` routes `GCA_` and `GCF_` accessions to genome download, and other accessions to sequence FASTA download. Genome downloads support `--format auto`, `--format fasta`, `--format gff3`, `--format genbank`, and `--format embl`; `gb`, `gbk`, and `gbff` are accepted as aliases for `genbank`. `auto` is the default and writes an available annotation file before falling back to FASTA. EMBL genome downloads are fetched from ENA. FASTA genome output uses `--wrap`, with default `0` producing unwrapped sequence lines. Genome downloads treat compression suffixes separately from biological format suffixes. For example, `.gz`, `.bz2`, `.xz`, and `.zst` choose output compression. If the selected downloaded genome content conflicts with a recognized biological suffix such as `.fa`, `.gff3`, `.gbff`, or `.embl`, the command writes the requested path and prints a non-fatal warning.
+### Download Behavior
 
-For sequence accessions, `download` writes FASTA only. Its `--db` flag accepts `auto`, `protein`, `nuccore`, `nucleotide`, or `sequences`; `auto` routes common protein accessions such as `WP_002248791.1` and INSDC protein accessions such as `AAA98665.1` to NCBI Protein, so `faqt download WP_002248791.1` downloads the protein sequence by default. It also routes INSDC nucleotide accessions such as `U49845.1` and `AF086833.2` to NCBI Nucleotide. WGS/TSA/TLS master accessions such as `JABRPF000000000.1` are expanded to their component contig/scaffold accessions and written as multi-record FASTA. Use `--nucleotide` to download the first RefSeq CDS nucleotide sequence linked from a protein accession, or `--nucleotide=all` to write all matching CDS records. `--source` accepts `refseq`, `insdc`, or `all` and defaults to `refseq`; `--assembly` filters nucleotide CDS rows to one assembly accession. Set `NCBI_API_KEY` and `NCBI_EMAIL`, or pass `--api-key` and `--email`, when you want those values sent with sequence requests.
+`faqt download` routes accessions by type:
 
-`download-reads` accepts one ENA/SRA run accession, a comma-separated list of run accessions, or `--accessions-file` with one run accession per line. It writes files directly under `--output-dir`. Without `--prefix`, it writes ENA filenames, usually `RUN_ACCESSION_1.fastq.gz` and `RUN_ACCESSION_2.fastq.gz` for paired reads or one ENA FASTQ filename for single-end reads. With `--prefix sampleA` and one run accession, it writes `sampleA_1.fastq.gz` and `sampleA_2.fastq.gz` for paired reads or `sampleA.fastq.gz` for single-end reads. With `--prefix sampleA` and multiple run accessions, each run uses `sampleA_RUN_ACCESSION` as its effective prefix. The default `--method ena` queries ENA for FASTQ URLs, MD5 sums, and byte counts, downloads the gzipped FASTQs directly, checks MD5 sums, and validates gzip content. Direct ENA downloads do not have a fixed whole-file timeout; `--download-stall-timeout` aborts only when no bytes arrive for the configured duration, defaulting to `5m`. Use `--method ena,sracha` to try direct ENA download first and fall back to `sracha`; use `--method sracha` to force `sracha`. Failed attempts wait a random delay between `--retry-delay-min` and `--retry-delay-max`, defaulting to `5s` and `20s`. `sracha` is found on `PATH` unless `--sracha-bin` is supplied; `--sracha-threads` and `--sracha-connections` control the `-t` and `--connections` arguments, defaulting to `1` and `1`. For `sracha`, `faqt` chooses the split mode from the ENA FASTQ manifest so paired, single-end, and paired-with-unpaired output names stay compatible with ENA metadata. ENA metadata JSON is not written by default; pass `--ena-meta` to write the single `ichsm search -c ALL` ENA record as `RUN_ACCESSION_ena_meta.json` in no-prefix mode or `sampleA_ena_meta.json` with `--prefix sampleA`. Pass `--verbose` to report progress to stderr, including rate-limited direct ENA byte progress every 30 seconds and once at completion.
+- `GCA_` and `GCF_` accessions use genome download.
+- Other accessions use sequence FASTA download.
+
+Genome downloads:
+
+- Supported formats are `auto`, `fasta`, `gff3`, `genbank`, and `embl`.
+- `gb`, `gbk`, and `gbff` are accepted as aliases for `genbank`.
+- `auto` is the default and writes an available annotation file before falling back to FASTA.
+- EMBL genome downloads are fetched from ENA.
+- FASTA output uses `--wrap`; the default `0` writes unwrapped sequence lines.
+- Compression suffixes are handled separately from biological format suffixes: `.gz`, `.bz2`, `.xz`, and `.zst` choose output compression.
+- If downloaded content conflicts with a recognized biological suffix such as `.fa`, `.gff3`, `.gbff`, or `.embl`, the command writes the requested path and prints a non-fatal warning.
+
+Sequence accession downloads:
+
+- Output is FASTA only.
+- `--db` accepts `auto`, `protein`, `nuccore`, `nucleotide`, or `sequences`.
+- `--db auto` routes common protein accessions such as `WP_002248791.1` and INSDC protein accessions such as `AAA98665.1` to NCBI Protein.
+- `--db auto` routes INSDC nucleotide accessions such as `U49845.1` and `AF086833.2` to NCBI Nucleotide.
+- WGS/TSA/TLS master accessions such as `JABRPF000000000.1` are expanded to component contig/scaffold records and written as multi-record FASTA.
+- `--nucleotide` downloads the first RefSeq CDS nucleotide sequence linked from a protein accession.
+- `--nucleotide=all` writes all matching CDS records.
+- `--source` accepts `refseq`, `insdc`, or `all` and defaults to `refseq`.
+- `--assembly` filters nucleotide CDS rows to one assembly accession.
+- Set `NCBI_API_KEY` and `NCBI_EMAIL`, or pass `--api-key` and `--email`, when you want those values sent with sequence requests.
+
+Read downloads:
+
+- `download-reads` accepts one ENA/SRA run accession, a comma-separated list, or `--accessions-file` with one run accession per line.
+- Files are written directly under `--output-dir`.
+- Without `--prefix`, ENA filenames are used, usually `RUN_ACCESSION_1.fastq.gz` and `RUN_ACCESSION_2.fastq.gz` for paired reads or one ENA FASTQ filename for single-end reads.
+- With `--prefix sampleA` and one run accession, paired reads become `sampleA_1.fastq.gz` and `sampleA_2.fastq.gz`; single-end reads become `sampleA.fastq.gz`.
+- With `--prefix sampleA` and multiple run accessions, each run uses `sampleA_RUN_ACCESSION` as its effective prefix.
+- The default `--method ena` queries ENA for FASTQ URLs, MD5 sums, and byte counts, downloads the gzipped FASTQs directly, checks MD5 sums, and validates gzip content.
+- Direct ENA downloads have no fixed whole-file timeout; `--download-stall-timeout` aborts only when no bytes arrive for the configured duration, defaulting to `5m`.
+- `--method ena,sracha` tries direct ENA first and falls back to [`sracha`](https://rnabioco.github.io/sracha-rs/); `--method sracha` forces `sracha`.
+- Failed attempts wait a random delay between `--retry-delay-min` and `--retry-delay-max`, defaulting to `5s` and `20s`.
+- `sracha` is found on `PATH` unless `--sracha-bin` is supplied.
+- `--sracha-threads` and `--sracha-connections` control the `-t` and `--connections` arguments, defaulting to `1` and `1`.
+- For `sracha`, `faqt` chooses the split mode from the ENA FASTQ manifest so paired, single-end, and paired-with-unpaired output names stay compatible with ENA metadata.
+- ENA metadata JSON is not written by default; pass `--ena-meta` to write it as `RUN_ACCESSION_ena_meta.json` in no-prefix mode or `sampleA_ena_meta.json` with `--prefix sampleA`.
+- Pass `--verbose` to report progress to stderr, including rate-limited direct ENA byte progress every 30 seconds and once at completion.
 
 ## Public API
 
