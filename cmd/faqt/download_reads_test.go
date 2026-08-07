@@ -23,7 +23,7 @@ func TestDownloadReadsCommandExists(t *testing.T) {
 	if found == nil || found.Name() != "download-reads" {
 		t.Fatalf("unexpected command = %v", found)
 	}
-	for _, name := range []string{"output-dir", "prefix", "accessions-file", "ena-meta", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "verbose"} {
+	for _, name := range []string{"output-dir", "prefix", "accessions-file", "ena-meta", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "merge", "verbose"} {
 		if found.Flags().Lookup(name) == nil {
 			t.Fatalf("download-reads command missing --%s flag", name)
 		}
@@ -189,6 +189,36 @@ func TestDownloadReadsCommandUsesRunSpecificPrefixWithMultipleRuns(t *testing.T)
 	wantPrefixes := []string{"sampleA_ERR123456", "sampleA_ERR123457"}
 	if !reflect.DeepEqual(gotPrefixes, wantPrefixes) {
 		t.Fatalf("output prefixes = %#v, want %#v", gotPrefixes, wantPrefixes)
+	}
+}
+
+func TestDownloadReadsCommandMergesMultipleRuns(t *testing.T) {
+	old := downloadReads
+	defer func() { downloadReads = old }()
+
+	outDir := t.TempDir()
+	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
+		path := filepath.Join(outDir, opts.OutputPrefix+".fastq.gz")
+		contents := []byte(runAccession)
+		if err := os.WriteFile(path, contents, 0o644); err != nil {
+			return readdl.Result{}, err
+		}
+		return readdl.Result{Files: []readdl.DownloadedFile{{Filename: filepath.Base(path), Path: path}}}, nil
+	}
+
+	cmd := newDownloadReadsCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ERR123456,ERR123457", "--prefix", "sampleA", "--output-dir", outDir, "--merge"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	contents, err := os.ReadFile(filepath.Join(outDir, "sampleA.fastq.gz"))
+	if err != nil {
+		t.Fatalf("ReadFile(merged) error = %v", err)
+	}
+	if string(contents) != "ERR123456ERR123457" {
+		t.Fatalf("merged contents = %q, want concatenated runs", contents)
 	}
 }
 

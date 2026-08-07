@@ -28,6 +28,7 @@ func newDownloadReadsCmd() *cobra.Command {
 		delayMin          time.Duration
 		delayMax          time.Duration
 		stallTimeout      time.Duration
+		merge             bool
 		verbose           bool
 	)
 	delayMin = readdl.DefaultRetryDelayMin
@@ -86,12 +87,20 @@ func newDownloadReadsCmd() *cobra.Command {
 			if verbose {
 				opts.ProgressWriter = cmd.ErrOrStderr()
 			}
+			results := make([]readdl.Result, 0, len(runAccessions))
 			for _, runAccession := range runAccessions {
 				runOpts := opts
 				if prefix != "" && len(runAccessions) > 1 {
 					runOpts.OutputPrefix = prefix + "_" + runAccession
 				}
-				if _, err := downloadReads(cmd.Context(), runAccession, runOpts); err != nil {
+				result, err := downloadReads(cmd.Context(), runAccession, runOpts)
+				if err != nil {
+					return err
+				}
+				results = append(results, result)
+			}
+			if merge && len(results) > 1 {
+				if _, err := readdl.MergeResults(cmd.Context(), results, outputDir, prefix); err != nil {
 					return err
 				}
 			}
@@ -110,6 +119,7 @@ func newDownloadReadsCmd() *cobra.Command {
 	cmd.Flags().DurationVar(&delayMin, "retry-delay-min", delayMin, "Minimum delay between failed download attempts")
 	cmd.Flags().DurationVar(&delayMax, "retry-delay-max", delayMax, "Maximum delay between failed download attempts")
 	cmd.Flags().DurationVar(&stallTimeout, "download-stall-timeout", stallTimeout, "Abort direct ENA downloads if no bytes arrive for this duration")
+	cmd.Flags().BoolVar(&merge, "merge", false, "Merge FASTQ files from multiple runs into one file per read direction")
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Report download progress to stderr")
 	return cmd
 }

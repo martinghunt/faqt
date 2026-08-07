@@ -101,6 +101,104 @@ func DownloadReads(ctx context.Context, runAccession string, opts DownloadOption
 	return NewDownloader().DownloadReads(ctx, runAccession, opts)
 }
 
+// MergeResults concatenates the FASTQ files from multiple run download results.
+// The inputs must all have the same single-end or paired-end layout. The output
+// uses prefix (or "merged" when prefix is empty), preserving the FASTQ extension.
+func MergeResults(ctx context.Context, results []Result, outputDir, prefix string) ([]DownloadedFile, error) {
+	if len(results) < 2 {
+		return nil, fmt.Errorf("merging reads requires at least two run results")
+	}
+	root := strings.TrimSpace(outputDir)
+	if root == "" {
+		root = "."
+	}
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return nil, err
+	}
+	prefix = strings.TrimSpace(prefix)
+	if prefix == "" {
+		prefix = "merged"
+	}
+	if strings.ContainsAny(prefix, `/\\`) {
+		return nil, fmt.Errorf("output prefix must not contain path separators")
+	}
+
+	fileCount := len(results[0].Files)
+	if fileCount < 1 || fileCount > 2 {
+		return nil, fmt.Errorf("cannot merge %d FASTQ files per run; expected one or two", fileCount)
+	}
+	for _, result := range results {
+		if len(result.Files) != fileCount {
+			return nil, fmt.Errorf("cannot merge runs with different numbers of FASTQ files")
+		}
+	}
+
+	merged := make([]DownloadedFile, fileCount)
+	for index := range merged {
+		ext := readFileExtension(results[0].Files[index].Filename)
+		if ext == "" {
+			return nil, fmt.Errorf("cannot determine FASTQ extension for %s", results[0].Files[index].Filename)
+		}
+		for _, result := range results[1:] {
+			if got := readFileExtension(result.Files[index].Filename); got != ext {
+				return nil, fmt.Errorf("cannot merge FASTQ files with different extensions")
+			}
+		}
+		filename := prefix + ext
+		if fileCount == 2 {
+			filename = fmt.Sprintf("%s_%d%s", prefix, index+1, ext)
+		}
+		merged[index] = DownloadedFile{Filename: filename, Path: filepath.Join(root, filename)}
+	}
+	if err := ensureMergedOutputsDoNotExist(merged); err != nil {
+		return nil, err
+	}
+
+	temporaryPaths := make([]string, len(merged))
+	for index := range merged {
+		tmp, err := os.CreateTemp(root, "."+merged[index].Filename+"-merge-*")
+		if err != nil {
+			removeFiles(temporaryPaths)
+			return nil, err
+		}
+		temporaryPaths[index] = tmp.Name()
+		for _, result := range results {
+			if err := ctx.Err(); err != nil {
+				_ = tmp.Close()
+				removeFiles(temporaryPaths)
+				return nil, err
+			}
+			in, err := os.Open(result.Files[index].Path)
+			if err != nil {
+				_ = tmp.Close()
+				removeFiles(temporaryPaths)
+				return nil, err
+			}
+			_, copyErr := io.Copy(tmp, in)
+			closeErr := in.Close()
+			if copyErr != nil || closeErr != nil {
+				_ = tmp.Close()
+				removeFiles(temporaryPaths)
+				if copyErr != nil {
+					return nil, copyErr
+				}
+				return nil, closeErr
+			}
+		}
+		if err := tmp.Close(); err != nil {
+			removeFiles(temporaryPaths)
+			return nil, err
+		}
+	}
+	for index, temporaryPath := range temporaryPaths {
+		if err := os.Rename(temporaryPath, merged[index].Path); err != nil {
+			removeFiles(temporaryPaths[index:])
+			return nil, err
+		}
+	}
+	return merged, nil
+}
+
 func ParseMethods(value string) ([]Method, error) {
 	parts := strings.Split(value, ",")
 	methods := make([]Method, 0, len(parts))
@@ -784,6 +882,25 @@ func ensureNoExistingOutputs(files []ichsm.ReadFile, finalDir, run, prefix strin
 		}
 	}
 	return nil
+}
+
+func ensureMergedOutputsDoNotExist(files []DownloadedFile) error {
+	for _, file := range files {
+		if _, err := os.Stat(file.Path); err == nil {
+			return errFilesAlreadyExist
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+func removeFiles(paths []string) {
+	for _, path := range paths {
+		if path != "" {
+			_ = os.Remove(path)
+		}
+	}
 }
 
 func moveResultFiles(result Result, finalDir string) error {

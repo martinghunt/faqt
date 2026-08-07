@@ -7,6 +7,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -984,6 +985,64 @@ func TestApplyOutputPrefix(t *testing.T) {
 	_, err = applyOutputPrefix(files, "/tmp/reads", "bad/prefix")
 	if err == nil || err.Error() != "output prefix must not contain path separators" {
 		t.Fatalf("applyOutputPrefix(bad) error = %v", err)
+	}
+}
+
+func TestMergeResults(t *testing.T) {
+	root := t.TempDir()
+	write := func(name, content string) DownloadedFile {
+		path := filepath.Join(root, name)
+		if err := os.WriteFile(path, gzipBytes(t, []byte(content)), 0o644); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", name, err)
+		}
+		return DownloadedFile{Filename: name, Path: path}
+	}
+	first1 := write("ERR123456_1.fastq.gz", "@first/1\nAC\n+\n!!\n")
+	first2 := write("ERR123456_2.fastq.gz", "@first/2\nGT\n+\n!!\n")
+	second1 := write("ERR123457_1.fastq.gz", "@second/1\nTG\n+\n!!\n")
+	second2 := write("ERR123457_2.fastq.gz", "@second/2\nCA\n+\n!!\n")
+
+	got, err := MergeResults(context.Background(), []Result{
+		{Files: []DownloadedFile{first1, first2}},
+		{Files: []DownloadedFile{second1, second2}},
+	}, root, "sampleA")
+	if err != nil {
+		t.Fatalf("MergeResults() error = %v", err)
+	}
+	wantNames := []string{"sampleA_1.fastq.gz", "sampleA_2.fastq.gz"}
+	for index, file := range got {
+		if file.Filename != wantNames[index] {
+			t.Fatalf("merged filename = %q, want %q", file.Filename, wantNames[index])
+		}
+		in, err := os.Open(file.Path)
+		if err != nil {
+			t.Fatalf("Open(%s) error = %v", file.Path, err)
+		}
+		gr, err := gzip.NewReader(in)
+		if err != nil {
+			t.Fatalf("gzip.NewReader(%s) error = %v", file.Path, err)
+		}
+		contents, readErr := io.ReadAll(gr)
+		closeErr := gr.Close()
+		fileCloseErr := in.Close()
+		if readErr != nil || closeErr != nil || fileCloseErr != nil {
+			t.Fatalf("read merged gzip: read=%v gzip-close=%v file-close=%v", readErr, closeErr, fileCloseErr)
+		}
+		want := "@first/" + strconv.Itoa(index+1) + "\n" + map[int]string{0: "AC", 1: "GT"}[index] + "\n+\n!!\n" +
+			"@second/" + strconv.Itoa(index+1) + "\n" + map[int]string{0: "TG", 1: "CA"}[index] + "\n+\n!!\n"
+		if string(contents) != want {
+			t.Fatalf("merged contents = %q, want %q", contents, want)
+		}
+	}
+}
+
+func TestMergeResultsRejectsMixedLayouts(t *testing.T) {
+	_, err := MergeResults(context.Background(), []Result{
+		{Files: []DownloadedFile{{Filename: "ERR123456.fastq.gz"}}},
+		{Files: []DownloadedFile{{Filename: "ERR123457_1.fastq.gz"}, {Filename: "ERR123457_2.fastq.gz"}}},
+	}, t.TempDir(), "")
+	if err == nil || err.Error() != "cannot merge runs with different numbers of FASTQ files" {
+		t.Fatalf("MergeResults() error = %v, want layout error", err)
 	}
 }
 
