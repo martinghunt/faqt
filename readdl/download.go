@@ -79,6 +79,12 @@ type Result struct {
 	Files        []DownloadedFile
 }
 
+type MergeOptions struct {
+	OutputDir     string
+	OutputPrefix  string
+	KeepOriginals bool
+}
+
 type Downloader struct {
 	ENAClient  *ichsm.Client
 	HTTPClient *http.Client
@@ -103,19 +109,21 @@ func DownloadReads(ctx context.Context, runAccession string, opts DownloadOption
 
 // MergeResults concatenates the FASTQ files from multiple run download results.
 // The inputs must all have the same single-end or paired-end layout. The output
-// uses prefix (or "merged" when prefix is empty), preserving the FASTQ extension.
-func MergeResults(ctx context.Context, results []Result, outputDir, prefix string) ([]DownloadedFile, error) {
+// uses opts.OutputPrefix (or "merged" when it is empty), preserving the FASTQ
+// extension. Source FASTQs are removed after a successful merge unless
+// opts.KeepOriginals is true.
+func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]DownloadedFile, error) {
 	if len(results) < 2 {
 		return nil, fmt.Errorf("merging reads requires at least two run results")
 	}
-	root := strings.TrimSpace(outputDir)
+	root := strings.TrimSpace(opts.OutputDir)
 	if root == "" {
 		root = "."
 	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return nil, err
 	}
-	prefix = strings.TrimSpace(prefix)
+	prefix := strings.TrimSpace(opts.OutputPrefix)
 	if prefix == "" {
 		prefix = "merged"
 	}
@@ -193,6 +201,11 @@ func MergeResults(ctx context.Context, results []Result, outputDir, prefix strin
 	for index, temporaryPath := range temporaryPaths {
 		if err := os.Rename(temporaryPath, merged[index].Path); err != nil {
 			removeFiles(temporaryPaths[index:])
+			return nil, err
+		}
+	}
+	if !opts.KeepOriginals {
+		if err := removeResultFiles(results); err != nil {
 			return nil, err
 		}
 	}
@@ -901,6 +914,17 @@ func removeFiles(paths []string) {
 			_ = os.Remove(path)
 		}
 	}
+}
+
+func removeResultFiles(results []Result) error {
+	for _, result := range results {
+		for _, file := range result.Files {
+			if err := os.Remove(file.Path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func moveResultFiles(result Result, finalDir string) error {

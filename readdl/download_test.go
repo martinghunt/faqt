@@ -1005,7 +1005,7 @@ func TestMergeResults(t *testing.T) {
 	got, err := MergeResults(context.Background(), []Result{
 		{Files: []DownloadedFile{first1, first2}},
 		{Files: []DownloadedFile{second1, second2}},
-	}, root, "sampleA")
+	}, MergeOptions{OutputDir: root, OutputPrefix: "sampleA"})
 	if err != nil {
 		t.Fatalf("MergeResults() error = %v", err)
 	}
@@ -1034,15 +1034,44 @@ func TestMergeResults(t *testing.T) {
 			t.Fatalf("merged contents = %q, want %q", contents, want)
 		}
 	}
+	for _, file := range []DownloadedFile{first1, first2, second1, second2} {
+		if _, err := os.Stat(file.Path); !os.IsNotExist(err) {
+			t.Fatalf("source file %s exists after merge, stat error = %v", file.Path, err)
+		}
+	}
 }
 
 func TestMergeResultsRejectsMixedLayouts(t *testing.T) {
 	_, err := MergeResults(context.Background(), []Result{
 		{Files: []DownloadedFile{{Filename: "ERR123456.fastq.gz"}}},
 		{Files: []DownloadedFile{{Filename: "ERR123457_1.fastq.gz"}, {Filename: "ERR123457_2.fastq.gz"}}},
-	}, t.TempDir(), "")
+	}, MergeOptions{OutputDir: t.TempDir()})
 	if err == nil || err.Error() != "cannot merge runs with different numbers of FASTQ files" {
 		t.Fatalf("MergeResults() error = %v, want layout error", err)
+	}
+}
+
+func TestMergeResultsKeepsOriginalsWhenRequested(t *testing.T) {
+	root := t.TempDir()
+	first := DownloadedFile{Filename: "ERR123456.fastq.gz", Path: filepath.Join(root, "ERR123456.fastq.gz")}
+	second := DownloadedFile{Filename: "ERR123457.fastq.gz", Path: filepath.Join(root, "ERR123457.fastq.gz")}
+	for _, file := range []DownloadedFile{first, second} {
+		if err := os.WriteFile(file.Path, gzipBytes(t, []byte(file.Filename)), 0o644); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", file.Path, err)
+		}
+	}
+
+	_, err := MergeResults(context.Background(), []Result{
+		{Files: []DownloadedFile{first}},
+		{Files: []DownloadedFile{second}},
+	}, MergeOptions{OutputDir: root, KeepOriginals: true})
+	if err != nil {
+		t.Fatalf("MergeResults() error = %v", err)
+	}
+	for _, file := range []DownloadedFile{first, second} {
+		if _, err := os.Stat(file.Path); err != nil {
+			t.Fatalf("Stat(%s) error = %v, want original file", file.Path, err)
+		}
 	}
 }
 

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Add `faqt download-reads --merge` to concatenate FASTQ files from multiple runs into one single-end output or paired `_1` and `_2` outputs.
+- Add `faqt download-reads --merge` to concatenate FASTQ files from multiple runs into one single-end output or paired `_1` and `_2` outputs; per-run FASTQs are removed after merging unless `--keep-originals` is passed.
 - Add context-aware and FASTA-only `genomedl` helpers for library callers.
 - Add `faqt update` to check the latest GitHub release, verify the matching archive checksum, and replace the installed binary when a newer release is available.
 

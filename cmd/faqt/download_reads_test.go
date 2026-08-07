@@ -23,7 +23,7 @@ func TestDownloadReadsCommandExists(t *testing.T) {
 	if found == nil || found.Name() != "download-reads" {
 		t.Fatalf("unexpected command = %v", found)
 	}
-	for _, name := range []string{"output-dir", "prefix", "accessions-file", "ena-meta", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "merge", "verbose"} {
+	for _, name := range []string{"output-dir", "prefix", "accessions-file", "ena-meta", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "merge", "keep-originals", "verbose"} {
 		if found.Flags().Lookup(name) == nil {
 			t.Fatalf("download-reads command missing --%s flag", name)
 		}
@@ -219,6 +219,11 @@ func TestDownloadReadsCommandMergesMultipleRuns(t *testing.T) {
 	}
 	if string(contents) != "ERR123456ERR123457" {
 		t.Fatalf("merged contents = %q, want concatenated runs", contents)
+	}
+	for _, name := range []string{"sampleA_ERR123456.fastq.gz", "sampleA_ERR123457.fastq.gz"} {
+		if _, err := os.Stat(filepath.Join(outDir, name)); !os.IsNotExist(err) {
+			t.Fatalf("per-run file %s exists after merge, stat error = %v", name, err)
+		}
 	}
 }
 

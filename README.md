@@ -164,7 +164,7 @@ Read downloads:
 - Without `--prefix`, ENA filenames are used, usually `RUN_ACCESSION_1.fastq.gz` and `RUN_ACCESSION_2.fastq.gz` for paired reads or one ENA FASTQ filename for single-end reads.
 - With `--prefix sampleA` and one run accession, paired reads become `sampleA_1.fastq.gz` and `sampleA_2.fastq.gz`; single-end reads become `sampleA.fastq.gz`.
 - With `--prefix sampleA` and multiple run accessions, each run uses `sampleA_RUN_ACCESSION` as its effective prefix.
-- Pass `--merge` with multiple run accessions to concatenate each read direction into one output. With `--prefix sampleA`, paired reads become `sampleA_1.fastq.gz` and `sampleA_2.fastq.gz`, and single-end reads become `sampleA.fastq.gz`. Without `--prefix`, the merged outputs use the `merged` prefix.
+- Pass `--merge` with multiple run accessions to concatenate each read direction into one output. With `--prefix sampleA`, paired reads become `sampleA_1.fastq.gz` and `sampleA_2.fastq.gz`, and single-end reads become `sampleA.fastq.gz`. Without `--prefix`, the merged outputs use the `merged` prefix. Per-run FASTQs are removed after a successful merge; pass `--keep-originals` to retain them.
 - The default `--method ena` queries ENA for FASTQ URLs, MD5 sums, and byte counts, downloads the gzipped FASTQs directly, checks MD5 sums, and validates gzip content.
 - Direct ENA downloads have no fixed whole-file timeout; `--download-stall-timeout` aborts only when no bytes arrive for the configured duration, defaulting to `5m`.
 - `--method ena,sracha` tries direct ENA first and falls back to [`sracha`](https://rnabioco.github.io/sracha-rs/); `--method sracha` forces `sracha`.
