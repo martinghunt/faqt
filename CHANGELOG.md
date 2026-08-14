@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `download-reads --ena-meta-single-object` for non-merged metadata consumers that require a top-level JSON object.
+
+### Changed
+- Write ENA read metadata as a JSON list by default and combine metadata from merged runs into one ordered list.
+
 ## [0.7.0] - 2026-08-07
 
 ### Added

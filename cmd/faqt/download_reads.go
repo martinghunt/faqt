@@ -20,6 +20,7 @@ func newDownloadReadsCmd() *cobra.Command {
 		prefix            string
 		accessionsFile    string
 		enaMeta           bool
+		enaMetaSingle     bool
 		methods           string
 		attempts          int
 		srachaPath        string
@@ -76,6 +77,7 @@ func newDownloadReadsCmd() *cobra.Command {
 				OutputDir:            outputDir,
 				OutputPrefix:         prefix,
 				WriteMetadata:        enaMeta,
+				MetadataSingleObject: enaMetaSingle && !merge,
 				Methods:              parsedMethods,
 				Attempts:             attempts,
 				SrachaPath:           srachaPath,
@@ -116,6 +118,7 @@ func newDownloadReadsCmd() *cobra.Command {
 	cmd.Flags().StringVar(&prefix, "prefix", "", "Output FASTQ filename prefix; default uses ENA filenames")
 	cmd.Flags().StringVar(&accessionsFile, "accessions-file", "", "File containing run accessions, one per line; use - for stdin")
 	cmd.Flags().BoolVar(&enaMeta, "ena-meta", false, "Write ENA read metadata JSON alongside FASTQ files")
+	cmd.Flags().BoolVar(&enaMetaSingle, "ena-meta-single-object", false, "Write each non-merged single-run metadata file as a JSON object instead of a list")
 	cmd.Flags().StringVar(&methods, "method", string(readdl.MethodENA), "Download method(s), comma-separated: ena, sracha")
 	cmd.Flags().IntVar(&attempts, "attempts", readdl.DefaultAttempts, "Download attempts per method")
 	cmd.Flags().StringVar(&srachaPath, "sracha-bin", "", "Path to sracha; defaults to searching PATH")

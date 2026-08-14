@@ -172,7 +172,7 @@ Read downloads:
 - `sracha` is found on `PATH` unless `--sracha-bin` is supplied.
 - `--sracha-threads` and `--sracha-connections` control the `-t` and `--connections` arguments, defaulting to `1` and `1`.
 - For `sracha`, `faqt` chooses the split mode from the ENA FASTQ manifest so paired, single-end, and paired-with-unpaired output names stay compatible with ENA metadata.
-- ENA metadata JSON is not written by default; pass `--ena-meta` to write it as `RUN_ACCESSION_ena_meta.json` in no-prefix mode or `sampleA_ena_meta.json` with `--prefix sampleA`.
+- ENA metadata JSON is not written by default; pass `--ena-meta` to write it as a JSON list in `RUN_ACCESSION_ena_meta.json` in no-prefix mode or `sampleA_ena_meta.json` with `--prefix sampleA`. With `--merge`, metadata from every run is written in input order to `merged_ena_meta.json`, or `PREFIX_ena_meta.json` when `--prefix` is set. Pass `--ena-meta-single-object` to use a top-level JSON object for non-merged, single-run metadata files; this option is ignored with `--merge`.
 - Pass `--verbose` to report progress to stderr, including rate-limited direct ENA byte progress every 30 seconds and once at completion.
 
 ## Public API
@@ -413,7 +413,7 @@ The `genomedl` package exposes `genomedl.DownloadGenome(accession, outPath)` for
 
 The `seqdl` package exposes `seqdl.DownloadAccession(accession, outPath, options)` and `seqdl.DownloadAccessions(accessions, outPath, options)` for downloading accession FASTA from NCBI EFetch. Downloaded content is streamed through `seqio` and written as FASTA.
 
-The `readdl` package exposes `readdl.DownloadReads(ctx, runAccession, options)` for downloading gzipped run FASTQ files. It uses `ichsm` for ENA read metadata lookup and supports direct ENA downloads with MD5 validation or [`sracha`](https://rnabioco.github.io/sracha-rs/) downloads with gzip validation. Set `DownloadOptions.WriteMetadata` to write ENA metadata JSON. Set `DownloadOptions.DownloadStallTimeout` to tune the direct ENA idle timeout. Set `DownloadOptions.DownloadProgressInterval` to tune verbose direct ENA progress cadence.
+The `readdl` package exposes `readdl.DownloadReads(ctx, runAccession, options)` for downloading gzipped run FASTQ files. It uses `ichsm` for ENA read metadata lookup and supports direct ENA downloads with MD5 validation or [`sracha`](https://rnabioco.github.io/sracha-rs/) downloads with gzip validation. Set `DownloadOptions.WriteMetadata` to write ENA metadata as a JSON list, or additionally set `DownloadOptions.MetadataSingleObject` for the legacy single-object shape. `MergeResults` combines metadata lists when its input results include metadata. Set `DownloadOptions.DownloadStallTimeout` to tune the direct ENA idle timeout. Set `DownloadOptions.DownloadProgressInterval` to tune verbose direct ENA progress cadence.
 
 ### Minimizers, Mapping, and Alignment
 

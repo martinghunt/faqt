@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -23,7 +24,7 @@ func TestDownloadReadsCommandExists(t *testing.T) {
 	if found == nil || found.Name() != "download-reads" {
 		t.Fatalf("unexpected command = %v", found)
 	}
-	for _, name := range []string{"output-dir", "prefix", "accessions-file", "ena-meta", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "merge", "keep-originals", "verbose"} {
+	for _, name := range []string{"output-dir", "prefix", "accessions-file", "ena-meta", "ena-meta-single-object", "method", "attempts", "sracha-bin", "sracha-threads", "sracha-connections", "retry-delay-min", "retry-delay-max", "download-stall-timeout", "merge", "keep-originals", "verbose"} {
 		if found.Flags().Lookup(name) == nil {
 			t.Fatalf("download-reads command missing --%s flag", name)
 		}
@@ -53,6 +54,7 @@ func TestDownloadReadsCommandRoutesToDownloader(t *testing.T) {
 		"--output-dir", outDir,
 		"--prefix", "sampleA",
 		"--ena-meta",
+		"--ena-meta-single-object",
 		"--method", "ena,sracha",
 		"--attempts", "2",
 		"--sracha-bin", "/usr/local/bin/sracha",
@@ -78,6 +80,9 @@ func TestDownloadReadsCommandRoutesToDownloader(t *testing.T) {
 	}
 	if !gotOpts.WriteMetadata {
 		t.Fatal("WriteMetadata = false, want true")
+	}
+	if !gotOpts.MetadataSingleObject {
+		t.Fatal("MetadataSingleObject = false, want true")
 	}
 	if !reflect.DeepEqual(gotOpts.Methods, []readdl.Method{readdl.MethodENA, readdl.MethodSRACHA}) {
 		t.Fatalf("methods = %#v", gotOpts.Methods)
@@ -189,6 +194,49 @@ func TestDownloadReadsCommandUsesRunSpecificPrefixWithMultipleRuns(t *testing.T)
 	wantPrefixes := []string{"sampleA_ERR123456", "sampleA_ERR123457"}
 	if !reflect.DeepEqual(gotPrefixes, wantPrefixes) {
 		t.Fatalf("output prefixes = %#v, want %#v", gotPrefixes, wantPrefixes)
+	}
+}
+
+func TestDownloadReadsCommandIgnoresSingleObjectMetadataWhenMerging(t *testing.T) {
+	old := downloadReads
+	defer func() { downloadReads = old }()
+
+	outDir := t.TempDir()
+	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
+		if opts.MetadataSingleObject {
+			t.Fatal("MetadataSingleObject = true with --merge, want false")
+		}
+		fastqPath := filepath.Join(outDir, runAccession+".fastq.gz")
+		if err := os.WriteFile(fastqPath, []byte(runAccession), 0o644); err != nil {
+			return readdl.Result{}, err
+		}
+		metaPath := filepath.Join(outDir, runAccession+"_ena_meta.json")
+		if err := os.WriteFile(metaPath, []byte("[{\"run_accession\":\""+runAccession+"\"}]\n"), 0o644); err != nil {
+			return readdl.Result{}, err
+		}
+		return readdl.Result{
+			MetaPath: metaPath,
+			Files:    []readdl.DownloadedFile{{Filename: filepath.Base(fastqPath), Path: fastqPath}},
+		}, nil
+	}
+
+	cmd := newDownloadReadsCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"ERR123456,ERR123457", "--output-dir", outDir, "--ena-meta", "--ena-meta-single-object", "--merge"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(outDir, "merged_ena_meta.json"))
+	if err != nil {
+		t.Fatalf("ReadFile(merged metadata) error = %v", err)
+	}
+	var records []map[string]string
+	if err := json.Unmarshal(data, &records); err != nil {
+		t.Fatalf("Unmarshal(merged metadata) error = %v", err)
+	}
+	if len(records) != 2 || records[0]["run_accession"] != "ERR123456" || records[1]["run_accession"] != "ERR123457" {
+		t.Fatalf("merged metadata = %s", data)
 	}
 }
 

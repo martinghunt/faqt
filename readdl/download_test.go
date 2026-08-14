@@ -383,10 +383,14 @@ func TestDownloadReadsWritesENAMetadataWhenRequestedWithPrefix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile(meta) error = %v", err)
 	}
-	var record map[string]any
-	if err := json.Unmarshal(meta, &record); err != nil {
+	var records []map[string]any
+	if err := json.Unmarshal(meta, &records); err != nil {
 		t.Fatalf("Unmarshal(meta) error = %v", err)
 	}
+	if len(records) != 1 {
+		t.Fatalf("metadata record count = %d, want 1", len(records))
+	}
+	record := records[0]
 	if record["run_accession"] != "ERR123456" || record["library_layout"] != "PAIRED" || record["source"] != string(ichsm.SearchSourceENA) {
 		t.Fatalf("metadata = %s", string(meta))
 	}
@@ -455,10 +459,14 @@ func TestDownloadReadsWritesENAMetadataWhenRequestedWithoutPrefix(t *testing.T) 
 	if err != nil {
 		t.Fatalf("ReadFile(meta) error = %v", err)
 	}
-	var record map[string]any
-	if err := json.Unmarshal(meta, &record); err != nil {
+	var records []map[string]any
+	if err := json.Unmarshal(meta, &records); err != nil {
 		t.Fatalf("Unmarshal(meta) error = %v", err)
 	}
+	if len(records) != 1 {
+		t.Fatalf("metadata record count = %d, want 1", len(records))
+	}
+	record := records[0]
 	if record["run_accession"] != "ERR123456" || record["library_layout"] != "SINGLE" || record["source"] != string(ichsm.SearchSourceENA) {
 		t.Fatalf("metadata = %s", string(meta))
 	}
@@ -1001,10 +1009,18 @@ func TestMergeResults(t *testing.T) {
 	first2 := write("ERR123456_2.fastq.gz", "@first/2\nGT\n+\n!!\n")
 	second1 := write("ERR123457_1.fastq.gz", "@second/1\nTG\n+\n!!\n")
 	second2 := write("ERR123457_2.fastq.gz", "@second/2\nCA\n+\n!!\n")
+	firstMeta := filepath.Join(root, "ERR123456_ena_meta.json")
+	secondMeta := filepath.Join(root, "ERR123457_ena_meta.json")
+	if err := os.WriteFile(firstMeta, []byte("[{\"run_accession\":\"ERR123456\"}]\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(first metadata) error = %v", err)
+	}
+	if err := os.WriteFile(secondMeta, []byte("[{\"run_accession\":\"ERR123457\"}]\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(second metadata) error = %v", err)
+	}
 
 	got, err := MergeResults(context.Background(), []Result{
-		{Files: []DownloadedFile{first1, first2}},
-		{Files: []DownloadedFile{second1, second2}},
+		{MetaPath: firstMeta, Files: []DownloadedFile{first1, first2}},
+		{MetaPath: secondMeta, Files: []DownloadedFile{second1, second2}},
 	}, MergeOptions{OutputDir: root, OutputPrefix: "sampleA"})
 	if err != nil {
 		t.Fatalf("MergeResults() error = %v", err)
@@ -1038,6 +1054,46 @@ func TestMergeResults(t *testing.T) {
 		if _, err := os.Stat(file.Path); !os.IsNotExist(err) {
 			t.Fatalf("source file %s exists after merge, stat error = %v", file.Path, err)
 		}
+	}
+	meta, err := os.ReadFile(filepath.Join(root, "sampleA_ena_meta.json"))
+	if err != nil {
+		t.Fatalf("ReadFile(merged metadata) error = %v", err)
+	}
+	var records []map[string]string
+	if err := json.Unmarshal(meta, &records); err != nil {
+		t.Fatalf("Unmarshal(merged metadata) error = %v", err)
+	}
+	wantRuns := []string{"ERR123456", "ERR123457"}
+	if len(records) != len(wantRuns) {
+		t.Fatalf("merged metadata record count = %d, want %d", len(records), len(wantRuns))
+	}
+	for i, want := range wantRuns {
+		if records[i]["run_accession"] != want {
+			t.Fatalf("merged metadata run %d = %q, want %q", i, records[i]["run_accession"], want)
+		}
+	}
+	for _, path := range []string{firstMeta, secondMeta} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("source metadata %s exists after merge, stat error = %v", path, err)
+		}
+	}
+}
+
+func TestWriteENAMetadataSingleObject(t *testing.T) {
+	path, err := writeENAMetadata(t.TempDir(), "ERR123456", "", ichsm.Record{"run_accession": "ERR123456"}, true)
+	if err != nil {
+		t.Fatalf("writeENAMetadata() error = %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	var record map[string]string
+	if err := json.Unmarshal(data, &record); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if record["run_accession"] != "ERR123456" {
+		t.Fatalf("metadata = %s", data)
 	}
 }
 

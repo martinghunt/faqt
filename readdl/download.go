@@ -50,6 +50,7 @@ type DownloadOptions struct {
 	OutputDir                string
 	OutputPrefix             string
 	WriteMetadata            bool
+	MetadataSingleObject     bool
 	Methods                  []Method
 	Attempts                 int
 	SrachaPath               string
@@ -161,6 +162,13 @@ func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]D
 	if err := ensureMergedOutputsDoNotExist(merged); err != nil {
 		return nil, err
 	}
+	metadataTemporaryPath, metadataPath, err := prepareMergedMetadata(results, root, prefix)
+	if err != nil {
+		return nil, err
+	}
+	if metadataTemporaryPath != "" {
+		defer func() { _ = os.Remove(metadataTemporaryPath) }()
+	}
 
 	temporaryPaths := make([]string, len(merged))
 	for index := range merged {
@@ -201,6 +209,11 @@ func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]D
 	for index, temporaryPath := range temporaryPaths {
 		if err := os.Rename(temporaryPath, merged[index].Path); err != nil {
 			removeFiles(temporaryPaths[index:])
+			return nil, err
+		}
+	}
+	if metadataTemporaryPath != "" {
+		if err := os.Rename(metadataTemporaryPath, metadataPath); err != nil {
 			return nil, err
 		}
 	}
@@ -354,7 +367,7 @@ func (d *Downloader) downloadWithENA(ctx context.Context, run, outDir, finalDir 
 	var metaPath string
 	if opts.WriteMetadata {
 		progressf(opts.ProgressWriter, "writing ENA metadata to %s", filepath.Join(outDir, metadataFilename(run, opts.OutputPrefix)))
-		metaPath, err = writeENAMetadata(outDir, run, opts.OutputPrefix, manifest.Metadata)
+		metaPath, err = writeENAMetadata(outDir, run, opts.OutputPrefix, manifest.Metadata, opts.MetadataSingleObject)
 		if err != nil {
 			return Result{}, err
 		}
@@ -409,7 +422,7 @@ func (d *Downloader) downloadWithSRACHA(ctx context.Context, run, outDir, finalD
 	var metaPath string
 	if opts.WriteMetadata {
 		progressf(opts.ProgressWriter, "writing ENA metadata to %s", filepath.Join(outDir, metadataFilename(run, opts.OutputPrefix)))
-		metaPath, err = writeENAMetadata(outDir, run, opts.OutputPrefix, manifest.Metadata)
+		metaPath, err = writeENAMetadata(outDir, run, opts.OutputPrefix, manifest.Metadata, opts.MetadataSingleObject)
 		if err != nil {
 			return Result{}, err
 		}
@@ -908,6 +921,71 @@ func ensureMergedOutputsDoNotExist(files []DownloadedFile) error {
 	return nil
 }
 
+func prepareMergedMetadata(results []Result, root, prefix string) (temporaryPath, path string, err error) {
+	hasMetadata := false
+	for _, result := range results {
+		if result.MetaPath != "" {
+			hasMetadata = true
+			break
+		}
+	}
+	if !hasMetadata {
+		return "", "", nil
+	}
+
+	records := make([]ichsm.Record, 0, len(results))
+	for _, result := range results {
+		if result.MetaPath == "" {
+			return "", "", fmt.Errorf("cannot merge results when only some runs have ENA metadata")
+		}
+		data, readErr := os.ReadFile(result.MetaPath)
+		if readErr != nil {
+			return "", "", readErr
+		}
+		var runRecords []ichsm.Record
+		if unmarshalErr := json.Unmarshal(data, &runRecords); unmarshalErr != nil {
+			var record ichsm.Record
+			if objectErr := json.Unmarshal(data, &record); objectErr != nil {
+				return "", "", fmt.Errorf("read ENA metadata %s: expected a JSON object or list: %w", result.MetaPath, unmarshalErr)
+			}
+			runRecords = []ichsm.Record{record}
+		}
+		records = append(records, runRecords...)
+	}
+
+	path = filepath.Join(root, prefix+"_ena_meta.json")
+	if _, statErr := os.Stat(path); statErr == nil {
+		return "", "", errFilesAlreadyExist
+	} else if !os.IsNotExist(statErr) {
+		return "", "", statErr
+	}
+
+	out, createErr := os.CreateTemp(root, "."+prefix+"_ena_meta-*")
+	if createErr != nil {
+		return "", "", createErr
+	}
+	temporaryPath = out.Name()
+	defer func() {
+		if closeErr := out.Close(); err == nil && closeErr != nil {
+			err = closeErr
+		}
+		if err != nil {
+			_ = os.Remove(temporaryPath)
+			temporaryPath = ""
+			path = ""
+		}
+	}()
+	if chmodErr := out.Chmod(0o644); chmodErr != nil {
+		return temporaryPath, path, chmodErr
+	}
+	encoder := json.NewEncoder(out)
+	encoder.SetIndent("", "  ")
+	if encodeErr := encoder.Encode(records); encodeErr != nil {
+		return temporaryPath, path, encodeErr
+	}
+	return temporaryPath, path, nil
+}
+
 func removeFiles(paths []string) {
 	for _, path := range paths {
 		if path != "" {
@@ -920,6 +998,11 @@ func removeResultFiles(results []Result) error {
 	for _, result := range results {
 		for _, file := range result.Files {
 			if err := os.Remove(file.Path); err != nil {
+				return err
+			}
+		}
+		if result.MetaPath != "" {
+			if err := os.Remove(result.MetaPath); err != nil {
 				return err
 			}
 		}
@@ -1046,7 +1129,7 @@ func resolveSracha(path string) (string, error) {
 	return resolved, nil
 }
 
-func writeENAMetadata(outDir, run, prefix string, record ichsm.Record) (path string, err error) {
+func writeENAMetadata(outDir, run, prefix string, record ichsm.Record, singleObject bool) (path string, err error) {
 	path = filepath.Join(outDir, metadataFilename(run, prefix))
 	out, err := os.Create(path)
 	if err != nil {
@@ -1056,7 +1139,11 @@ func writeENAMetadata(outDir, run, prefix string, record ichsm.Record) (path str
 
 	encoder := json.NewEncoder(out)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(record); err != nil {
+	value := any([]ichsm.Record{record})
+	if singleObject {
+		value = record
+	}
+	if err := encoder.Encode(value); err != nil {
 		return "", err
 	}
 	return path, nil
