@@ -67,7 +67,7 @@ Command-line input can be any supported sequence format:
 - BAM
 - Clustal
 - PHYLIP
-
+- AGC v3 archives
 
 Compressed input files are handled automatically by content, not filename. `faqt` can read:
 
@@ -76,6 +76,8 @@ Compressed input files are handled automatically by content, not filename. `faqt
 - bzip2
 - xz
 - zstd
+
+AGC is the exception: it requires an uncompressed, seekable local file because its index is stored at the end of the archive. AGC already compresses its sequence data internally.
 
 For file output, compression is chosen by output filename suffix or by `--compress` when a command supports it:
 
@@ -97,6 +99,8 @@ Examples:
 ```bash
 faqt to-fasta reads.fq.gz > out.fa
 faqt to-fasta --input aln.aln --remove-dashes
+faqt to-fasta genomes.agc -o all-genomes.fa
+faqt to-fasta genomes.agc --sample sampleA -o sampleA.fa
 faqt interleave reads_1.fq reads_2.fq -o reads_interleaved.fq --suffix1 /1 --suffix2 /2
 faqt to-perfect-reads ref.fa --out reads.fq --coverage 50 --read-length 150
 faqt to-perfect-reads ref.fa --forward-out reads_1.fq --reverse-out reads_2.fq --mean-insert 300 --insert-std 30 --coverage 50 --read-length 150
@@ -125,6 +129,8 @@ cat reads.gb | faqt to-fasta
 faqt to-fasta -i - -o out.fa < reads.embl
 faqt stats assembly.fa
 faqt stats -t assembly.fa
+faqt stats genomes.agc
+faqt stats --combine-inputs assembly1.fa assembly2.fa genomes.agc
 ```
 
 ### Download Behavior
@@ -247,6 +253,37 @@ fmt.Println(len(records["ref1"].Seq))
 
 Supported input formats are FASTA, FASTQ, Clustal, PHYLIP, SAM, BAM, GenBank, EMBL, and GFF3 sequence from the `##FASTA` section. For SAM and BAM, alignment data are ignored except for the reverse-strand flag, which causes sequence and quality to be reversed back to original read orientation. GFF3 inputs without a `##FASTA` section return an error.
 
+### Reading AGC Archives
+
+AGC archives contain multiple named genome samples and require random access. Open a local archive, select one sample, and read its contigs as normal `SeqRecord` values:
+
+```go
+archive, err := agc.OpenPath("genomes.agc")
+if err != nil {
+	log.Fatal(err)
+}
+defer archive.Close()
+
+reader, err := archive.OpenSample("sample1")
+if err != nil {
+	log.Fatal(err)
+}
+for {
+	record, err := reader.Read()
+	if err == io.EOF {
+		break
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\t%d\n", record.Name, len(record.Seq))
+}
+```
+
+Use `Archive.Samples` to list names in archive order, `Archive.IterateSamples` to process every genome with explicit sample boundaries, or `Archive.OpenAll` for one flat record stream. `OpenSample` preserves original contig names. `OpenAll` prepends `sample.` to each contig name and keeps all contigs from one sample adjacent. `agc.OpenReaderAt` supports other random-access backends when their exact size is known.
+
+AGC input is detected from archive contents rather than its filename. `seqio.OpenPath` automatically uses the flat all-samples view, so record-oriented operations work without special handling. AGC cannot be read from stdin or an ordinary `io.Reader`, and externally compressed AGC files are not supported; AGC already provides internal compression.
+
 ### Writing Records
 
 `seqio.CreatePath` creates a streaming writer for FASTA or FASTQ. Compression is selected from the output suffix by default, or explicitly with `seqio.WithCompression`. Use `"-"` to write to standard output; standard output is uncompressed unless compression is explicitly requested.
@@ -335,6 +372,7 @@ The format packages expose direct readers and writers where available:
 
 - `fasta` and `fastq`: format-specific readers and writers
 - `clustal`, `phylip`, `sam`, `bam`, `genbank`, `embl`, `gff3`: format-specific readers
+- `agc`: random-access archive and per-sample sequence readers
 
 Use these when the input format is already known and you do not need `seqio` format or compression detection.
 
@@ -366,6 +404,8 @@ fmt.Print(s.String(stats.FormatHuman))
 ```
 
 Use `stats.RenderMany` to render multiple `stats.Stats` values in a shared output format. The available formats are `stats.FormatHuman`, `stats.FormatTab`, `stats.FormatTabNoHeader`, and `stats.FormatGreppy`.
+
+`stats.FromPaths` returns one result per ordinary input and one result per AGC sample by default. Set its combine argument to `true`, or pass `faqt stats --combine-inputs`, to treat every record across all inputs and AGC samples as one combined dataset.
 
 Random FASTA contigs can be generated through the `randomcontigs` package:
 
@@ -480,6 +520,8 @@ Input format detection is content-based after decompression. Compression detecti
 - bzip2
 - xz
 - zstd
+
+AGC v3 archives are content-detected separately and require an uncompressed seekable path or an `io.ReaderAt` with a known size.
 
 Output compression is selected by path suffix or `seqio.WithCompression`:
 

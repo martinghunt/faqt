@@ -3,6 +3,7 @@ package seqio
 import (
 	"io"
 
+	seqagc "github.com/martinghunt/faqt/agc"
 	"github.com/martinghunt/faqt/internal/closeutil"
 )
 
@@ -82,4 +83,30 @@ func ToFASTAPath(inputPath, outputPath string, opts ...Option) error {
 
 func ToFASTAPathWithTransform(inputPath, outputPath string, transform RecordTransform, opts ...Option) error {
 	return TransformPath(inputPath, outputPath, FASTA, transform, opts...)
+}
+
+// AGCSampleToFASTAPath writes one named AGC sample as FASTA, preserving the
+// sample's original contig names.
+func AGCSampleToFASTAPath(inputPath, sample, outputPath string, opts ...Option) error {
+	return AGCSampleToFASTAPathWithTransform(inputPath, sample, outputPath, nil, opts...)
+}
+
+// AGCSampleToFASTAPathWithTransform writes one named AGC sample as transformed
+// FASTA records, preserving the sample's original contig names.
+func AGCSampleToFASTAPathWithTransform(inputPath, sample, outputPath string, transform RecordTransform, opts ...Option) (err error) {
+	archive, err := seqagc.OpenPath(inputPath)
+	if err != nil {
+		return err
+	}
+	defer closeutil.CloseWithError(&err, archive)
+	reader, err := archive.OpenSample(sample)
+	if err != nil {
+		return err
+	}
+	writer, err := CreatePath(outputPath, FASTA, opts...)
+	if err != nil {
+		return err
+	}
+	defer closeutil.CloseWithError(&err, writer)
+	return Process(reader, writer, transform)
 }

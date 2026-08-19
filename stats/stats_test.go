@@ -1,6 +1,7 @@
 package stats_test
 
 import (
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"strings"
@@ -137,6 +138,58 @@ func TestRenderMany(t *testing.T) {
 	}
 }
 
+func TestFromPathsDefaultsToOneResultPerAGCSample(t *testing.T) {
+	path := writeStatsAGC(t)
+	results, err := stats.FromPaths([]string{path}, 1, false)
+	if err != nil {
+		t.Fatalf("FromPaths() error = %v", err)
+	}
+	if len(results) != 4 {
+		t.Fatalf("result count = %d, want 4", len(results))
+	}
+	wantNames := []string{path + ":ref", path + ":a", path + ":b", path + ":c"}
+	wantTotals := []int{55, 22, 32, 37}
+	wantCounts := []int{4, 2, 4, 3}
+	for i := range results {
+		if results[i].Filename != wantNames[i] || results[i].TotalLength != wantTotals[i] || results[i].Number != wantCounts[i] {
+			t.Errorf("result %d = %+v, want name %q total %d count %d", i, results[i], wantNames[i], wantTotals[i], wantCounts[i])
+		}
+	}
+}
+
+func TestFromPathsCombineInputsMergesOrdinaryFiles(t *testing.T) {
+	path1 := filepath.Join(t.TempDir(), "one.fa")
+	path2 := filepath.Join(t.TempDir(), "two.fa")
+	if err := os.WriteFile(path1, []byte(">a\nAAAA\n>b\nNN\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path2, []byte(">c\nAAAAAA\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	results, err := stats.FromPaths([]string{path1, path2}, 1, true)
+	if err != nil {
+		t.Fatalf("FromPaths() error = %v", err)
+	}
+	if len(results) != 1 || results[0].Filename != "combined" || results[0].TotalLength != 12 || results[0].Number != 3 {
+		t.Fatalf("combined results = %+v, want one combined result with length 12 and count 3", results)
+	}
+}
+
+func TestFromPathsCombineInputsMergesAGCSamplesAndOrdinaryFiles(t *testing.T) {
+	agcPath := writeStatsAGC(t)
+	fastaPath := filepath.Join(t.TempDir(), "extra.fa")
+	if err := os.WriteFile(fastaPath, []byte(">extra\nAAAA\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	results, err := stats.FromPaths([]string{agcPath, fastaPath}, 1, true)
+	if err != nil {
+		t.Fatalf("FromPaths() error = %v", err)
+	}
+	if len(results) != 1 || results[0].TotalLength != 150 || results[0].Number != 14 {
+		t.Fatalf("combined results = %+v, want length 150 and count 14", results)
+	}
+}
+
 func TestRemoveDashes(t *testing.T) {
 	rec := &seqio.SeqRecord{Name: "r1", Seq: []byte("A-C--GT"), Qual: []byte("1234567")}
 	got, err := stats.RemoveDashes(rec)
@@ -165,6 +218,23 @@ func writeStatsFixture(t *testing.T) string {
 		">e\nA\n"
 	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
+	}
+	return path
+}
+
+func writeStatsAGC(t *testing.T) string {
+	t.Helper()
+	encoded, err := os.ReadFile(filepath.Join("..", "agc", "testdata", "toy_ex.agc.b64"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := base64.StdEncoding.DecodeString(string(encoded))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "genomes.data")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
 	}
 	return path
 }

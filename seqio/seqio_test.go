@@ -3,6 +3,8 @@ package seqio_test
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -84,6 +86,62 @@ func TestOpenReaderDetectsFormats(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOpenPathDetectsAGCContentAndReadsAllSamples(t *testing.T) {
+	data := toyAGC(t)
+	path := filepath.Join(t.TempDir(), "misleading.fasta")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	r, err := seqio.OpenPath(path)
+	if err != nil {
+		t.Fatalf("OpenPath(AGC) error = %v", err)
+	}
+	closer, ok := r.(io.Closer)
+	if !ok {
+		t.Fatal("OpenPath(AGC) reader does not implement io.Closer")
+	}
+	defer closer.Close()
+	var got []string
+	for {
+		rec, err := r.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, rec.Name)
+	}
+	want := []string{
+		"ref.chr1", "ref.chr2", "ref.chr3", "ref.seq",
+		"a.chr1a", "a.chr3a", "b.chr1", "b.g", "b.c", "b.t",
+		"c.1", "c.2", "c.3",
+	}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("OpenPath(AGC) names = %v, want %v", got, want)
+	}
+}
+
+func TestOpenReaderDoesNotSpoolAGCStream(t *testing.T) {
+	_, err := seqio.OpenReader(bytes.NewReader(toyAGC(t)))
+	if err == nil || !strings.Contains(err.Error(), "could not detect sequence format") {
+		t.Fatalf("OpenReader(AGC) error = %v, want streaming format detection error", err)
+	}
+}
+
+func toyAGC(t *testing.T) []byte {
+	t.Helper()
+	encoded, err := os.ReadFile(filepath.Join("..", "agc", "testdata", "toy_ex.agc.b64"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := base64.StdEncoding.DecodeString(string(encoded))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }
 
 func TestOpenReaderCloseClosesWrappedSource(t *testing.T) {

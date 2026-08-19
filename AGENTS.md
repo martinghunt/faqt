@@ -17,6 +17,7 @@ Supported sequence inputs:
 * GenBank (sequence only)
 * EMBL (sequence only)
 * GFF3 (sequence only, from `##FASTA` section only)
+* AGC v3 (sequence only, random-access archives)
 
 All inputs normalize to a minimal sequence record.
 
@@ -78,7 +79,7 @@ Rules:
 ## Package responsibilities
 
 * `seqio`: public API, SeqRecord, Reader/Writer, open helpers
-* `fasta`, `fastq`, `clustal`, `phylip`, `sam`, `bam`, `genbank`, `embl`, `gff3`: format parsers
+* `fasta`, `fastq`, `clustal`, `phylip`, `sam`, `bam`, `genbank`, `embl`, `gff3`, `agc`: format parsers and adapters
 * `seq`: sequence utilities
 * `orf`: ORF finding
 * `internal/sniff`: format detection
@@ -147,6 +148,14 @@ Do not mix responsibilities.
 * If no sequence present → return error
 * Do not parse features
 
+### AGC
+
+* Read AGC v3 archives from seekable paths or `io.ReaderAt` sources only
+* Preserve explicit sample boundaries in the `agc` package
+* Flat all-sample readers must keep samples adjacent and prefix contig names with `sample.`
+* Selected-sample readers preserve original contig names
+* Do not spool stdin or externally compressed AGC input
+
 ---
 
 ## Output model
@@ -178,6 +187,8 @@ Always prefer `seqio.Writer` in real usage.
   * by extension OR `--compress`
   * flag overrides extension
 * stdout defaults to uncompressed
+* `to-fasta` reads every AGC sample by default and supports selecting one with `--sample`
+* `stats` reports AGC samples separately by default; `--combine-inputs` combines every input record
 
 ---
 

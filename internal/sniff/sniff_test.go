@@ -48,6 +48,13 @@ func TestFormat(t *testing.T) {
 	}
 }
 
+func TestFormatUnknownErrorIsTyped(t *testing.T) {
+	_, err := Format(bufio.NewReader(strings.NewReader("not a known format\n")))
+	if !errors.Is(err, ErrUnknownFormat) {
+		t.Fatalf("Format() error = %v, want ErrUnknownFormat", err)
+	}
+}
+
 func TestHelperDetectors(t *testing.T) {
 	if looksLikeFASTQ([]byte("@r1\nAC\n")) {
 		t.Fatal("looksLikeFASTQ() = true, want false for truncated record")

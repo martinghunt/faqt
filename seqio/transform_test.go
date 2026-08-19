@@ -141,6 +141,26 @@ func TestToFASTAPathWithTransform(t *testing.T) {
 	}
 }
 
+func TestAGCSampleToFASTAPathPreservesUnprefixedContigNames(t *testing.T) {
+	dir := t.TempDir()
+	in := filepath.Join(dir, "genomes.data")
+	out := filepath.Join(dir, "sample.fa")
+	if err := os.WriteFile(in, toyAGC(t), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := seqio.AGCSampleToFASTAPath(in, "b", out); err != nil {
+		t.Fatalf("AGCSampleToFASTAPath() error = %v", err)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := ">chr1\nAAAAAAAAA\n>g h i 21\nGGGAGGG\n>c\nCCCCCCCCC\n>t\nTTTTTTT\n"
+	if string(data) != want {
+		t.Fatalf("output = %q, want %q", data, want)
+	}
+}
+
 func TestProcessErrorPaths(t *testing.T) {
 	reader, err := seqio.OpenReader(bytes.NewBufferString(">r1\nACGT\n"))
 	if err != nil {

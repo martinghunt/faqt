@@ -2,10 +2,12 @@ package seqio
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	seqagc "github.com/martinghunt/faqt/agc"
 	"github.com/martinghunt/faqt/bam"
 	"github.com/martinghunt/faqt/clustal"
 	"github.com/martinghunt/faqt/embl"
@@ -23,6 +25,9 @@ import (
 type Reader interface {
 	Read() (*SeqRecord, error)
 }
+
+var _ Reader = (*seqagc.Reader)(nil)
+var _ Reader = (*seqagc.AllReader)(nil)
 
 type WriteCloser interface {
 	Write(*SeqRecord) error
@@ -51,7 +56,23 @@ func OpenPath(path string) (Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return openBufferedReader(bufio.NewReader(src), src, true)
+	reader, err := openBufferedReader(bufio.NewReader(src), src, true)
+	if err == nil || path == "-" || !errors.Is(err, sniff.ErrUnknownFormat) {
+		return reader, err
+	}
+	archive, agcErr := seqagc.OpenPath(path)
+	if agcErr != nil {
+		if errors.Is(agcErr, seqagc.ErrUnsupportedVersion) {
+			return nil, agcErr
+		}
+		return nil, err
+	}
+	all, agcErr := archive.OpenAll()
+	if agcErr != nil {
+		_ = archive.Close()
+		return nil, agcErr
+	}
+	return &readerWithCloser{Reader: all, closer: archive}, nil
 }
 
 func openPathSource(path string) (io.ReadCloser, error) {

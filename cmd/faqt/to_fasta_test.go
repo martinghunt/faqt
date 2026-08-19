@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/base64"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/martinghunt/faqt/seqio"
@@ -52,4 +54,72 @@ func TestRunToFastaStdinStdout(t *testing.T) {
 	if got != ">r1\nACGT\n" {
 		t.Fatalf("stdout output = %q", got)
 	}
+}
+
+func TestToFastaCommandReadsAllAGCSamplesWithPrefixedNames(t *testing.T) {
+	in := writeCommandAGC(t)
+	out := filepath.Join(t.TempDir(), "all.fa")
+	cmd := newToFastaCmd()
+	cmd.SetArgs([]string{in, "-o", out})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, ">ref.chr1\n") || !strings.Contains(text, ">b.g h i 21\n") || !strings.Contains(text, ">c.3\n") {
+		t.Fatalf("AGC FASTA output lacks prefixed records: %q", text)
+	}
+	if strings.Index(text, ">ref.chr1\n") > strings.Index(text, ">a.chr1a\n") || strings.Index(text, ">a.chr1a\n") > strings.Index(text, ">b.chr1\n") {
+		t.Fatalf("AGC samples are not adjacent in archive order: %q", text)
+	}
+}
+
+func TestToFastaCommandSelectsOneAGCSampleWithoutPrefix(t *testing.T) {
+	in := writeCommandAGC(t)
+	out := filepath.Join(t.TempDir(), "sample.fa")
+	cmd := newToFastaCmd()
+	cmd.SetArgs([]string{in, "--sample", "a", "-o", out})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := ">chr1a\nCTGAGCTGACTGA\n>chr3a\nAGTTTAGCT\n"
+	if string(data) != want {
+		t.Fatalf("output = %q, want %q", data, want)
+	}
+}
+
+func TestToFastaCommandRejectsSampleForNonAGCInput(t *testing.T) {
+	in := filepath.Join(t.TempDir(), "input.fa")
+	if err := os.WriteFile(in, []byte(">contig\nACGT\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := newToFastaCmd()
+	cmd.SetArgs([]string{in, "--sample", "sample1", "-o", filepath.Join(t.TempDir(), "out.fa")})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("Execute() error = nil, want non-AGC input error")
+	}
+}
+
+func writeCommandAGC(t *testing.T) string {
+	t.Helper()
+	encoded, err := os.ReadFile(filepath.Join("..", "..", "agc", "testdata", "toy_ex.agc.b64"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := base64.StdEncoding.DecodeString(string(encoded))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "misleading.fasta")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }

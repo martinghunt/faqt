@@ -1,11 +1,13 @@
 package stats
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
 
+	seqagc "github.com/martinghunt/faqt/agc"
 	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/martinghunt/faqt/seqio"
 )
@@ -41,29 +43,100 @@ func FromPath(path string, minimumLength int) (s Stats, err error) {
 		defer closeutil.CloseWithError(&err, closer)
 	}
 
-	s = Stats{Filename: path}
 	lengths := make([]int, 0, 128)
+	s = Stats{Filename: path}
+	if err := addRecords(&s, &lengths, reader, minimumLength); err != nil {
+		return Stats{}, err
+	}
+	s.finish(lengths)
+	return s, nil
+}
+
+// FromPaths calculates one result per ordinary input and per AGC sample. When
+// combineInputs is true, every record from every input contributes to one
+// result named "combined".
+func FromPaths(paths []string, minimumLength int, combineInputs bool) ([]Stats, error) {
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	if combineInputs {
+		combined := Stats{Filename: "combined"}
+		lengths := make([]int, 0, 128)
+		for _, path := range paths {
+			err := visitPathDatasets(path, func(_ string, reader seqio.Reader) error {
+				return addRecords(&combined, &lengths, reader, minimumLength)
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+		combined.finish(lengths)
+		return []Stats{combined}, nil
+	}
+
+	results := make([]Stats, 0, len(paths))
+	for _, path := range paths {
+		err := visitPathDatasets(path, func(name string, reader seqio.Reader) error {
+			s := Stats{Filename: name}
+			lengths := make([]int, 0, 128)
+			if err := addRecords(&s, &lengths, reader, minimumLength); err != nil {
+				return err
+			}
+			s.finish(lengths)
+			results = append(results, s)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return results, nil
+}
+
+func visitPathDatasets(path string, yield func(name string, reader seqio.Reader) error) (err error) {
+	if path != "-" {
+		archive, agcErr := seqagc.OpenPath(path)
+		if agcErr == nil {
+			defer closeutil.CloseWithError(&err, archive)
+			return archive.IterateSamples(func(sample string, reader *seqagc.Reader) error {
+				return yield(path+":"+sample, reader)
+			})
+		}
+		if errors.Is(agcErr, seqagc.ErrUnsupportedVersion) {
+			return agcErr
+		}
+	}
+
+	reader, err := seqio.OpenPath(path)
+	if err != nil {
+		return err
+	}
+	if closer, ok := reader.(io.Closer); ok {
+		defer closeutil.CloseWithError(&err, closer)
+	}
+	return yield(path, reader)
+}
+
+func addRecords(s *Stats, lengths *[]int, reader seqio.Reader, minimumLength int) error {
 	for {
 		rec, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return Stats{}, err
+			return err
 		}
 		if len(rec.Seq) < minimumLength {
 			continue
 		}
 		l := len(rec.Seq)
-		lengths = append(lengths, l)
+		*lengths = append(*lengths, l)
 		s.TotalLength += l
 		nCount, gapCount := countNsAndGaps(rec.Seq)
 		s.NCount += nCount
 		s.GapCount += gapCount
 	}
-
-	s.finish(lengths)
-	return s, nil
+	return nil
 }
 
 func (s *Stats) finish(lengths []int) {

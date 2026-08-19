@@ -8,6 +8,7 @@ import (
 func newToFastaCmd() *cobra.Command {
 	var (
 		inputPath    string
+		sample       string
 		output       sequenceOutputOptions
 		removeDashes bool
 	)
@@ -19,6 +20,15 @@ func newToFastaCmd() *cobra.Command {
 			if len(args) > 0 && inputPath == "-" {
 				inputPath = args[0]
 			}
+			if sample != "" {
+				return seqio.AGCSampleToFASTAPathWithTransform(
+					inputPath,
+					sample,
+					output.path,
+					removeDashesTransform(removeDashes),
+					output.seqioOptions()...,
+				)
+			}
 			return seqio.ToFASTAPathWithTransform(
 				inputPath,
 				output.path,
@@ -28,6 +38,7 @@ func newToFastaCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&inputPath, "input", "i", "-", "Input path or - for stdin")
+	cmd.Flags().StringVar(&sample, "sample", "", "Extract one named sample from AGC input without prefixing contig names")
 	addSequenceOutputFlags(cmd, &output)
 	cmd.Flags().BoolVar(&removeDashes, "remove-dashes", false, "Remove '-' characters from output sequences")
 	return cmd

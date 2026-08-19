@@ -15,6 +15,7 @@ const (
 	GenBank       Format = "genbank"
 	EMBL          Format = "embl"
 	GFF3          Format = "gff3"
+	AGC           Format = "agc"
 )
 
 type Compression string

@@ -10,6 +10,8 @@ import (
 
 const PeekSize = 8192
 
+var ErrUnknownFormat = errors.New("could not detect sequence format")
+
 func Format(r *bufio.Reader) (string, error) {
 	buf, err := r.Peek(PeekSize)
 	if err != nil && !isShortPeek(err) {
@@ -37,7 +39,7 @@ func Format(r *bufio.Reader) (string, error) {
 	case looksLikeFASTQ(buf):
 		return "fastq", nil
 	default:
-		return "", fmt.Errorf("could not detect sequence format from content")
+		return "", fmt.Errorf("%w from content", ErrUnknownFormat)
 	}
 }
 

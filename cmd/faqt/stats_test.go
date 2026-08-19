@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -41,5 +42,45 @@ func TestStatsCommandDefaultsToStdin(t *testing.T) {
 	expected := "-\t6\t2\t3.00\t4\t2\t2\t1\t4\t1\t2\t2\t2\t2\n"
 	if got != expected {
 		t.Fatalf("stdout = %q, want %q", got, expected)
+	}
+}
+
+func TestStatsCommandReportsAGCPerSampleByDefault(t *testing.T) {
+	path := writeCommandAGC(t)
+	cmd := newStatsCmd()
+	cmd.SetArgs([]string{"-u", path})
+	got, err := runWithCapturedStdout(t, cmd.Execute)
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	for _, sample := range []string{"ref", "a", "b", "c"} {
+		if !strings.Contains(got, path+":"+sample+"\t") {
+			t.Errorf("stdout lacks sample %q: %q", sample, got)
+		}
+	}
+	if strings.Count(got, "\n") != 4 {
+		t.Fatalf("stdout line count = %d, want 4: %q", strings.Count(got, "\n"), got)
+	}
+}
+
+func TestStatsCommandCombineInputsMergesMultipleFiles(t *testing.T) {
+	dir := t.TempDir()
+	one := filepath.Join(dir, "one.fa")
+	two := filepath.Join(dir, "two.fa")
+	if err := os.WriteFile(one, []byte(">a\nAAAA\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(two, []byte(">b\nNN\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := newStatsCmd()
+	cmd.SetArgs([]string{"-u", "--combine-inputs", one, two})
+	got, err := runWithCapturedStdout(t, cmd.Execute)
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	want := "combined\t6\t2\t3.00\t4\t2\t2\t1\t4\t1\t2\t2\t2\t2\n"
+	if got != want {
+		t.Fatalf("stdout = %q, want %q", got, want)
 	}
 }

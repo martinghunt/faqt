@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add the `agc` package for opening AGC v3 archives, listing samples, reading one sample's contigs as sequence records, and iterating complete samples in archive order.
+- Detect AGC archives from content in `seqio.OpenPath`, keeping samples adjacent and prefixing flattened contig names with `sample.`.
+- Add `faqt to-fasta --sample` for extracting one AGC sample with its original contig names.
+- Add per-sample AGC statistics by default and `faqt stats --combine-inputs` for combining records across multiple ordinary inputs and AGC samples into one result.
+
 ## [0.8.0] - 2026-08-14
 
 ### Added

@@ -14,6 +14,7 @@ func newStatsCmd() *cobra.Command {
 		greppy        bool
 		tabDelimited  bool
 		tabNoHeader   bool
+		combineInputs bool
 	)
 	cmd := &cobra.Command{
 		Use:   "stats [files...]",
@@ -27,13 +28,9 @@ func newStatsCmd() *cobra.Command {
 			if len(args) == 0 {
 				args = []string{"-"}
 			}
-			results := make([]stats.Stats, 0, len(args))
-			for _, path := range args {
-				s, err := stats.FromPath(path, minimumLength)
-				if err != nil {
-					return err
-				}
-				results = append(results, s)
+			results, err := stats.FromPaths(args, minimumLength, combineInputs)
+			if err != nil {
+				return err
 			}
 			_, err = fmt.Fprint(os.Stdout, stats.RenderMany(results, format))
 			return err
@@ -43,6 +40,7 @@ func newStatsCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&greppy, "greppy", "s", false, "Print grep friendly output")
 	cmd.Flags().BoolVarP(&tabDelimited, "tab", "t", false, "Print tab-delimited output")
 	cmd.Flags().BoolVarP(&tabNoHeader, "tab-no-header", "u", false, "Print tab-delimited output with no header line")
+	cmd.Flags().BoolVar(&combineInputs, "combine-inputs", false, "Combine all records from all inputs into one statistics result")
 	return cmd
 }
 
