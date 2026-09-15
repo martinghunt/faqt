@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Reject FASTQ filenames from ENA metadata that contain a path separator or resolve to `.`/`..` in `faqt download-reads`, preventing a maliciously crafted ENA response from writing outside the output directory.
 
+### Fixed
+- Make the `phylip` reader error on interleaved PHYLIP input instead of silently splicing a later taxon's name and sequence into the current record; only sequential PHYLIP is supported.
+
 ## [0.8.0] - 2026-08-14
 
 ### Added

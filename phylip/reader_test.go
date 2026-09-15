@@ -59,6 +59,27 @@ func TestReaderReadsWrappedSequentialPhylip(t *testing.T) {
 	}
 }
 
+func TestReaderErrorsOnInterleavedPhylipInsteadOfCorruptingSequence(t *testing.T) {
+	// Two taxa, each with a 20-character sequence split across two
+	// interleaved blocks. A sequential-format reader must not silently
+	// splice "seq2"'s name and sequence into seq1's record.
+	input := "2 20\n" +
+		"seq1 ACGTACGTAC\n" +
+		"seq2 TTGGTTGGTT\n" +
+		"\n" +
+		"GTACGTACGT\n" +
+		"GGTTGGTTGG\n"
+	r, err := NewReader(bufio.NewReader(strings.NewReader(input)))
+	if err != nil {
+		t.Fatalf("NewReader() error = %v", err)
+	}
+
+	_, err = r.Read()
+	if err == nil || !strings.Contains(err.Error(), "interleaved PHYLIP is not supported") {
+		t.Fatalf("Read() error = %v, want interleaved-PHYLIP error", err)
+	}
+}
+
 func TestReaderErrorsOnTruncatedWrappedPhylip(t *testing.T) {
 	r, err := NewReader(bufio.NewReader(strings.NewReader("1 8\nseq1 ACGT\nAA\n")))
 	if err != nil {

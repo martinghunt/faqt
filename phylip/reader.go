@@ -63,7 +63,10 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 		if err != nil {
 			return nil, err
 		}
-		seq = appendSequenceChars(seq, line)
+		seq, err = appendSequenceContinuation(seq, line)
+		if err != nil {
+			return nil, fmt.Errorf("phylip sequence %q: %w (interleaved PHYLIP is not supported)", name, err)
+		}
 	}
 	if len(seq) != r.seqLen {
 		return nil, fmt.Errorf("phylip sequence %q length %d does not match header length %d", name, len(seq), r.seqLen)
@@ -96,4 +99,37 @@ func appendSequenceChars(dst, src []byte) []byte {
 		dst = append(dst, b)
 	}
 	return dst
+}
+
+// appendSequenceContinuation appends a wrapped-line continuation of a
+// sequential PHYLIP record's sequence. Unlike appendSequenceChars, it
+// rejects characters outside the sequence alphabet (letters and the common
+// gap/stop/unknown symbols) instead of accepting anything. A continuation
+// line is only ever real sequence data in the sequential format this reader
+// supports; in an interleaved PHYLIP file, a "continuation" line is actually
+// the next taxon's own name-and-sequence line, and accepting it here would
+// silently splice that taxon's name and sequence into the current record.
+func appendSequenceContinuation(dst, src []byte) ([]byte, error) {
+	for _, b := range src {
+		switch {
+		case b == ' ' || b == '\t' || b == '\r' || b == '\n':
+			continue
+		case isSequenceLetter(b):
+			dst = append(dst, b)
+		default:
+			return nil, fmt.Errorf("unexpected character %q on continuation line %q", b, src)
+		}
+	}
+	return dst, nil
+}
+
+func isSequenceLetter(b byte) bool {
+	switch {
+	case b >= 'A' && b <= 'Z', b >= 'a' && b <= 'z':
+		return true
+	case b == '-' || b == '.' || b == '*' || b == '?':
+		return true
+	default:
+		return false
+	}
 }
