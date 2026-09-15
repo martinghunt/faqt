@@ -81,6 +81,10 @@ func Open(path string) (io.ReadCloser, error) {
 	return &readCloser{Reader: rc, closer: closeutil.MultiCloser(fh, rc)}, nil
 }
 
+// WrapReader decompresses without an output size limit. This is deliberate:
+// faqt's normal workload is multi-gigabyte genome/read files, and a size cap
+// would break that. Callers are expected to point faqt at files/accessions
+// they already trust, not arbitrary untrusted uploads.
 func WrapReader(r io.Reader) (io.ReadCloser, error) {
 	br, ok := r.(*bufio.Reader)
 	if !ok {
