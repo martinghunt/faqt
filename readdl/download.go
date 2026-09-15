@@ -477,6 +477,9 @@ func (d *Downloader) readManifest(ctx context.Context, run, outDir string, opts 
 		if err != nil {
 			return readManifest{}, err
 		}
+		if err := validateReadFilenames(files); err != nil {
+			return readManifest{}, err
+		}
 		progressf(opts.ProgressWriter, "found %d FASTQ file(s)", len(files))
 		return readManifest{Files: files}, nil
 	}
@@ -503,8 +506,36 @@ func (d *Downloader) readManifest(ctx context.Context, run, outDir string, opts 
 	if err != nil {
 		return readManifest{}, err
 	}
+	if err := validateReadFilenames(files); err != nil {
+		return readManifest{}, err
+	}
 	progressf(opts.ProgressWriter, "found %d FASTQ file(s)", len(files))
 	return readManifest{Files: files, Metadata: record}, nil
+}
+
+// validateReadFilenames rejects FASTQ filenames from ENA metadata that could
+// escape the download directory when joined into an output path. Filenames
+// normally come from the last path segment of an ENA FTP URL, but faqt
+// doesn't rely on that being safe on every OS (e.g. a backslash isn't a path
+// separator to ichsm's Unix-style URL parsing, but is one in filepath.Join on
+// Windows), so it validates independently before any path is built from it.
+func validateReadFilenames(files []ichsm.ReadFile) error {
+	for _, file := range files {
+		if err := validateSafeFilename(file.Filename); err != nil {
+			return fmt.Errorf("refusing to use FASTQ filename from ENA metadata: %w", err)
+		}
+	}
+	return nil
+}
+
+func validateSafeFilename(name string) error {
+	if name == "" || name == "." || name == ".." {
+		return fmt.Errorf("invalid filename %q", name)
+	}
+	if strings.ContainsAny(name, `/\`) {
+		return fmt.Errorf("filename %q must not contain path separators", name)
+	}
+	return nil
 }
 
 func (d *Downloader) readFiles(ctx context.Context, run, outDir, protocol string) ([]ichsm.ReadFile, error) {

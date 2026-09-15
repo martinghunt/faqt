@@ -996,6 +996,20 @@ func TestApplyOutputPrefix(t *testing.T) {
 	}
 }
 
+func TestValidateReadFilenamesRejectsPathTraversal(t *testing.T) {
+	bad := []string{"", ".", "..", "../escape.fastq.gz", "dir/escape.fastq.gz", `dir\escape.fastq.gz`}
+	for _, name := range bad {
+		err := validateReadFilenames([]ichsm.ReadFile{{Filename: name}})
+		if err == nil {
+			t.Fatalf("validateReadFilenames(%q) error = nil, want error", name)
+		}
+	}
+
+	if err := validateReadFilenames([]ichsm.ReadFile{{Filename: "ERR123456_1.fastq.gz"}}); err != nil {
+		t.Fatalf("validateReadFilenames(valid) error = %v", err)
+	}
+}
+
 func TestMergeResults(t *testing.T) {
 	root := t.TempDir()
 	write := func(name, content string) DownloadedFile {

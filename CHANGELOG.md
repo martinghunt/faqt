@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `faqt to-fasta --sample` for extracting one AGC sample with its original contig names.
 - Add per-sample AGC statistics by default and `faqt stats --combine-inputs` for combining records across multiple ordinary inputs and AGC samples into one result.
 
+### Security
+- Reject FASTQ filenames from ENA metadata that contain a path separator or resolve to `.`/`..` in `faqt download-reads`, preventing a maliciously crafted ENA response from writing outside the output directory.
+
 ## [0.8.0] - 2026-08-14
 
 ### Added
