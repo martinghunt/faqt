@@ -22,12 +22,24 @@ import (
 	seqsam "github.com/martinghunt/faqt/sam"
 )
 
+// ErrEmptyInput is returned when an input holds no data, and so has no format
+// to detect. Callers for which no records is a valid answer can use
+// OpenPathAllowEmpty instead.
+var ErrEmptyInput = sniff.ErrEmptyInput
+
 type Reader interface {
 	Read() (*SeqRecord, error)
 }
 
 var _ Reader = (*seqagc.Reader)(nil)
 var _ Reader = (*seqagc.AllReader)(nil)
+
+// emptyReader is a Reader over no records.
+type emptyReader struct{}
+
+func (emptyReader) Read() (*SeqRecord, error) {
+	return nil, io.EOF
+}
 
 type WriteCloser interface {
 	Write(*SeqRecord) error
@@ -73,6 +85,16 @@ func OpenPath(path string) (Reader, error) {
 		return nil, agcErr
 	}
 	return &readerWithCloser{Reader: all, closer: archive}, nil
+}
+
+// OpenPathAllowEmpty is OpenPath, except that an input holding no data yields a
+// reader over no records instead of ErrEmptyInput.
+func OpenPathAllowEmpty(path string) (Reader, error) {
+	reader, err := OpenPath(path)
+	if errors.Is(err, ErrEmptyInput) {
+		return emptyReader{}, nil
+	}
+	return reader, err
 }
 
 func openPathSource(path string) (io.ReadCloser, error) {

@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Detect AGC archives from content in `seqio.OpenPath`, keeping samples adjacent and prefixing flattened contig names with `sample.`.
 - Add `faqt to-fasta --sample` for extracting one AGC sample with its original contig names.
 - Add per-sample AGC statistics by default and `faqt stats --combine-inputs` for combining records across multiple ordinary inputs and AGC samples into one result.
+- Add the `seqio.ErrEmptyInput` sentinel error and `seqio.OpenPathAllowEmpty` for library callers for which an input holding no records is a valid answer.
 
 ### Security
 - Reject FASTQ filenames from ENA metadata that contain a path separator or resolve to `.`/`..` in `faqt download-reads`, preventing a maliciously crafted ENA response from writing outside the output directory.
 
 ### Fixed
 - Make the `phylip` reader error on interleaved PHYLIP input instead of silently splicing a later taxon's name and sequence into the current record; only sequential PHYLIP is supported.
+- Report all-zero statistics for an empty input in `faqt stats` instead of failing with `empty input`, so an assembly or bin FASTA with no contigs counts as zero sequences.
 
 ## [0.8.0] - 2026-08-14
 

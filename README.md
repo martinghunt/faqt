@@ -206,6 +206,8 @@ All supported inputs normalize to this record. `Qual` is `nil` unless the source
 
 `seqio.OpenPath` opens a path, detects compression from magic bytes, detects the biological format from content, and returns a streaming reader. Use `"-"` to read from standard input.
 
+An input holding no data has no format to detect, so `seqio.OpenPath` fails with `seqio.ErrEmptyInput`. Use `seqio.OpenPathAllowEmpty` where no records is a valid answer; it returns a reader over no records instead.
+
 ```go
 package main
 
@@ -404,6 +406,8 @@ fmt.Print(s.String(stats.FormatHuman))
 ```
 
 Use `stats.RenderMany` to render multiple `stats.Stats` values in a shared output format. The available formats are `stats.FormatHuman`, `stats.FormatTab`, `stats.FormatTabNoHeader`, and `stats.FormatGreppy`.
+
+An empty input, or one with no sequences at or above the minimum length, gives a result of all zeroes rather than an error.
 
 `stats.FromPaths` returns one result per ordinary input and one result per AGC sample by default. Set its combine argument to `true`, or pass `faqt stats --combine-inputs`, to treat every record across all inputs and AGC samples as one combined dataset.
 

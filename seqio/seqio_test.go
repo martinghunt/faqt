@@ -589,6 +589,36 @@ func TestOpenPathUnknownFormat(t *testing.T) {
 	}
 }
 
+func TestOpenPathEmptyInput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "empty.fa")
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	if _, err := seqio.OpenPath(path); !errors.Is(err, seqio.ErrEmptyInput) {
+		t.Fatalf("OpenPath() error = %v, want ErrEmptyInput", err)
+	}
+
+	r, err := seqio.OpenPathAllowEmpty(path)
+	if err != nil {
+		t.Fatalf("OpenPathAllowEmpty() error = %v", err)
+	}
+	if _, err := r.Read(); err != io.EOF {
+		t.Fatalf("Read() error = %v, want io.EOF", err)
+	}
+}
+
+func TestOpenPathAllowEmptyKeepsOtherErrors(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "unknown.txt")
+	if err := os.WriteFile(path, []byte("this is not a sequence file\n"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	if _, err := seqio.OpenPathAllowEmpty(path); err == nil ||
+		!strings.Contains(err.Error(), "could not detect sequence format") {
+		t.Fatalf("OpenPathAllowEmpty() error = %v", err)
+	}
+}
+
 func TestCompressionAndBasePathHelpers(t *testing.T) {
 	tests := []struct {
 		path     string

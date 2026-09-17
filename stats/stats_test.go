@@ -1,6 +1,8 @@
 package stats_test
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/base64"
 	"os"
 	"path/filepath"
@@ -101,6 +103,43 @@ func TestMinimumLength(t *testing.T) {
 	}
 	if s.TotalLength != 14 || s.Number != 2 || s.Shortest != 6 || s.Longest != 8 {
 		t.Fatalf("stats = %+v", s)
+	}
+}
+
+func TestStatsEmptyInput(t *testing.T) {
+	dir := t.TempDir()
+	plain := filepath.Join(dir, "empty.fa")
+	if err := os.WriteFile(plain, nil, 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	gzipped := filepath.Join(dir, "empty.fa.gz")
+	writeGzipFile(t, gzipped, nil)
+
+	for _, path := range []string{plain, gzipped} {
+		s, err := stats.FromPath(path, 1)
+		if err != nil {
+			t.Fatalf("FromPath(%q) error = %v", path, err)
+		}
+		expected := path + "\t0\t0\t0.00\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\n"
+		if got := s.String(stats.FormatTabNoHeader); got != expected {
+			t.Fatalf("FromPath(%q) tab output = %q, want %q", path, got, expected)
+		}
+	}
+
+	results, err := stats.FromPaths([]string{plain, gzipped}, 1, false)
+	if err != nil {
+		t.Fatalf("FromPaths() error = %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("result count = %d, want 2", len(results))
+	}
+
+	combined, err := stats.FromPaths([]string{plain, gzipped}, 1, true)
+	if err != nil {
+		t.Fatalf("FromPaths(combine) error = %v", err)
+	}
+	if len(combined) != 1 || combined[0].Number != 0 || combined[0].TotalLength != 0 {
+		t.Fatalf("combined results = %+v, want one result with length 0 and count 0", combined)
 	}
 }
 
@@ -220,6 +259,21 @@ func writeStatsFixture(t *testing.T) string {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 	return path
+}
+
+func writeGzipFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	if _, err := gw.Write(data); err != nil {
+		t.Fatalf("gzip Write() error = %v", err)
+	}
+	if err := gw.Close(); err != nil {
+		t.Fatalf("gzip Close() error = %v", err)
+	}
+	if err := os.WriteFile(path, buf.Bytes(), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
 }
 
 func writeStatsAGC(t *testing.T) string {

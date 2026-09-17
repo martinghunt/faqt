@@ -34,8 +34,10 @@ type Stats struct {
 	nxxn        [9]int
 }
 
+// FromPath calculates statistics for one input. An input holding no data gives
+// a result of all zeroes, as does one holding no sequences.
 func FromPath(path string, minimumLength int) (s Stats, err error) {
-	reader, err := seqio.OpenPath(path)
+	reader, err := seqio.OpenPathAllowEmpty(path)
 	if err != nil {
 		return Stats{}, err
 	}
@@ -107,7 +109,7 @@ func visitPathDatasets(path string, yield func(name string, reader seqio.Reader)
 		}
 	}
 
-	reader, err := seqio.OpenPath(path)
+	reader, err := seqio.OpenPathAllowEmpty(path)
 	if err != nil {
 		return err
 	}

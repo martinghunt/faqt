@@ -12,6 +12,10 @@ const PeekSize = 8192
 
 var ErrUnknownFormat = errors.New("could not detect sequence format")
 
+// ErrEmptyInput is returned when an input holds no data, and so has no format
+// to detect.
+var ErrEmptyInput = errors.New("empty input")
+
 func Format(r *bufio.Reader) (string, error) {
 	buf, err := r.Peek(PeekSize)
 	if err != nil && !isShortPeek(err) {
@@ -19,7 +23,7 @@ func Format(r *bufio.Reader) (string, error) {
 	}
 	buf = bytes.TrimLeft(buf, "\n\r\t ")
 	if len(buf) == 0 {
-		return "", fmt.Errorf("empty input")
+		return "", ErrEmptyInput
 	}
 	switch {
 	case bytes.HasPrefix(buf, []byte("##gff-version 3")):
