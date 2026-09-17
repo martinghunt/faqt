@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-17
+
 ### Added
 - Add the `agc` package for opening AGC v3 archives, listing samples, reading one sample's contigs as sequence records, and iterating complete samples in archive order.
 - Detect AGC archives from content in `seqio.OpenPath`, keeping samples adjacent and prefixing flattened contig names with `sample.`.
@@ -20,9 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Make the `phylip` reader error on interleaved PHYLIP input instead of silently splicing a later taxon's name and sequence into the current record; only sequential PHYLIP is supported.
 - Report all-zero statistics for an empty input in `faqt stats` instead of failing with `empty input`, so an assembly or bin FASTA with no contigs counts as zero sequences.
-
-### Changed
-- Update go-agc from 0.2.0 to 0.3.0
 
 ## [0.8.0] - 2026-08-14
 
