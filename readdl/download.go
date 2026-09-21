@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -109,10 +110,15 @@ func DownloadReads(ctx context.Context, runAccession string, opts DownloadOption
 }
 
 // MergeResults concatenates the FASTQ files from multiple run download results.
-// The inputs must all have the same single-end or paired-end layout. The output
-// uses opts.OutputPrefix (or "merged" when it is empty), preserving the FASTQ
-// extension. Source FASTQs are removed after a successful merge unless
-// opts.KeepOriginals is true.
+// Files are grouped by the read they hold rather than by their position in each
+// run's file list, so read 1 is only ever concatenated onto read 1, and within
+// each output the runs are concatenated in the order given. Every run must hold
+// the same numbered reads; unpaired reads are the exception, since ENA lists an
+// unpaired file for only some runs of a sample, and those merge into their own
+// output. The outputs use opts.OutputPrefix (or "merged" when it is empty) plus
+// the read number, preserving the FASTQ extension: <prefix>_1, <prefix>_2 and,
+// for unpaired reads, <prefix>. Source FASTQs are removed after a successful
+// merge unless opts.KeepOriginals is true.
 func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]DownloadedFile, error) {
 	if len(results) < 2 {
 		return nil, fmt.Errorf("merging reads requires at least two run results")
@@ -132,31 +138,23 @@ func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]D
 		return nil, fmt.Errorf("output prefix must not contain path separators")
 	}
 
-	fileCount := len(results[0].Files)
-	if fileCount < 1 || fileCount > 2 {
-		return nil, fmt.Errorf("cannot merge %d FASTQ files per run; expected one or two", fileCount)
-	}
-	for _, result := range results {
-		if len(result.Files) != fileCount {
-			return nil, fmt.Errorf("cannot merge runs with different numbers of FASTQ files")
-		}
+	groups, err := groupFilesByRole(results)
+	if err != nil {
+		return nil, err
 	}
 
-	merged := make([]DownloadedFile, fileCount)
-	for index := range merged {
-		ext := readFileExtension(results[0].Files[index].Filename)
+	merged := make([]DownloadedFile, len(groups))
+	for index, group := range groups {
+		ext := readFileExtension(group.files[0].Filename)
 		if ext == "" {
-			return nil, fmt.Errorf("cannot determine FASTQ extension for %s", results[0].Files[index].Filename)
+			return nil, fmt.Errorf("cannot determine FASTQ extension for %s", group.files[0].Filename)
 		}
-		for _, result := range results[1:] {
-			if got := readFileExtension(result.Files[index].Filename); got != ext {
+		for _, file := range group.files[1:] {
+			if got := readFileExtension(file.Filename); got != ext {
 				return nil, fmt.Errorf("cannot merge FASTQ files with different extensions")
 			}
 		}
-		filename := prefix + ext
-		if fileCount == 2 {
-			filename = fmt.Sprintf("%s_%d%s", prefix, index+1, ext)
-		}
+		filename := prefix + group.role + ext
 		merged[index] = DownloadedFile{Filename: filename, Path: filepath.Join(root, filename)}
 	}
 	if err := ensureMergedOutputsDoNotExist(merged); err != nil {
@@ -178,13 +176,13 @@ func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]D
 			return nil, err
 		}
 		temporaryPaths[index] = tmp.Name()
-		for _, result := range results {
+		for _, file := range groups[index].files {
 			if err := ctx.Err(); err != nil {
 				_ = tmp.Close()
 				removeFiles(temporaryPaths)
 				return nil, err
 			}
-			in, err := os.Open(result.Files[index].Path)
+			in, err := os.Open(file.Path)
 			if err != nil {
 				_ = tmp.Close()
 				removeFiles(temporaryPaths)
@@ -885,9 +883,119 @@ func hasBareReadFile(files []ichsm.ReadFile) bool {
 }
 
 func isBareReadFilename(filename string) bool {
+	return readFileRole(filename) == ""
+}
+
+// readFileRole returns the read a file holds, as the trailing read number in
+// its name: "_1", "_2", and so on, or "" for unpaired reads, which carry no
+// number.
+func readFileRole(filename string) string {
 	ext := readFileExtension(filename)
-	stem := strings.TrimSuffix(filename, ext)
-	return trailingReadNumber(stem) == ""
+	return trailingReadNumber(strings.TrimSuffix(filename, ext))
+}
+
+// mergeGroup is the set of files one merged output is concatenated from, held
+// in the order the runs were given.
+type mergeGroup struct {
+	role  string
+	files []DownloadedFile
+}
+
+// groupFilesByRole collects the runs' read files into one group per read.
+//
+// Grouping by role rather than by position means a run contributes each file to
+// the output for the read it actually holds. Position is not safe to merge on:
+// nothing guarantees every run lists its files in the same order, and getting
+// it wrong concatenates one run's read 1 onto another's read 2, which no later
+// step would catch.
+//
+// Every run must hold the same numbered reads, because merging a paired run
+// with a single-end one leaves the pair mismatched. Unpaired reads are the
+// exception: ENA lists an unpaired file for only some runs of a sample, so that
+// group takes whichever runs have one.
+func groupFilesByRole(results []Result) ([]mergeGroup, error) {
+	groups := make(map[string]*mergeGroup)
+	var wantNumbered []string
+
+	for index, result := range results {
+		if len(result.Files) == 0 {
+			return nil, fmt.Errorf("cannot merge %s: it has no FASTQ files", describeRun(result, index))
+		}
+
+		var numbered []string
+		seen := make(map[string]struct{}, len(result.Files))
+		for _, file := range result.Files {
+			role := readFileRole(file.Filename)
+			if _, duplicate := seen[role]; duplicate {
+				return nil, fmt.Errorf(
+					"cannot merge %s: it has more than one FASTQ file for read %s",
+					describeRun(result, index), readName(role),
+				)
+			}
+			seen[role] = struct{}{}
+
+			group, ok := groups[role]
+			if !ok {
+				group = &mergeGroup{role: role}
+				groups[role] = group
+			}
+			group.files = append(group.files, file)
+			if role != "" {
+				numbered = append(numbered, role)
+			}
+		}
+
+		slices.Sort(numbered)
+		if index == 0 {
+			wantNumbered = numbered
+			continue
+		}
+		if !slices.Equal(numbered, wantNumbered) {
+			return nil, fmt.Errorf(
+				"cannot merge runs holding different reads: %s has %s, %s has %s",
+				describeRun(results[0], 0), describeReads(wantNumbered),
+				describeRun(result, index), describeReads(numbered),
+			)
+		}
+	}
+
+	ordered := make([]mergeGroup, 0, len(groups))
+	for _, role := range wantNumbered {
+		ordered = append(ordered, *groups[role])
+	}
+	if unpaired, ok := groups[""]; ok {
+		ordered = append(ordered, *unpaired)
+	}
+	return ordered, nil
+}
+
+// readName describes a role for an error message.
+func readName(role string) string {
+	if role == "" {
+		return "unpaired"
+	}
+	return strings.TrimPrefix(role, "_")
+}
+
+// describeRun names a run for an error message, falling back to its position
+// for a Result a library caller built without an accession.
+func describeRun(result Result, index int) string {
+	if result.RunAccession != "" {
+		return "run " + result.RunAccession
+	}
+	return fmt.Sprintf("run %d", index+1)
+}
+
+// describeReads lists the numbered reads a run holds, for an error message.
+func describeReads(roles []string) string {
+	if len(roles) == 0 {
+		return "none"
+	}
+	names := make([]string, len(roles))
+	for index, role := range roles {
+		names[index] = readName(role)
+	}
+	return strings.Join(names, ", ")
 }
 
 func uniqueStrings(values []string) []string {

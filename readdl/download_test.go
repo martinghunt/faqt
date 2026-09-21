@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -1168,12 +1169,141 @@ func TestWriteENAMetadataSingleObject(t *testing.T) {
 
 func TestMergeResultsRejectsMixedLayouts(t *testing.T) {
 	_, err := MergeResults(context.Background(), []Result{
-		{Files: []DownloadedFile{{Filename: "ERR123456.fastq.gz"}}},
-		{Files: []DownloadedFile{{Filename: "ERR123457_1.fastq.gz"}, {Filename: "ERR123457_2.fastq.gz"}}},
+		{RunAccession: "ERR123456", Files: []DownloadedFile{{Filename: "ERR123456.fastq.gz"}}},
+		{RunAccession: "ERR123457", Files: []DownloadedFile{{Filename: "ERR123457_1.fastq.gz"}, {Filename: "ERR123457_2.fastq.gz"}}},
 	}, MergeOptions{OutputDir: t.TempDir()})
-	if err == nil || err.Error() != "cannot merge runs with different numbers of FASTQ files" {
-		t.Fatalf("MergeResults() error = %v, want layout error", err)
+	want := "cannot merge runs holding different reads: run ERR123456 has none, run ERR123457 has 1, 2"
+	if err == nil || err.Error() != want {
+		t.Fatalf("MergeResults() error = %v, want %q", err, want)
 	}
+}
+
+// Runs are grouped by the read each file holds, so a run contributes to the
+// output for its actual read rather than for its position in the run's list,
+// and each output concatenates the runs in the order they were given. ENA lists
+// an unpaired file for only some runs of a sample, so that group takes whichever
+// runs have one.
+func TestMergeResultsGroupsFilesByRead(t *testing.T) {
+	tests := []struct {
+		name string
+		runs map[string][]string
+		want map[string]string
+	}{
+		{
+			name: "paired runs",
+			runs: map[string][]string{"ERR1": {"_1", "_2"}, "ERR2": {"_1", "_2"}},
+			want: map[string]string{
+				"merged_1.fastq.gz": "ERR1_1 ERR2_1",
+				"merged_2.fastq.gz": "ERR1_2 ERR2_2",
+			},
+		},
+		{
+			name: "every run has unpaired reads",
+			runs: map[string][]string{"ERR1": {"", "_1", "_2"}, "ERR2": {"", "_1", "_2"}},
+			want: map[string]string{
+				"merged_1.fastq.gz": "ERR1_1 ERR2_1",
+				"merged_2.fastq.gz": "ERR1_2 ERR2_2",
+				"merged.fastq.gz":   "ERR1 ERR2",
+			},
+		},
+		{
+			name: "only some runs have unpaired reads",
+			runs: map[string][]string{"ERR1": {"", "_1", "_2"}, "ERR2": {"_1", "_2"}, "ERR3": {"", "_1", "_2"}},
+			want: map[string]string{
+				"merged_1.fastq.gz": "ERR1_1 ERR2_1 ERR3_1",
+				"merged_2.fastq.gz": "ERR1_2 ERR2_2 ERR3_2",
+				"merged.fastq.gz":   "ERR1 ERR3",
+			},
+		},
+		{
+			name: "runs listing their files in different orders",
+			runs: map[string][]string{"ERR1": {"_2", "", "_1"}, "ERR2": {"_1", "_2", ""}},
+			want: map[string]string{
+				"merged_1.fastq.gz": "ERR1_1 ERR2_1",
+				"merged_2.fastq.gz": "ERR1_2 ERR2_2",
+				"merged.fastq.gz":   "ERR1 ERR2",
+			},
+		},
+		{
+			name: "single-end runs",
+			runs: map[string][]string{"ERR1": {""}, "ERR2": {""}},
+			want: map[string]string{"merged.fastq.gz": "ERR1 ERR2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			runNames := make([]string, 0, len(tt.runs))
+			for run := range tt.runs {
+				runNames = append(runNames, run)
+			}
+			sort.Strings(runNames)
+
+			results := make([]Result, 0, len(runNames))
+			for _, run := range runNames {
+				files := make([]DownloadedFile, 0, len(tt.runs[run]))
+				for _, role := range tt.runs[run] {
+					name := run + role + ".fastq.gz"
+					path := filepath.Join(root, name)
+					if err := os.WriteFile(path, gzipBytes(t, []byte(run+role+" ")), 0o644); err != nil {
+						t.Fatalf("WriteFile(%s) error = %v", name, err)
+					}
+					files = append(files, DownloadedFile{Filename: name, Path: path})
+				}
+				results = append(results, Result{RunAccession: run, Files: files})
+			}
+
+			got, err := MergeResults(context.Background(), results,
+				MergeOptions{OutputDir: root, OutputPrefix: "merged"})
+			if err != nil {
+				t.Fatalf("MergeResults() error = %v", err)
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("merged %d files, want %d: %+v", len(got), len(tt.want), got)
+			}
+
+			for _, file := range got {
+				want, ok := tt.want[file.Filename]
+				if !ok {
+					t.Fatalf("unexpected merged file %q", file.Filename)
+				}
+				if strings.TrimSpace(readGzip(t, file.Path)) != want {
+					t.Fatalf("%s = %q, want %q", file.Filename,
+						strings.TrimSpace(readGzip(t, file.Path)), want)
+				}
+			}
+		})
+	}
+}
+
+func TestMergeResultsRejectsDuplicateRead(t *testing.T) {
+	_, err := MergeResults(context.Background(), []Result{
+		{RunAccession: "ERR1", Files: []DownloadedFile{{Filename: "a_1.fastq.gz"}, {Filename: "b_1.fastq.gz"}}},
+		{RunAccession: "ERR2", Files: []DownloadedFile{{Filename: "c_1.fastq.gz"}}},
+	}, MergeOptions{OutputDir: t.TempDir()})
+	want := "cannot merge run ERR1: it has more than one FASTQ file for read 1"
+	if err == nil || err.Error() != want {
+		t.Fatalf("MergeResults() error = %v, want %q", err, want)
+	}
+}
+
+func readGzip(t *testing.T, path string) string {
+	t.Helper()
+	in, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("Open(%s) error = %v", path, err)
+	}
+	defer func() { _ = in.Close() }()
+	gr, err := gzip.NewReader(in)
+	if err != nil {
+		t.Fatalf("gzip.NewReader(%s) error = %v", path, err)
+	}
+	contents, err := io.ReadAll(gr)
+	if err != nil {
+		t.Fatalf("ReadAll(%s) error = %v", path, err)
+	}
+	return string(contents)
 }
 
 func TestMergeResultsKeepsOriginalsWhenRequested(t *testing.T) {

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Merge runs by the read each FASTQ holds rather than by its position in the run's file list, so `faqt download-reads --merge` concatenates read 1 onto read 1 whatever order a run lists its files in, and can merge runs where ENA supplies an unpaired file for only some of them. Unpaired reads merge into `<prefix>.fastq.gz` alongside `<prefix>_1.fastq.gz` and `<prefix>_2.fastq.gz`; previously any run with an unpaired file was rejected with `cannot merge 3 FASTQ files per run`.
 - Stop `faqt download-reads --prefix` failing with `output prefix produced duplicate FASTQ filename` on runs where ENA lists a bare orphan-reads file alongside `_1` and `_2`, such as `SRR31209530`. The bare file was numbered by its position and renamed onto read 1; it now keeps its bare name, so the three files become `<prefix>.fastq.gz`, `<prefix>_1.fastq.gz` and `<prefix>_2.fastq.gz`.
 
 ## [0.9.0] - 2026-09-17
