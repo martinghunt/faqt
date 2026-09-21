@@ -1277,6 +1277,50 @@ func TestMergeResultsGroupsFilesByRead(t *testing.T) {
 	}
 }
 
+// Every output must concatenate the runs in the same order, or a merged pair is
+// silently mis-ordered against itself: read 1 holding ERR1 then ERR2 while read
+// 2 holds ERR2 then ERR1. The runs are given out of alphabetical order, and each
+// lists its reads in a different order again, so neither can stand in for the
+// order the caller asked for.
+func TestMergeResultsConcatenatesRunsInGivenOrder(t *testing.T) {
+	root := t.TempDir()
+	runs := []string{"ERR3", "ERR1", "ERR2"}
+
+	results := make([]Result, 0, len(runs))
+	for _, run := range runs {
+		var files []DownloadedFile
+		for _, role := range []string{"_2", "", "_1"} {
+			name := run + role + ".fastq.gz"
+			path := filepath.Join(root, name)
+			if err := os.WriteFile(path, gzipBytes(t, []byte(run+role+" ")), 0o644); err != nil {
+				t.Fatalf("WriteFile(%s) error = %v", name, err)
+			}
+			files = append(files, DownloadedFile{Filename: name, Path: path})
+		}
+		results = append(results, Result{RunAccession: run, Files: files})
+	}
+
+	got, err := MergeResults(context.Background(), results,
+		MergeOptions{OutputDir: root, OutputPrefix: "merged"})
+	if err != nil {
+		t.Fatalf("MergeResults() error = %v", err)
+	}
+
+	want := map[string]string{
+		"merged_1.fastq.gz": "ERR3_1 ERR1_1 ERR2_1",
+		"merged_2.fastq.gz": "ERR3_2 ERR1_2 ERR2_2",
+		"merged.fastq.gz":   "ERR3 ERR1 ERR2",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("merged %d files, want %d: %+v", len(got), len(want), got)
+	}
+	for _, file := range got {
+		if contents := strings.TrimSpace(readGzip(t, file.Path)); contents != want[file.Filename] {
+			t.Fatalf("%s = %q, want %q", file.Filename, contents, want[file.Filename])
+		}
+	}
+}
+
 func TestMergeResultsRejectsDuplicateRead(t *testing.T) {
 	_, err := MergeResults(context.Background(), []Result{
 		{RunAccession: "ERR1", Files: []DownloadedFile{{Filename: "a_1.fastq.gz"}, {Filename: "b_1.fastq.gz"}}},
