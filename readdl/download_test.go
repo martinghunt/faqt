@@ -996,6 +996,61 @@ func TestApplyOutputPrefix(t *testing.T) {
 	}
 }
 
+func TestApplyOutputPrefixNaming(t *testing.T) {
+	tests := []struct {
+		name  string
+		files []string
+		want  []string
+	}{
+		{
+			// ENA lists a bare orphan-reads file alongside _1 and _2 for some
+			// paired runs, e.g. SRR31209530. Numbering the bare file by its
+			// position renamed it to _1 and collided with the real read 1.
+			name:  "bare file alongside numbered files",
+			files: []string{"SRR31209530.fastq.gz", "SRR31209530_1.fastq.gz", "SRR31209530_2.fastq.gz"},
+			want:  []string{"merged.fastq.gz", "merged_1.fastq.gz", "merged_2.fastq.gz"},
+		},
+		{
+			// Nothing is self-numbered, so there is nothing to collide with and
+			// position still supplies the read numbers.
+			name:  "unnumbered files numbered by position",
+			files: []string{"forward.fastq.gz", "reverse.fastq.gz"},
+			want:  []string{"merged_1.fastq.gz", "merged_2.fastq.gz"},
+		},
+		{
+			name:  "self-numbered files keep their own numbers",
+			files: []string{"ERR123456_2.fastq.gz", "ERR123456_1.fastq.gz"},
+			want:  []string{"merged_2.fastq.gz", "merged_1.fastq.gz"},
+		},
+		{
+			name:  "lone bare file stays bare",
+			files: []string{"ERR123456.fastq.gz"},
+			want:  []string{"merged.fastq.gz"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files := make([]ichsm.ReadFile, len(tt.files))
+			for i, filename := range tt.files {
+				files[i] = ichsm.ReadFile{Filename: filename}
+			}
+			got, err := applyOutputPrefix(files, "/tmp/reads", "merged")
+			if err != nil {
+				t.Fatalf("applyOutputPrefix() error = %v", err)
+			}
+			for i, want := range tt.want {
+				if got[i].Filename != want {
+					t.Fatalf("filename %d = %q, want %q", i, got[i].Filename, want)
+				}
+				if got[i].OutputPath != filepath.Join("/tmp/reads", want) {
+					t.Fatalf("output path %d = %q", i, got[i].OutputPath)
+				}
+			}
+		})
+	}
+}
+
 func TestValidateReadFilenamesRejectsPathTraversal(t *testing.T) {
 	bad := []string{"", ".", "..", "../escape.fastq.gz", "dir/escape.fastq.gz", `dir\escape.fastq.gz`}
 	for _, name := range bad {

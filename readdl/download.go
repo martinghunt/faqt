@@ -853,12 +853,26 @@ func srachaOutputPathCandidates(file ichsm.ReadFile, run string, index, count in
 				filepath.Join(dir, run+"_0.fastq.gz"),
 			)
 		} else {
-			candidates = append(candidates, filepath.Join(dir, run+readFileSuffix(file.Filename, index, count)))
+			candidates = append(candidates, filepath.Join(dir, run+readFileSuffix(file.Filename, index, count, true)))
 		}
 	case srachaSplitFiles:
-		candidates = append(candidates, filepath.Join(dir, run+readFileSuffix(file.Filename, index, count)))
+		candidates = append(candidates, filepath.Join(dir, run+readFileSuffix(file.Filename, index, count, true)))
 	}
 	return uniqueStrings(candidates)
+}
+
+// hasNumberedReadFile reports whether any file in the set carries its own read
+// number, e.g. ERR123456_1.fastq.gz. ENA exposes a bare orphan-reads file
+// alongside _1 and _2 for some paired runs, and numbering that bare file by its
+// position would rename it onto read 1 and collide with the real read 1, so
+// positional numbering is only safe when nothing in the set is self-numbered.
+func hasNumberedReadFile(files []ichsm.ReadFile) bool {
+	for _, file := range files {
+		if !isBareReadFilename(file.Filename) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasBareReadFile(files []ichsm.ReadFile) bool {
@@ -908,11 +922,13 @@ func applyOutputPrefix(files []ichsm.ReadFile, outDir, prefix string) ([]ichsm.R
 		return nil, fmt.Errorf("output prefix must not contain path separators")
 	}
 
+	numberByPosition := !hasNumberedReadFile(files)
+
 	out := make([]ichsm.ReadFile, len(files))
 	copy(out, files)
 	seen := make(map[string]struct{}, len(out))
 	for i := range out {
-		filename := prefix + readFileSuffix(out[i].Filename, i, len(out))
+		filename := prefix + readFileSuffix(out[i].Filename, i, len(out), numberByPosition)
 		if _, ok := seen[filename]; ok {
 			return nil, fmt.Errorf("output prefix produced duplicate FASTQ filename: %s", filename)
 		}
@@ -1069,13 +1085,17 @@ func moveResultFiles(result Result, finalDir string) error {
 	return nil
 }
 
-func readFileSuffix(filename string, index int, count int) string {
+// readFileSuffix returns the suffix a read file should keep once renamed. A
+// file that carries its own read number keeps it; otherwise the file is
+// numbered by its position in the set, but only when numberByPosition says the
+// set has no self-numbered files to collide with. See hasNumberedReadFile.
+func readFileSuffix(filename string, index int, count int, numberByPosition bool) string {
 	ext := readFileExtension(filename)
 	stem := strings.TrimSuffix(filename, ext)
 	if suffix := trailingReadNumber(stem); suffix != "" {
 		return suffix + ext
 	}
-	if count == 1 {
+	if count == 1 || !numberByPosition {
 		return ext
 	}
 	return fmt.Sprintf("_%d%s", index+1, ext)
