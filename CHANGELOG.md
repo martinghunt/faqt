@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-21
+
 ### Fixed
 - Merge runs by the read each FASTQ holds rather than by its position in the run's file list, so `faqt download-reads --merge` concatenates read 1 onto read 1 whatever order a run lists its files in, and can merge runs where ENA supplies an unpaired file for only some of them. Unpaired reads merge into `<prefix>.fastq.gz` alongside `<prefix>_1.fastq.gz` and `<prefix>_2.fastq.gz`; previously any run with an unpaired file was rejected with `cannot merge 3 FASTQ files per run`.
 - Stop `faqt download-reads --prefix` failing with `output prefix produced duplicate FASTQ filename` on runs where ENA lists a bare orphan-reads file alongside `_1` and `_2`, such as `SRR31209530`. The bare file was numbered by its position and renamed onto read 1; it now keeps its bare name, so the three files become `<prefix>.fastq.gz`, `<prefix>_1.fastq.gz` and `<prefix>_2.fastq.gz`.
+
+### Changed
+- Merging runs that each hold a single numbered FASTQ now writes `<prefix>_1.fastq.gz` instead of `<prefix>.fastq.gz`, keeping the read number the input files carry. Runs each holding a single unpaired FASTQ are unchanged and still merge into `<prefix>.fastq.gz`.
 
 ## [0.9.0] - 2026-09-17
 
@@ -159,7 +164,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/martinghunt/faqt/compare/v0.9.0...v0.9.1
+[0.9.0]: https://github.com/martinghunt/faqt/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/martinghunt/faqt/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/martinghunt/faqt/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/martinghunt/faqt/compare/v0.5.0...v0.6.0
