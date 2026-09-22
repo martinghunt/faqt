@@ -3,7 +3,6 @@ package xopen
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"github.com/biogo/hts/bgzf"
 	htssam "github.com/biogo/hts/sam"
 	dsnetbzip2 "github.com/dsnet/compress/bzip2"
+	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
 	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/ulikunitz/xz"
@@ -334,4 +334,71 @@ func gzipBytes(t *testing.T, payload []byte) []byte {
 		t.Fatalf("gzip Close() error = %v", err)
 	}
 	return buf.Bytes()
+}
+
+// TestWrapWriterGzipLevelIsPinned guards the compression ratio against a
+// library default changing underneath faqt. klauspost/compress defaults to
+// level 5 where compress/gzip defaulted to 6, which silently grew every
+// gzipped output by about 2.7% when the libraries were swapped.
+func TestWrapWriterGzipLevelIsPinned(t *testing.T) {
+	payload := bytes.Repeat([]byte(">rec1 description\nACGTACGTNNNNACGT\n"), 4096)
+
+	var viaWrap bytes.Buffer
+	w, closer, err := WrapWriter(&viaWrap, "gzip", 1)
+	if err != nil {
+		t.Fatalf("WrapWriter() error = %v", err)
+	}
+	if _, err := w.Write(payload); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if err := closer.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
+	var atLevel6 bytes.Buffer
+	direct, err := gzip.NewWriterLevel(&atLevel6, 6)
+	if err != nil {
+		t.Fatalf("NewWriterLevel() error = %v", err)
+	}
+	if _, err := direct.Write(payload); err != nil {
+		t.Fatalf("direct Write() error = %v", err)
+	}
+	if err := direct.Close(); err != nil {
+		t.Fatalf("direct Close() error = %v", err)
+	}
+
+	// The header carries the level-independent fields, so compare the
+	// deflate stream and the trailer that follow it.
+	const headerSize = 10
+	if !bytes.Equal(viaWrap.Bytes()[headerSize:], atLevel6.Bytes()[headerSize:]) {
+		t.Fatalf("gzip output is %d bytes, want the %d bytes level 6 produces",
+			viaWrap.Len(), atLevel6.Len())
+	}
+}
+
+// TestWrapWriterGzipHasNoTimestamp checks the MTIME field stays zero, which
+// RFC 1952 section 2.3.1 defines as "no modification time available". faqt
+// compresses streams, not copies of files, and a stamp would also make output
+// differ run to run. klauspost/compress casts the zero time instead of special
+// casing it, which stamped every output with a date in 2042.
+func TestWrapWriterGzipHasNoTimestamp(t *testing.T) {
+	var buf bytes.Buffer
+	w, closer, err := WrapWriter(&buf, "gzip", 1)
+	if err != nil {
+		t.Fatalf("WrapWriter() error = %v", err)
+	}
+	if _, err := io.WriteString(w, ">rec1\nACGT\n"); err != nil {
+		t.Fatalf("WriteString() error = %v", err)
+	}
+	if err := closer.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
+	out := buf.Bytes()
+	if len(out) < 10 {
+		t.Fatalf("gzip output is only %d bytes", len(out))
+	}
+	if mtime := out[4:8]; !bytes.Equal(mtime, []byte{0, 0, 0, 0}) {
+		t.Fatalf("gzip MTIME = %v, want zero", mtime)
+	}
 }

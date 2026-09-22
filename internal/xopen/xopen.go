@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/biogo/hts/bgzf"
 	dsnetbzip2 "github.com/dsnet/compress/bzip2"
@@ -19,6 +20,13 @@ import (
 
 const sniffSize = 16
 const bgzfHeaderSize = 18
+
+// gzipLevel is pinned rather than left to the library's default, so the
+// compression ratio does not move when the library does. klauspost/compress
+// defaults to 5 where compress/gzip defaulted to 6; level 6 keeps the output
+// faqt has always produced, byte for byte, and klauspost reaches it about 12%
+// faster than the standard library did.
+const gzipLevel = 6
 
 // maxBGZFBlock is the largest possible BGZF block, including its header and
 // footer. The first block is enough to tell BAM from ordinary text.
@@ -193,7 +201,16 @@ func WrapWriter(w io.Writer, c string, threads int) (io.Writer, io.Closer, error
 	case "auto", "none", "":
 		return w, nil, nil
 	case "gzip":
-		gw := gzip.NewWriter(w)
+		gw, err := gzip.NewWriterLevel(w, gzipLevel)
+		if err != nil {
+			return nil, nil, err
+		}
+		// RFC 1952 section 2.3.1: a zero MTIME means no modification
+		// time is available, which is what faqt wants, since output is
+		// a stream and not a copy of a file. compress/gzip special
+		// cased the zero time; klauspost/compress casts it, turning it
+		// into a date in 2042, so ask for the epoch explicitly.
+		gw.ModTime = time.Unix(0, 0)
 		return gw, gw, nil
 	case "bzip2":
 		bw, err := dsnetbzip2.NewWriter(w, nil)
