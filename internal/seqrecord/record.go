@@ -117,7 +117,7 @@ func (r SeqRecord) String() string {
 
 func (r SeqRecord) WriteTo(w io.Writer) (int64, error) {
 	if r.Qual != nil {
-		return r.writeFASTQTo(w)
+		return r.WriteFASTQTo(w)
 	}
 	return r.WriteFASTATo(w, 0)
 }
@@ -130,6 +130,42 @@ func (r SeqRecord) Header() string {
 		return r.Description
 	}
 	return r.Name + " " + r.Description
+}
+
+// writeHeaderTo writes the marker, name, description and newline as separate
+// writes, so no per-record string is built to hold the joined header. Output
+// is buffered by seqio.Writer, so the extra writes cost nothing.
+func (r SeqRecord) writeHeaderTo(w io.Writer, marker string) (int64, error) {
+	total := int64(0)
+	n, err := io.WriteString(w, marker)
+	total += int64(n)
+	if err != nil {
+		return total, err
+	}
+	if r.Name != "" {
+		n, err = io.WriteString(w, r.Name)
+		total += int64(n)
+		if err != nil {
+			return total, err
+		}
+		if r.Description != "" {
+			n, err = io.WriteString(w, " ")
+			total += int64(n)
+			if err != nil {
+				return total, err
+			}
+		}
+	}
+	if r.Description != "" {
+		n, err = io.WriteString(w, r.Description)
+		total += int64(n)
+		if err != nil {
+			return total, err
+		}
+	}
+	n, err = io.WriteString(w, "\n")
+	total += int64(n)
+	return total, err
 }
 
 func (r SeqRecord) ValidateFASTQ() error {
@@ -149,12 +185,11 @@ func (r SeqRecord) FASTAString(wrap int) string {
 }
 
 func (r SeqRecord) WriteFASTATo(w io.Writer, wrap int) (int64, error) {
-	total := int64(0)
-	n, err := io.WriteString(w, ">"+r.Header()+"\n")
-	total += int64(n)
+	total, err := r.writeHeaderTo(w, ">")
 	if err != nil {
 		return total, err
 	}
+	var n int
 
 	if wrap <= 0 {
 		n, err = w.Write(r.Seq)
@@ -190,17 +225,17 @@ func (r SeqRecord) WriteFASTATo(w io.Writer, wrap int) (int64, error) {
 	return total, err
 }
 
-func (r SeqRecord) writeFASTQTo(w io.Writer) (int64, error) {
+// WriteFASTQTo writes the record as FASTQ regardless of whether Qual is set,
+// so a FASTQ writer never silently emits FASTA.
+func (r SeqRecord) WriteFASTQTo(w io.Writer) (int64, error) {
 	if err := r.ValidateFASTQ(); err != nil {
 		return 0, err
 	}
-	total := int64(0)
-	n, err := io.WriteString(w, "@"+r.Header()+"\n")
-	total += int64(n)
+	total, err := r.writeHeaderTo(w, "@")
 	if err != nil {
 		return total, err
 	}
-	n, err = w.Write(r.Seq)
+	n, err := w.Write(r.Seq)
 	total += int64(n)
 	if err != nil {
 		return total, err

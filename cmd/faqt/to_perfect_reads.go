@@ -23,6 +23,7 @@ func newToPerfectReadsCmd() *cobra.Command {
 		readLength int
 		noN        bool
 		seed       int64
+		input      inputOptions
 	)
 	cmd := &cobra.Command{
 		Use:   "to-perfect-reads INPUT",
@@ -30,7 +31,7 @@ func newToPerfectReadsCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			inputPath = args[0]
-			reader, err := seqio.OpenPath(inputPath)
+			reader, err := seqio.OpenPath(inputPath, input.seqioOptions()...)
 			if err != nil {
 				return err
 			}
@@ -45,7 +46,7 @@ func newToPerfectReadsCmd() *cobra.Command {
 				NoN:        noN,
 				Seed:       seed,
 			}
-			report, err := runToPerfectReads(reader, outputPath, outputFwd, outputRev, opts)
+			report, err := runToPerfectReads(reader, outputPath, outputFwd, outputRev, opts, input.seqioOptions()...)
 			if err != nil {
 				return err
 			}
@@ -64,16 +65,17 @@ func newToPerfectReadsCmd() *cobra.Command {
 	cmd.Flags().IntVar(&readLength, "read-length", 0, "Length of each read")
 	cmd.Flags().BoolVar(&noN, "no-n", false, "Do not allow any N or n characters in the reads")
 	cmd.Flags().Int64Var(&seed, "seed", 1, "Random seed")
+	addInputFlags(cmd, &input)
 	return cmd
 }
 
-func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev string, opts perfectreads.Options) (report perfectreads.Report, err error) {
+func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev string, opts perfectreads.Options, writerOpts ...seqio.Option) (report perfectreads.Report, err error) {
 	switch {
 	case outputPath != "":
 		if outputFwd != "" || outputRev != "" {
 			return perfectreads.Report{}, fmt.Errorf("use either --out for single-end reads or --forward-out/--reverse-out for paired reads")
 		}
-		w, err := seqio.CreateFASTQPath(outputPath)
+		w, err := seqio.CreateFASTQPath(outputPath, writerOpts...)
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
@@ -86,12 +88,12 @@ func runToPerfectReads(reader seqio.Reader, outputPath, outputFwd, outputRev str
 		if opts.MeanInsert <= 0 {
 			return perfectreads.Report{}, fmt.Errorf("mean insert must be > 0")
 		}
-		fw, err := seqio.CreateFASTQPath(outputFwd)
+		fw, err := seqio.CreateFASTQPath(outputFwd, writerOpts...)
 		if err != nil {
 			return perfectreads.Report{}, err
 		}
 		defer closeutil.CloseWithError(&err, fw)
-		rw, err := seqio.CreateFASTQPath(outputRev)
+		rw, err := seqio.CreateFASTQPath(outputRev, writerOpts...)
 		if err != nil {
 			return perfectreads.Report{}, err
 		}

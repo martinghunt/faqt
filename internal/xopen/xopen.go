@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"compress/bzip2"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/biogo/hts/bgzf"
 	dsnetbzip2 "github.com/dsnet/compress/bzip2"
+	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
 	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/ulikunitz/xz"
@@ -18,6 +19,13 @@ import (
 
 const sniffSize = 16
 const bgzfHeaderSize = 18
+
+// maxBGZFBlock is the largest possible BGZF block, including its header and
+// footer. The first block is enough to tell BAM from ordinary text.
+const maxBGZFBlock = 65536
+
+// bamMagic starts the uncompressed payload of every BAM file.
+var bamMagic = []byte{'B', 'A', 'M', 0x01}
 
 func CompressionFromPath(path string) string {
 	switch {
@@ -65,15 +73,56 @@ func IsBGZF(r *bufio.Reader) (bool, error) {
 	return header[12] == 'B' && header[13] == 'C' && header[14] == 2 && header[15] == 0, nil
 }
 
-func Open(path string) (io.ReadCloser, error) {
+// IsBAM reports whether a BGZF stream holds BAM rather than compressed text.
+// BGZF is the container samtools uses for both BAM and bgzipped FASTA/FASTQ,
+// so the container alone cannot decide which reader to use. It decompresses
+// the first block from peeked bytes and looks for the BAM magic number,
+// leaving r unread.
+func IsBAM(r *bufio.Reader) (bool, error) {
+	header, err := r.Peek(bgzfHeaderSize)
+	if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
+		return false, err
+	}
+	if len(header) < bgzfHeaderSize {
+		return false, nil
+	}
+	// BSIZE holds the whole block's size minus one, so peek exactly one
+	// block rather than waiting for a slow writer to fill a larger peek.
+	size := (int(header[16]) | int(header[17])<<8) + 1
+	if size < bgzfHeaderSize || size > maxBGZFBlock {
+		return false, nil
+	}
+	block, err := r.Peek(size)
+	if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
+		return false, err
+	}
+	if len(block) < bgzfHeaderSize {
+		return false, nil
+	}
+	gr, err := gzip.NewReader(bytes.NewReader(block))
+	if err != nil {
+		// Not readable as gzip, so not BAM. Let the caller's normal
+		// decompression path report any error.
+		return false, nil
+	}
+	defer func() { _ = gr.Close() }()
+	gr.Multistream(false)
+	magic := make([]byte, len(bamMagic))
+	if _, err := io.ReadFull(gr, magic); err != nil {
+		return false, nil
+	}
+	return bytes.Equal(magic, bamMagic), nil
+}
+
+func Open(path string, threads int) (io.ReadCloser, error) {
 	if path == "-" {
-		return WrapReader(os.Stdin)
+		return WrapReader(os.Stdin, threads)
 	}
 	fh, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	rc, err := WrapReader(fh)
+	rc, err := WrapReader(fh, threads)
 	if err != nil {
 		_ = fh.Close()
 		return nil, err
@@ -85,7 +134,12 @@ func Open(path string) (io.ReadCloser, error) {
 // faqt's normal workload is multi-gigabyte genome/read files, and a size cap
 // would break that. Callers are expected to point faqt at files/accessions
 // they already trust, not arbitrary untrusted uploads.
-func WrapReader(r io.Reader) (io.ReadCloser, error) {
+//
+// threads bounds the worker goroutines any decompressor may start. One keeps
+// decompression on the calling goroutine, so faqt uses a single core unless
+// asked for more.
+func WrapReader(r io.Reader, threads int) (io.ReadCloser, error) {
+	threads = normalizeThreads(threads)
 	br, ok := r.(*bufio.Reader)
 	if !ok {
 		br = bufio.NewReader(r)
@@ -96,6 +150,17 @@ func WrapReader(r io.Reader) (io.ReadCloser, error) {
 	}
 	switch {
 	case bytes.HasPrefix(magic, []byte{0x1f, 0x8b}):
+		// BGZF is gzip, but its independent blocks can be inflated in
+		// parallel when the caller has asked for more than one thread.
+		if threads > 1 {
+			isBGZF, err := IsBGZF(br)
+			if err != nil {
+				return nil, err
+			}
+			if isBGZF {
+				return bgzf.NewReader(br, threads)
+			}
+		}
 		gr, err := gzip.NewReader(br)
 		if err != nil {
 			return nil, err
@@ -110,7 +175,7 @@ func WrapReader(r io.Reader) (io.ReadCloser, error) {
 		}
 		return io.NopCloser(xzr), nil
 	case bytes.HasPrefix(magic, []byte{0x28, 0xb5, 0x2f, 0xfd}):
-		zr, err := zstd.NewReader(br)
+		zr, err := zstd.NewReader(br, zstd.WithDecoderConcurrency(threads))
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +185,10 @@ func WrapReader(r io.Reader) (io.ReadCloser, error) {
 	}
 }
 
-func WrapWriter(w io.Writer, c string) (io.Writer, io.Closer, error) {
+// WrapWriter compresses output with c. threads bounds the worker goroutines
+// the compressor may start; one keeps compression on the calling goroutine.
+func WrapWriter(w io.Writer, c string, threads int) (io.Writer, io.Closer, error) {
+	threads = normalizeThreads(threads)
 	switch c {
 	case "auto", "none", "":
 		return w, nil, nil
@@ -140,7 +208,7 @@ func WrapWriter(w io.Writer, c string) (io.Writer, io.Closer, error) {
 		}
 		return xzw, xzw, nil
 	case "zstd":
-		zw, err := zstd.NewWriter(w)
+		zw, err := zstd.NewWriter(w, zstd.WithEncoderConcurrency(threads))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -148,6 +216,15 @@ func WrapWriter(w io.Writer, c string) (io.Writer, io.Closer, error) {
 	default:
 		return nil, nil, fmt.Errorf("unsupported compression %q", c)
 	}
+}
+
+// normalizeThreads keeps a missing or nonsensical thread count at one, so no
+// code path can accidentally fan out across every core.
+func normalizeThreads(threads int) int {
+	if threads < 1 {
+		return 1
+	}
+	return threads
 }
 
 type readCloser struct {

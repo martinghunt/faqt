@@ -20,8 +20,8 @@ func CountRecords(reader Reader) (int, error) {
 	}
 }
 
-func CountRecordsPath(path string) (count int, err error) {
-	reader, err := OpenPath(path)
+func CountRecordsPath(path string, opts ...Option) (count int, err error) {
+	reader, err := OpenPath(path, opts...)
 	if err != nil {
 		return 0, err
 	}

@@ -9,9 +9,20 @@ import (
 )
 
 func BenchmarkReadFASTQFile(b *testing.B) {
-	path := os.Getenv("FASTQ_BENCH_FILE")
+	benchmarkReadFile(b, "FASTQ_BENCH_FILE")
+}
+
+// BenchmarkReadFASTAFile benchmarks a real FASTA input. Wrapped and unwrapped
+// files exercise different paths in the reader, so benchmark both.
+func BenchmarkReadFASTAFile(b *testing.B) {
+	benchmarkReadFile(b, "FASTA_BENCH_FILE")
+}
+
+func benchmarkReadFile(b *testing.B, env string) {
+	b.Helper()
+	path := os.Getenv(env)
 	if path == "" {
-		b.Skip("set FASTQ_BENCH_FILE to benchmark a real FASTQ input")
+		b.Skipf("set %s to benchmark a real input", env)
 	}
 
 	b.ReportAllocs()

@@ -36,8 +36,8 @@ type Stats struct {
 
 // FromPath calculates statistics for one input. An input holding no data gives
 // a result of all zeroes, as does one holding no sequences.
-func FromPath(path string, minimumLength int) (s Stats, err error) {
-	reader, err := seqio.OpenPathAllowEmpty(path)
+func FromPath(path string, minimumLength int, opts ...seqio.Option) (s Stats, err error) {
+	reader, err := seqio.OpenPathAllowEmpty(path, opts...)
 	if err != nil {
 		return Stats{}, err
 	}
@@ -57,7 +57,7 @@ func FromPath(path string, minimumLength int) (s Stats, err error) {
 // FromPaths calculates one result per ordinary input and per AGC sample. When
 // combineInputs is true, every record from every input contributes to one
 // result named "combined".
-func FromPaths(paths []string, minimumLength int, combineInputs bool) ([]Stats, error) {
+func FromPaths(paths []string, minimumLength int, combineInputs bool, opts ...seqio.Option) ([]Stats, error) {
 	if len(paths) == 0 {
 		return nil, nil
 	}
@@ -67,7 +67,7 @@ func FromPaths(paths []string, minimumLength int, combineInputs bool) ([]Stats, 
 		for _, path := range paths {
 			err := visitPathDatasets(path, func(_ string, reader seqio.Reader) error {
 				return addRecords(&combined, &lengths, reader, minimumLength)
-			})
+			}, opts...)
 			if err != nil {
 				return nil, err
 			}
@@ -87,7 +87,7 @@ func FromPaths(paths []string, minimumLength int, combineInputs bool) ([]Stats, 
 			s.finish(lengths)
 			results = append(results, s)
 			return nil
-		})
+		}, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +95,7 @@ func FromPaths(paths []string, minimumLength int, combineInputs bool) ([]Stats, 
 	return results, nil
 }
 
-func visitPathDatasets(path string, yield func(name string, reader seqio.Reader) error) (err error) {
+func visitPathDatasets(path string, yield func(name string, reader seqio.Reader) error, opts ...seqio.Option) (err error) {
 	if path != "-" {
 		archive, agcErr := seqagc.OpenPath(path)
 		if agcErr == nil {
@@ -109,7 +109,7 @@ func visitPathDatasets(path string, yield func(name string, reader seqio.Reader)
 		}
 	}
 
-	reader, err := seqio.OpenPathAllowEmpty(path)
+	reader, err := seqio.OpenPathAllowEmpty(path, opts...)
 	if err != nil {
 		return err
 	}

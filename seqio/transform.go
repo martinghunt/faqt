@@ -60,7 +60,7 @@ func Process(reader Reader, writer WriteCloser, transform RecordTransform) error
 }
 
 func TransformPath(inputPath, outputPath string, format Format, transform RecordTransform, opts ...Option) (err error) {
-	reader, err := OpenPath(inputPath)
+	reader, err := OpenPath(inputPath, opts...)
 	if err != nil {
 		return err
 	}

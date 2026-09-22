@@ -67,3 +67,50 @@ func TestReaderReverseComplementsReverseStrand(t *testing.T) {
 		t.Fatalf("Read() final error = %v, want EOF", err)
 	}
 }
+
+// bamFixture builds a one-record BAM in memory.
+func bamFixture(t *testing.T) []byte {
+	t.Helper()
+	header, err := htssam.NewHeader(nil, nil)
+	if err != nil {
+		t.Fatalf("NewHeader() error = %v", err)
+	}
+	var buf bytes.Buffer
+	w, err := htsbam.NewWriter(&buf, header, 1)
+	if err != nil {
+		t.Fatalf("NewWriter() error = %v", err)
+	}
+	if err := w.Write(&htssam.Record{
+		Name: "read1",
+		Seq:  htssam.NewSeq([]byte("ACGT")),
+		Qual: []byte{1, 2, 3, 4},
+	}); err != nil {
+		t.Fatalf("Write() error = %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+	return buf.Bytes()
+}
+
+// TestNewReaderWithThreadsClampsZero guards the default: biogo reads zero as
+// GOMAXPROCS, which would fan a BAM read out across every core.
+func TestNewReaderWithThreadsClampsZero(t *testing.T) {
+	for _, threads := range []int{-1, 0, 1} {
+		buf := bamFixture(t)
+		r, err := NewReaderWithThreads(bytes.NewReader(buf), threads)
+		if err != nil {
+			t.Fatalf("NewReaderWithThreads(%d) error = %v", threads, err)
+		}
+		rec, err := r.Read()
+		if err != nil {
+			t.Fatalf("Read(threads=%d) error = %v", threads, err)
+		}
+		if rec.Name == "" {
+			t.Fatalf("record = %+v", rec)
+		}
+		if err := r.Close(); err != nil {
+			t.Fatalf("Close() error = %v", err)
+		}
+	}
+}

@@ -911,7 +911,7 @@ func TestWriteDownloadedGenomeFastaOnlyCompressesByExtension(t *testing.T) {
 func readXOpenPath(t *testing.T, path string) []byte {
 	t.Helper()
 
-	in, err := xopen.Open(path)
+	in, err := xopen.Open(path, 1)
 	if err != nil {
 		t.Fatalf("xopen.Open() error = %v", err)
 	}

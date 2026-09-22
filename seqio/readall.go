@@ -24,8 +24,8 @@ func ReadAll(reader Reader) ([]*SeqRecord, error) {
 
 // ReadAllPath opens path, detects its format and compression, and reads every
 // record into memory.
-func ReadAllPath(path string) (records []*SeqRecord, err error) {
-	reader, err := OpenPath(path)
+func ReadAllPath(path string, opts ...Option) (records []*SeqRecord, err error) {
+	reader, err := OpenPath(path, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,8 @@ func ReadAllByName(reader Reader) (map[string]*SeqRecord, error) {
 // ReadAllByNamePath opens path, detects its format and compression, and reads
 // every record into a map keyed by record name. Duplicate record names return
 // an error.
-func ReadAllByNamePath(path string) (records map[string]*SeqRecord, err error) {
-	reader, err := OpenPath(path)
+func ReadAllByNamePath(path string, opts ...Option) (records map[string]*SeqRecord, err error) {
+	reader, err := OpenPath(path, opts...)
 	if err != nil {
 		return nil, err
 	}

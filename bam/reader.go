@@ -12,8 +12,20 @@ type Reader struct {
 	r *htsbam.Reader
 }
 
+// NewReader reads sequences from BAM on the calling goroutine.
 func NewReader(r io.Reader) (*Reader, error) {
-	br, err := htsbam.NewReader(r, 0)
+	return NewReaderWithThreads(r, 1)
+}
+
+// NewReaderWithThreads reads sequences from BAM, using threads worker
+// goroutines to inflate BGZF blocks. One keeps the work on the calling
+// goroutine; zero or less is clamped to one, because biogo reads zero as
+// "use GOMAXPROCS" and faqt does not take cores it was not given.
+func NewReaderWithThreads(r io.Reader, threads int) (*Reader, error) {
+	if threads < 1 {
+		threads = 1
+	}
+	br, err := htsbam.NewReader(r, threads)
 	if err != nil {
 		return nil, err
 	}

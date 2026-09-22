@@ -2,7 +2,6 @@ package fastq
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 
@@ -10,7 +9,8 @@ import (
 )
 
 type Reader struct {
-	r *bufio.Reader
+	r    *bufio.Reader
+	long []byte // scratch for lines longer than the read buffer
 }
 
 func NewReader(r *bufio.Reader) *Reader {
@@ -18,7 +18,7 @@ func NewReader(r *bufio.Reader) *Reader {
 }
 
 func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
-	header, err := r.readBufferedLine()
+	header, err := r.readLine()
 	if err != nil {
 		return nil, err
 	}
@@ -27,70 +27,76 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 	}
 	name, desc := seqrecord.ParseHeader(header[1:])
 
-	seq, err := r.readOwnedLine()
+	seqLine, err := r.readLine()
 	if err != nil {
 		return nil, err
 	}
-	plus, err := r.readBufferedLine()
+	// Sequence and quality are the same length in a valid record, so one
+	// allocation sized from the sequence line holds both and every base is
+	// copied once. A mismatched record grows the buffer and then fails
+	// validation below.
+	seqLen := len(seqLine)
+	buf := make([]byte, seqLen, 2*seqLen)
+	copy(buf, seqLine)
+
+	plus, err := r.readLine()
 	if err != nil {
 		return nil, err
 	}
 	if len(plus) == 0 || plus[0] != '+' {
 		return nil, fmt.Errorf("fastq separator line must start with +")
 	}
-	qual, err := r.readOwnedLine()
+
+	qualLine, err := r.readLine()
 	if err != nil {
 		return nil, err
 	}
-	rec := &seqrecord.SeqRecord{Name: name, Description: desc, Seq: seq, Qual: qual}
+	buf = append(buf, qualLine...)
+
+	rec := &seqrecord.SeqRecord{
+		Name:        name,
+		Description: desc,
+		Seq:         buf[:seqLen:seqLen],
+		Qual:        buf[seqLen:],
+	}
 	if err := rec.ValidateFASTQ(); err != nil {
 		return nil, err
 	}
 	return rec, nil
 }
 
-func (r *Reader) readBufferedLine() ([]byte, error) {
+// readLine returns the next line with any trailing \r and \n removed. The
+// returned bytes point into the read buffer and stay valid only until the next
+// read, so callers must copy anything they keep.
+func (r *Reader) readLine() ([]byte, error) {
 	line, err := r.r.ReadSlice('\n')
 	if err == bufio.ErrBufferFull {
-		return r.readLongBufferedLine(line)
+		// A line longer than the read buffer, such as a long read.
+		// Stitch the pieces together in scratch space.
+		r.long = append(r.long[:0], line...)
+		for err == bufio.ErrBufferFull {
+			line, err = r.r.ReadSlice('\n')
+			r.long = append(r.long, line...)
+		}
+		line = r.long
 	}
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
-	line = bytes.TrimRight(line, "\r\n")
+	line = trimEOL(line)
 	if err == io.EOF && len(line) == 0 {
 		return nil, io.EOF
 	}
 	return line, nil
 }
 
-func (r *Reader) readLongBufferedLine(first []byte) ([]byte, error) {
-	line := append([]byte(nil), first...)
-	for {
-		next, err := r.r.ReadSlice('\n')
-		line = append(line, next...)
-		if err == bufio.ErrBufferFull {
-			continue
+func trimEOL(line []byte) []byte {
+	for len(line) > 0 {
+		c := line[len(line)-1]
+		if c != '\n' && c != '\r' {
+			break
 		}
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-		line = bytes.TrimRight(line, "\r\n")
-		if err == io.EOF && len(line) == 0 {
-			return nil, io.EOF
-		}
-		return line, nil
+		line = line[:len(line)-1]
 	}
-}
-
-func (r *Reader) readOwnedLine() ([]byte, error) {
-	line, err := r.r.ReadBytes('\n')
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-	line = bytes.TrimRight(line, "\r\n")
-	if err == io.EOF && len(line) == 0 {
-		return nil, io.EOF
-	}
-	return line, nil
+	return line
 }

@@ -32,6 +32,7 @@ const (
 type options struct {
 	wrap        int
 	compression Compression
+	threads     int
 }
 
 type Option func(*options)
@@ -48,8 +49,22 @@ func WithCompression(c Compression) Option {
 	}
 }
 
+// WithThreads sets the number of worker goroutines readers and writers may
+// use to compress or decompress data. The default is one, which keeps faqt on
+// a single core; schedulers that allocate one core kill jobs that quietly fan
+// out across a whole node. Values above one are honoured only where the format
+// allows it, such as BGZF blocks and zstd frames.
+func WithThreads(n int) Option {
+	return func(o *options) {
+		if n < 1 {
+			n = 1
+		}
+		o.threads = n
+	}
+}
+
 func newOptions(opts ...Option) options {
-	out := options{compression: CompressAuto}
+	out := options{compression: CompressAuto, threads: 1}
 	for _, opt := range opts {
 		opt(&out)
 	}

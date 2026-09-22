@@ -15,6 +15,7 @@ func newStatsCmd() *cobra.Command {
 		tabDelimited  bool
 		tabNoHeader   bool
 		combineInputs bool
+		input         inputOptions
 	)
 	cmd := &cobra.Command{
 		Use:   "stats [files...]",
@@ -28,7 +29,7 @@ func newStatsCmd() *cobra.Command {
 			if len(args) == 0 {
 				args = []string{"-"}
 			}
-			results, err := stats.FromPaths(args, minimumLength, combineInputs)
+			results, err := stats.FromPaths(args, minimumLength, combineInputs, input.seqioOptions()...)
 			if err != nil {
 				return err
 			}
@@ -41,6 +42,7 @@ func newStatsCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&tabDelimited, "tab", "t", false, "Print tab-delimited output")
 	cmd.Flags().BoolVarP(&tabNoHeader, "tab-no-header", "u", false, "Print tab-delimited output with no header line")
 	cmd.Flags().BoolVar(&combineInputs, "combine-inputs", false, "Combine all records from all inputs into one statistics result")
+	addInputFlags(cmd, &input)
 	return cmd
 }
 

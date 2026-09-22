@@ -8,22 +8,7 @@ import (
 )
 
 func WriteRecord(w io.Writer, rec seqrecord.SeqRecord) error {
-	if err := rec.ValidateFASTQ(); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(w, "@"+rec.Header()+"\n"); err != nil {
-		return err
-	}
-	if _, err := w.Write(rec.Seq); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(w, "\n+\n"); err != nil {
-		return err
-	}
-	if _, err := w.Write(rec.Qual); err != nil {
-		return err
-	}
-	_, err := io.WriteString(w, "\n")
+	_, err := rec.WriteFASTQTo(w)
 	return err
 }
 

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	htsbam "github.com/biogo/hts/bam"
+	"github.com/biogo/hts/bgzf"
 	htssam "github.com/biogo/hts/sam"
 	dsnetbzip2 "github.com/dsnet/compress/bzip2"
 	"github.com/klauspost/compress/zstd"
@@ -102,7 +103,7 @@ func TestWrapReader(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := WrapReader(bytes.NewReader(tc.data(t)))
+			r, err := WrapReader(bytes.NewReader(tc.data(t)), 1)
 			if err != nil {
 				t.Fatalf("WrapReader() error = %v", err)
 			}
@@ -140,7 +141,7 @@ func TestWrapWriterAndOpen(t *testing.T) {
 				t.Fatalf("Create() error = %v", err)
 			}
 
-			w, closer, err := WrapWriter(fh, tc.compression)
+			w, closer, err := WrapWriter(fh, tc.compression, 1)
 			if err != nil {
 				t.Fatalf("WrapWriter() error = %v", err)
 			}
@@ -156,7 +157,7 @@ func TestWrapWriterAndOpen(t *testing.T) {
 				t.Fatalf("fh.Close() error = %v", err)
 			}
 
-			r, err := Open(path)
+			r, err := Open(path, 1)
 			if err != nil {
 				t.Fatalf("Open() error = %v", err)
 			}
@@ -174,8 +175,8 @@ func TestWrapWriterAndOpen(t *testing.T) {
 }
 
 func TestWrapWriterUnsupportedCompression(t *testing.T) {
-	if _, _, err := WrapWriter(io.Discard, "bogus"); err == nil {
-		t.Fatal("WrapWriter() error = nil, want unsupported compression error")
+	if _, _, err := WrapWriter(io.Discard, "bogus", 1); err == nil {
+		t.Fatal("WrapWriter() error = nil, want unsupported compression error", 1)
 	}
 }
 
@@ -237,4 +238,100 @@ func TestMultiCloserCloseOrderAndError(t *testing.T) {
 	if !first.closed || !second.closed {
 		t.Fatalf("closed flags = (%v, %v), want both true", first.closed, second.closed)
 	}
+}
+
+// TestIsBAMDistinguishesBGZFContents covers the decision that BGZF alone
+// cannot make: the same container carries BAM and bgzipped text.
+func TestIsBAMDistinguishesBGZFContents(t *testing.T) {
+	bgzipped := func(payload []byte) []byte {
+		var buf bytes.Buffer
+		w := bgzf.NewWriter(&buf, 1)
+		if _, err := w.Write(payload); err != nil {
+			t.Fatalf("bgzf Write() error = %v", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatalf("bgzf Close() error = %v", err)
+		}
+		return buf.Bytes()
+	}
+
+	tests := []struct {
+		name     string
+		data     []byte
+		wantBGZF bool
+		wantBAM  bool
+	}{
+		{
+			name:     "bgzipped fasta",
+			data:     bgzipped([]byte(">rec1\nACGT\n")),
+			wantBGZF: true,
+			wantBAM:  false,
+		},
+		{
+			name:     "bgzipped fastq",
+			data:     bgzipped([]byte("@rec1\nACGT\n+\n!!!!\n")),
+			wantBGZF: true,
+			wantBAM:  false,
+		},
+		{
+			name:     "bam",
+			data:     bgzipped(append([]byte("BAM\x01"), make([]byte, 64)...)),
+			wantBGZF: true,
+			wantBAM:  true,
+		},
+		{
+			name:     "plain gzip fasta",
+			data:     gzipBytes(t, []byte(">rec1\nACGT\n")),
+			wantBGZF: false,
+			wantBAM:  false,
+		},
+		{
+			name:     "uncompressed fasta",
+			data:     []byte(">rec1\nACGT\n"),
+			wantBGZF: false,
+			wantBAM:  false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			br := bufio.NewReaderSize(bytes.NewReader(tc.data), 256<<10)
+			gotBGZF, err := IsBGZF(br)
+			if err != nil {
+				t.Fatalf("IsBGZF() error = %v", err)
+			}
+			if gotBGZF != tc.wantBGZF {
+				t.Fatalf("IsBGZF() = %v, want %v", gotBGZF, tc.wantBGZF)
+			}
+			gotBAM, err := IsBAM(br)
+			if err != nil {
+				t.Fatalf("IsBAM() error = %v", err)
+			}
+			if gotBAM != tc.wantBAM {
+				t.Fatalf("IsBAM() = %v, want %v", gotBAM, tc.wantBAM)
+			}
+
+			// Neither check may consume the stream.
+			rest, err := io.ReadAll(br)
+			if err != nil {
+				t.Fatalf("ReadAll() error = %v", err)
+			}
+			if !bytes.Equal(rest, tc.data) {
+				t.Fatalf("detection consumed %d of %d bytes", len(tc.data)-len(rest), len(tc.data))
+			}
+		})
+	}
+}
+
+func gzipBytes(t *testing.T, payload []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	if _, err := w.Write(payload); err != nil {
+		t.Fatalf("gzip Write() error = %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("gzip Close() error = %v", err)
+	}
+	return buf.Bytes()
 }

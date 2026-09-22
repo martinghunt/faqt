@@ -318,7 +318,7 @@ func createOutputWriter(path string) (io.Writer, io.Closer, error) {
 		closer = fh
 	}
 
-	wrapped, wrappedCloser, err := xopen.WrapWriter(base, xopen.CompressionFromPath(path))
+	wrapped, wrappedCloser, err := xopen.WrapWriter(base, xopen.CompressionFromPath(path), 1)
 	if err != nil {
 		if closer != nil {
 			_ = closer.Close()

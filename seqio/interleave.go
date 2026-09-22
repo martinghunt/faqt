@@ -47,7 +47,7 @@ func Interleave(reader1, reader2 Reader, writer WriteCloser, opts InterleaveOpti
 }
 
 func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts InterleaveOptions, opts ...Option) (err error) {
-	reader1, err := OpenPath(inputPath1)
+	reader1, err := OpenPath(inputPath1, opts...)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func InterleavePath(inputPath1, inputPath2, outputPath string, interleaveOpts In
 		defer closeutil.CloseWithError(&err, closer)
 	}
 
-	reader2, err := OpenPath(inputPath2)
+	reader2, err := OpenPath(inputPath2, opts...)
 	if err != nil {
 		return err
 	}

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Read bgzipped text input instead of failing with `sam: magic number mismatch`. BGZF carries both BAM and bgzipped FASTA, FASTQ, SAM, PHYLIP, Clustal, GenBank, EMBL and GFF3, so `seqio` now decompresses the first block and looks for the BAM magic number before choosing a reader. Every text format was unreadable when compressed with `bgzip`, the tool the samtools ecosystem uses.
+
+### Changed
+- Reading and writing helpers in `seqio` and `stats` take `seqio.Option` values, which is source compatible for calls but not for code that takes these functions as values: `seqio.OpenPath`, `OpenPathAllowEmpty`, `OpenReader`, `ReadAllPath`, `ReadAllByNamePath`, `CountRecordsPath`, `stats.FromPath` and `stats.FromPaths`. Building faqt as a library now needs a Go 1.25 toolchain.
+- Keep faqt on one core unless asked for more. Reading zstd, writing zstd and reading BAM previously ran one worker per core, because the compression libraries default to `GOMAXPROCS`; reading a BAM used 343% CPU, and schedulers that allocate one core kill jobs that fan out. Compression concurrency is now one by default, and `--threads` raises it for the commands that read or write sequence data. Serial decoding also uses less total CPU: the same BAM read costs 0.57 CPU-seconds serially against 0.99 across a pool.
+- Buffer output written by `seqio.CreatePath` and `seqio.OpenWriter`, which were writing straight to the file descriptor: one FASTQ record cost five `write` syscalls and a wrapped FASTA line cost two. `faqt to-fasta --wrap 60` on a 231 MB input drops from 10.1s to 0.22s. `Close` now flushes, so its error must be propagated for output to be complete. `seqio.NewWriter` stays unbuffered, because the caller owns the writer and may never call `Close`.
+- Read FASTA about 2.9x faster and FASTQ about 1.3x faster by parsing lines out of the read buffer rather than allocating one byte slice per line. Reading a 203 MB wrapped FASTA allocated 1262 MB in 3.34M allocations and now allocates 207 MB in under a thousand; the garbage that produced was also pushing CPU use above one core, so the same read drops from 146% CPU to 93%.
+- Decompress gzip with `klauspost/compress`, already a dependency, which is about 21% faster than `compress/gzip` on one core.
+- Raise read and write buffers from 4 KB and 8 KB to 256 KB, cutting read syscalls by roughly 64x on large inputs.
+- Raise the `go` directive to 1.25, so the `faqt` binary sizes `GOMAXPROCS` from the cgroup CPU limit rather than the number of cores on the host. The Go runtime gates this on the main module, so a tool importing faqt gets it from its own `go` directive, not this one.
+
+### Added
+- Add `seqio.Writer.Flush`, for callers that need a record to leave the output buffer without closing the writer, such as writing into a pipe a consumer reads record by record.
+- Add `bam.NewReaderWithThreads`, keeping `bam.NewReader` source compatible and serial.
+- Add `seqio.WithThreads` and a `--threads` flag on `to-fasta`, `stats`, `interleave` and `to-perfect-reads`, defaulting to one. Values above one are used where the format allows it, such as BGZF blocks and zstd frames.
+- Add a read and write test matrix over every input format and every compression, including BGZF, exercised by path and through stdin, alongside tests for concatenated compressed streams, misleading filename suffixes, and a guard that measures CPU use to catch compression fanning out across cores again.
+
 ## [0.9.1] - 2026-09-21
 
 ### Fixed
