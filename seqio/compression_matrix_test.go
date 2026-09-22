@@ -676,3 +676,54 @@ func TestWriterFlushOnUnbufferedWriter(t *testing.T) {
 		t.Fatalf("output = %q", got)
 	}
 }
+
+// countingWriter records how many separate Write calls reach the sink.
+type countingWriter struct {
+	calls int
+	bytes int
+}
+
+func (c *countingWriter) Write(p []byte) (int, error) {
+	c.calls++
+	c.bytes += len(p)
+	return len(p), nil
+}
+
+// TestCompressedOutputIsBatched guards the buffer below the compressor.
+// Compressors emit their own small chunks, so without it every one of those
+// becomes a write syscall: gzipping 176 MB straight to a file descriptor cost
+// 28% more than gzipping it into a buffer.
+func TestCompressedOutputIsBatched(t *testing.T) {
+	for _, compression := range []seqio.Compression{
+		seqio.CompressGzip,
+		seqio.CompressBzip2,
+		seqio.CompressXZ,
+		seqio.CompressZstd,
+	} {
+		t.Run(string(compression), func(t *testing.T) {
+			sink := &countingWriter{}
+			w, err := seqio.OpenWriter(sink, seqio.FASTA, seqio.WithCompression(compression))
+			if err != nil {
+				t.Fatalf("OpenWriter() error = %v", err)
+			}
+			rec := &seqio.SeqRecord{Name: "rec", Seq: bytes.Repeat([]byte("ACGTN"), 40)}
+			for i := 0; i < 20000; i++ { // ~4 MB of records
+				if err := w.Write(rec); err != nil {
+					t.Fatalf("Write() error = %v", err)
+				}
+			}
+			if err := w.Close(); err != nil {
+				t.Fatalf("Close() error = %v", err)
+			}
+
+			// Allow a couple of writes per buffer's worth of output, plus
+			// a handful for headers and trailers.
+			maxCalls := sink.bytes/(256<<10)*2 + 8
+			if sink.calls > maxCalls {
+				t.Fatalf("%d writes reached the sink for %d bytes, want at most %d: compressed output is not batched",
+					sink.calls, sink.bytes, maxCalls)
+			}
+			t.Logf("%d writes for %d bytes of output", sink.calls, sink.bytes)
+		})
+	}
+}

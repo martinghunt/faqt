@@ -32,7 +32,9 @@ const (
 	readBufSize = 256 << 10
 	// writeBufSize batches output so records do not each cost write
 	// syscalls. Unbuffered, one FASTQ record costs five writes and a
-	// wrapped FASTA line costs two.
+	// wrapped FASTA line costs two. It is also used below the compressor,
+	// which emits its own small chunks: gzipping 176 MB straight to a file
+	// descriptor costs 28% more than gzipping it into a buffer.
 	writeBufSize = 256 << 10
 )
 
@@ -255,12 +257,7 @@ func NewWriter(w io.Writer, format Format, opts ...Option) *Writer {
 // Close must be called to flush it.
 func OpenWriter(w io.Writer, format Format, opts ...Option) (*Writer, error) {
 	options := newOptions(opts...)
-	wrapped, closer, err := xopen.WrapWriter(w, string(options.compression), options.threads)
-	if err != nil {
-		return nil, err
-	}
-	buf := bufio.NewWriterSize(wrapped, writeBufSize)
-	return &Writer{w: buf, buf: buf, closer: closer, format: format, wrap: options.wrap}, nil
+	return newBufferedWriter(w, nil, format, options)
 }
 
 // CreatePath creates path and writes records to it, or to stdout for "-". The
@@ -288,21 +285,63 @@ func CreatePath(path string, format Format, opts ...Option) (*Writer, error) {
 		base = fh
 		closer = fh
 	}
-	wrapped, wcloser, err := xopen.WrapWriter(base, string(options.compression), options.threads)
+	writer, err := newBufferedWriter(base, closer, format, options)
 	if err != nil {
 		if closer != nil {
 			_ = closer.Close()
 		}
 		return nil, err
 	}
+	return writer, nil
+}
+
+// newBufferedWriter builds the output chain sink -> [buffer] -> compressor ->
+// record buffer. The buffer below the compressor matters as much as the one
+// above it: compressors emit their own small chunks, so writing them straight
+// to a file descriptor costs a quarter again in syscalls. It is only added
+// when something is actually compressing, since otherwise the record buffer
+// already sits directly on the sink.
+func newBufferedWriter(sink io.Writer, sinkCloser io.Closer, format Format, options options) (*Writer, error) {
+	compressing := options.compression != CompressNone && options.compression != CompressAuto
+
+	target := sink
+	var sinkBuf *bufio.Writer
+	if compressing {
+		sinkBuf = bufio.NewWriterSize(sink, writeBufSize)
+		target = sinkBuf
+	}
+
+	wrapped, wcloser, err := xopen.WrapWriter(target, string(options.compression), options.threads)
+	if err != nil {
+		return nil, err
+	}
+
 	buf := bufio.NewWriterSize(wrapped, writeBufSize)
+
+	// Closed in reverse order: the compressor first, so its trailer lands
+	// in the buffer below it, then that buffer, then the sink.
+	closers := []io.Closer{sinkCloser}
+	if sinkBuf != nil {
+		closers = append(closers, flushCloser{sinkBuf})
+	}
+	closers = append(closers, wcloser)
+
 	return &Writer{
 		w:      buf,
 		buf:    buf,
-		closer: closeutil.MultiCloser(closer, wcloser),
+		closer: closeutil.MultiCloser(closers...),
 		format: format,
 		wrap:   options.wrap,
 	}, nil
+}
+
+// flushCloser lets a buffer take part in the ordered close sequence.
+type flushCloser struct {
+	*bufio.Writer
+}
+
+func (f flushCloser) Close() error {
+	return f.Flush()
 }
 
 func (w *Writer) Write(rec *SeqRecord) error {
