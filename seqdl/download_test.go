@@ -1,6 +1,7 @@
 package seqdl
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,6 +13,25 @@ import (
 
 	"github.com/martinghunt/faqt/seqio"
 )
+
+func TestDownloadAccessionsContextUsesRequestContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	downloader := NewDownloader()
+	downloader.EFetchURL = "https://example.invalid/efetch"
+	err := downloader.DownloadAccessionsContext(ctx, []string{"WP_002248791.1"}, filepath.Join(t.TempDir(), "out.fa"), DownloadOptions{})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("DownloadAccessionsContext() error = %v, want context.Canceled", err)
+	}
+}
+
+func TestDownloadAccessionsContextRejectsNilContext(t *testing.T) {
+	err := NewDownloader().DownloadAccessionsContext(nil, []string{"WP_002248791.1"}, filepath.Join(t.TempDir(), "out.fa"), DownloadOptions{})
+	if err == nil || err.Error() != "nil context" {
+		t.Fatalf("DownloadAccessionsContext() error = %v, want nil context", err)
+	}
+}
 
 func TestDownloadAccessionInfersProteinForWPAccession(t *testing.T) {
 	var gotQuery string

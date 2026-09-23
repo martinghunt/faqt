@@ -12,7 +12,7 @@ import (
 
 var (
 	downloadGenomeWithOptions = genomedl.DownloadGenomeWithOptions
-	downloadSeqAccessions     = seqdl.DownloadAccessions
+	downloadSeqAccessions     = seqdl.DownloadAccessionsContext
 )
 
 func newDownloadCmd() *cobra.Command {
@@ -56,7 +56,7 @@ func newDownloadCmd() *cobra.Command {
 			if email == "" {
 				email = os.Getenv("NCBI_EMAIL")
 			}
-			return downloadSeqAccessions(args, output.path, seqdl.DownloadOptions{
+			return downloadSeqAccessions(cmd.Context(), args, output.path, seqdl.DownloadOptions{
 				Database:      seqdl.Database(db),
 				Nucleotide:    seqdl.NucleotideMode(nuc),
 				Source:        seqdl.Source(source),

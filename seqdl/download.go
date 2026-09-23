@@ -2,6 +2,7 @@ package seqdl
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"encoding/xml"
 	"errors"
@@ -95,16 +96,37 @@ func NewDownloader() *Downloader {
 
 // DownloadAccessions downloads one or more sequence accessions to FASTA.
 func DownloadAccessions(accessions []string, outPath string, opts DownloadOptions) error {
-	return NewDownloader().DownloadAccessions(accessions, outPath, opts)
+	return DownloadAccessionsContext(context.Background(), accessions, outPath, opts)
 }
 
 // DownloadAccession downloads one sequence accession to FASTA.
 func DownloadAccession(accession, outPath string, opts DownloadOptions) error {
-	return NewDownloader().DownloadAccessions([]string{accession}, outPath, opts)
+	return DownloadAccessionContext(context.Background(), accession, outPath, opts)
+}
+
+// DownloadAccessionsContext downloads one or more sequence accessions to FASTA
+// using ctx for every HTTP request.
+func DownloadAccessionsContext(ctx context.Context, accessions []string, outPath string, opts DownloadOptions) error {
+	return NewDownloader().DownloadAccessionsContext(ctx, accessions, outPath, opts)
+}
+
+// DownloadAccessionContext downloads one sequence accession to FASTA using ctx
+// for every HTTP request.
+func DownloadAccessionContext(ctx context.Context, accession, outPath string, opts DownloadOptions) error {
+	return NewDownloader().DownloadAccessionsContext(ctx, []string{accession}, outPath, opts)
 }
 
 // DownloadAccessions downloads one or more sequence accessions to FASTA.
 func (d *Downloader) DownloadAccessions(accessions []string, outPath string, opts DownloadOptions) (err error) {
+	return d.DownloadAccessionsContext(context.Background(), accessions, outPath, opts)
+}
+
+// DownloadAccessionsContext downloads one or more sequence accessions to FASTA
+// using ctx for every HTTP request.
+func (d *Downloader) DownloadAccessionsContext(ctx context.Context, accessions []string, outPath string, opts DownloadOptions) (err error) {
+	if ctx == nil {
+		return fmt.Errorf("nil context")
+	}
 	ids, err := cleanAccessions(accessions)
 	if err != nil {
 		return err
@@ -117,7 +139,7 @@ func (d *Downloader) DownloadAccessions(accessions []string, outPath string, opt
 		return err
 	}
 	if mode != NucleotideNone {
-		return d.downloadNucleotideAccessions(ids, outPath, opts, mode)
+		return d.downloadNucleotideAccessions(ctx, ids, outPath, opts, mode)
 	}
 	db, err := resolveDatabase(ids, opts.Database)
 	if err != nil {
@@ -132,7 +154,7 @@ func (d *Downloader) DownloadAccessions(accessions []string, outPath string, opt
 	}
 	defer closeutil.CloseWithError(&err, writer)
 
-	written, err := d.downloadSequenceFASTARecords(ids, db, writer, opts)
+	written, err := d.downloadSequenceFASTARecords(ctx, ids, db, writer, opts)
 	if err != nil {
 		return err
 	}
@@ -142,14 +164,14 @@ func (d *Downloader) DownloadAccessions(accessions []string, outPath string, opt
 	return nil
 }
 
-func (d *Downloader) downloadSequenceFASTARecords(accessions []string, db Database, writer *seqio.Writer, opts DownloadOptions) (int, error) {
+func (d *Downloader) downloadSequenceFASTARecords(ctx context.Context, accessions []string, db Database, writer *seqio.Writer, opts DownloadOptions) (int, error) {
 	written := 0
 	direct := make([]string, 0, len(accessions))
 	flushDirect := func() error {
 		if len(direct) == 0 {
 			return nil
 		}
-		n, err := d.downloadDirectFASTARecords(direct, db, writer, opts)
+		n, err := d.downloadDirectFASTARecords(ctx, direct, db, writer, opts)
 		if err != nil {
 			return err
 		}
@@ -166,7 +188,7 @@ func (d *Downloader) downloadSequenceFASTARecords(accessions []string, db Databa
 		if err := flushDirect(); err != nil {
 			return written, err
 		}
-		n, err := d.downloadWGSProjectFASTA(accession, writer, opts)
+		n, err := d.downloadWGSProjectFASTA(ctx, accession, writer, opts)
 		if err != nil {
 			return written, err
 		}
@@ -178,14 +200,14 @@ func (d *Downloader) downloadSequenceFASTARecords(accessions []string, db Databa
 	return written, nil
 }
 
-func (d *Downloader) downloadDirectFASTARecords(accessions []string, db Database, writer *seqio.Writer, opts DownloadOptions) (int, error) {
+func (d *Downloader) downloadDirectFASTARecords(ctx context.Context, accessions []string, db Database, writer *seqio.Writer, opts DownloadOptions) (int, error) {
 	written := 0
 	for start := 0; start < len(accessions); start += maxEFetchIDs {
 		end := start + maxEFetchIDs
 		if end > len(accessions) {
 			end = len(accessions)
 		}
-		req, err := d.newEFetchRequest(accessions[start:end], db, opts)
+		req, err := d.newEFetchRequest(ctx, accessions[start:end], db, opts)
 		if err != nil {
 			return written, err
 		}
@@ -235,7 +257,7 @@ func (d *Downloader) downloadFASTARequest(req *http.Request, writer *seqio.Write
 	return written, nil
 }
 
-func (d *Downloader) downloadNucleotideAccessions(accessions []string, outPath string, opts DownloadOptions, mode NucleotideMode) (err error) {
+func (d *Downloader) downloadNucleotideAccessions(ctx context.Context, accessions []string, outPath string, opts DownloadOptions, mode NucleotideMode) (err error) {
 	source, err := normalizeSource(opts.Source)
 	if err != nil {
 		return err
@@ -244,7 +266,7 @@ func (d *Downloader) downloadNucleotideAccessions(accessions []string, outPath s
 
 	rows := make([]ipgRow, 0, len(accessions))
 	for _, accession := range accessions {
-		matches, err := d.nucleotideRowsForAccession(accession, opts, source, assembly)
+		matches, err := d.nucleotideRowsForAccession(ctx, accession, opts, source, assembly)
 		if err != nil {
 			return err
 		}
@@ -264,15 +286,15 @@ func (d *Downloader) downloadNucleotideAccessions(accessions []string, outPath s
 	defer closeutil.CloseWithError(&err, writer)
 
 	for _, row := range rows {
-		if err := d.downloadNucleotideRow(row, writer, opts); err != nil {
+		if err := d.downloadNucleotideRow(ctx, row, writer, opts); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (d *Downloader) nucleotideRowsForAccession(accession string, opts DownloadOptions, source Source, assembly string) ([]ipgRow, error) {
-	req, err := d.newIPGRequest(accession, opts)
+func (d *Downloader) nucleotideRowsForAccession(ctx context.Context, accession string, opts DownloadOptions, source Source, assembly string) ([]ipgRow, error) {
+	req, err := d.newIPGRequest(ctx, accession, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -294,8 +316,8 @@ func (d *Downloader) nucleotideRowsForAccession(accession string, opts DownloadO
 	return filterIPGRows(rows, source, assembly), nil
 }
 
-func (d *Downloader) downloadNucleotideRow(row ipgRow, writer *seqio.Writer, opts DownloadOptions) (err error) {
-	req, err := d.newNucleotideRegionRequest(row, opts)
+func (d *Downloader) downloadNucleotideRow(ctx context.Context, row ipgRow, writer *seqio.Writer, opts DownloadOptions) (err error) {
+	req, err := d.newNucleotideRegionRequest(ctx, row, opts)
 	if err != nil {
 		return err
 	}
@@ -338,8 +360,8 @@ func (d *Downloader) downloadNucleotideRow(row ipgRow, writer *seqio.Writer, opt
 	return nil
 }
 
-func (d *Downloader) downloadWGSProjectFASTA(accession string, writer *seqio.Writer, opts DownloadOptions) (int, error) {
-	ranges, err := d.wgsComponentRanges(accession, opts)
+func (d *Downloader) downloadWGSProjectFASTA(ctx context.Context, accession string, writer *seqio.Writer, opts DownloadOptions) (int, error) {
+	ranges, err := d.wgsComponentRanges(ctx, accession, opts)
 	if err != nil {
 		return 0, err
 	}
@@ -349,7 +371,7 @@ func (d *Downloader) downloadWGSProjectFASTA(accession string, writer *seqio.Wri
 
 	written := 0
 	for _, r := range ranges {
-		n, err := d.downloadWGSComponentRange(r, writer, opts)
+		n, err := d.downloadWGSComponentRange(ctx, r, writer, opts)
 		if err != nil {
 			return written, err
 		}
@@ -361,8 +383,8 @@ func (d *Downloader) downloadWGSProjectFASTA(accession string, writer *seqio.Wri
 	return written, nil
 }
 
-func (d *Downloader) wgsComponentRanges(accession string, opts DownloadOptions) (ranges []accessionRange, err error) {
-	req, err := d.newWGSProjectRequest(accession, opts)
+func (d *Downloader) wgsComponentRanges(ctx context.Context, accession string, opts DownloadOptions) (ranges []accessionRange, err error) {
+	req, err := d.newWGSProjectRequest(ctx, accession, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -388,9 +410,9 @@ func (d *Downloader) wgsComponentRanges(accession string, opts DownloadOptions) 
 	return wgsRangesFromLocusLength(info.Locus, info.Length)
 }
 
-func (d *Downloader) downloadWGSComponentRange(r accessionRange, writer *seqio.Writer, opts DownloadOptions) (int, error) {
+func (d *Downloader) downloadWGSComponentRange(ctx context.Context, r accessionRange, writer *seqio.Writer, opts DownloadOptions) (int, error) {
 	if r.First == r.Last {
-		return d.downloadDirectFASTARecords([]string{r.First}, DatabaseNuccore, writer, opts)
+		return d.downloadDirectFASTARecords(ctx, []string{r.First}, DatabaseNuccore, writer, opts)
 	}
 	first, lastNumber, err := parseAccessionRangeSerial(r)
 	if err != nil {
@@ -406,7 +428,7 @@ func (d *Downloader) downloadWGSComponentRange(r accessionRange, writer *seqio.W
 		if len(batch) == 0 {
 			return nil
 		}
-		n, err := d.downloadDirectFASTARecords(batch, DatabaseNuccore, writer, opts)
+		n, err := d.downloadDirectFASTARecords(ctx, batch, DatabaseNuccore, writer, opts)
 		if err != nil {
 			return err
 		}
@@ -444,34 +466,34 @@ func cleanAccessions(accessions []string) ([]string, error) {
 	return ids, nil
 }
 
-func (d *Downloader) newEFetchRequest(accessions []string, db Database, opts DownloadOptions) (*http.Request, error) {
+func (d *Downloader) newEFetchRequest(ctx context.Context, accessions []string, db Database, opts DownloadOptions) (*http.Request, error) {
 	values := url.Values{}
 	values.Set("db", string(db))
 	values.Set("id", strings.Join(accessions, ","))
 	values.Set("rettype", "fasta")
 	values.Set("retmode", "text")
-	return d.newRequest(values, opts)
+	return d.newRequest(ctx, values, opts)
 }
 
-func (d *Downloader) newIPGRequest(accession string, opts DownloadOptions) (*http.Request, error) {
+func (d *Downloader) newIPGRequest(ctx context.Context, accession string, opts DownloadOptions) (*http.Request, error) {
 	values := url.Values{}
 	values.Set("db", string(DatabaseProtein))
 	values.Set("id", accession)
 	values.Set("rettype", "ipg")
 	values.Set("retmode", "text")
-	return d.newRequest(values, opts)
+	return d.newRequest(ctx, values, opts)
 }
 
-func (d *Downloader) newWGSProjectRequest(accession string, opts DownloadOptions) (*http.Request, error) {
+func (d *Downloader) newWGSProjectRequest(ctx context.Context, accession string, opts DownloadOptions) (*http.Request, error) {
 	values := url.Values{}
 	values.Set("db", string(DatabaseNuccore))
 	values.Set("id", accession)
 	values.Set("rettype", "gbc")
 	values.Set("retmode", "xml")
-	return d.newRequest(values, opts)
+	return d.newRequest(ctx, values, opts)
 }
 
-func (d *Downloader) newNucleotideRegionRequest(row ipgRow, opts DownloadOptions) (*http.Request, error) {
+func (d *Downloader) newNucleotideRegionRequest(ctx context.Context, row ipgRow, opts DownloadOptions) (*http.Request, error) {
 	strand, err := row.efetchStrand()
 	if err != nil {
 		return nil, err
@@ -484,10 +506,10 @@ func (d *Downloader) newNucleotideRegionRequest(row ipgRow, opts DownloadOptions
 	values.Set("strand", strand)
 	values.Set("rettype", "fasta")
 	values.Set("retmode", "text")
-	return d.newRequest(values, opts)
+	return d.newRequest(ctx, values, opts)
 }
 
-func (d *Downloader) newRequest(values url.Values, opts DownloadOptions) (*http.Request, error) {
+func (d *Downloader) newRequest(ctx context.Context, values url.Values, opts DownloadOptions) (*http.Request, error) {
 	base, err := url.Parse(d.efetchURL())
 	if err != nil {
 		return nil, err
@@ -508,7 +530,7 @@ func (d *Downloader) newRequest(values url.Values, opts DownloadOptions) (*http.
 		query.Set("api_key", opts.APIKey)
 	}
 	base.RawQuery = query.Encode()
-	return http.NewRequest(http.MethodGet, base.String(), nil)
+	return http.NewRequestWithContext(ctx, http.MethodGet, base.String(), nil)
 }
 
 func (d *Downloader) efetchURL() string {

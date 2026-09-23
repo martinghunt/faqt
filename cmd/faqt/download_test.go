@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"io"
 	"path/filepath"
@@ -64,7 +65,7 @@ func TestDownloadCommandRoutesAssemblyToGenomeDownloader(t *testing.T) {
 		gotOptions = opts
 		return outPath, nil
 	}
-	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+	downloadSeqAccessions = func(_ context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
 		t.Fatalf("sequence downloader should not be called")
 		return nil
 	}
@@ -108,7 +109,7 @@ func TestDownloadCommandDeprecatedFastaAliasRoutesToGenomeDownloader(t *testing.
 		gotOptions = opts
 		return outPath, nil
 	}
-	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+	downloadSeqAccessions = func(_ context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
 		t.Fatalf("sequence downloader should not be called")
 		return nil
 	}
@@ -153,7 +154,7 @@ func TestDownloadCommandRoutesGenomeFormatToDownloader(t *testing.T) {
 				gotOptions = opts
 				return outPath, nil
 			}
-			downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+			downloadSeqAccessions = func(_ context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
 				t.Fatalf("sequence downloader should not be called")
 				return nil
 			}
@@ -183,6 +184,7 @@ func TestDownloadCommandRoutesSequenceToSeqDownloader(t *testing.T) {
 
 	var (
 		gotAccessions []string
+		gotContext    context.Context
 		gotOutPath    string
 		gotOptions    seqdl.DownloadOptions
 	)
@@ -190,7 +192,8 @@ func TestDownloadCommandRoutesSequenceToSeqDownloader(t *testing.T) {
 		t.Fatalf("genome downloader should not be called")
 		return "", nil
 	}
-	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+	downloadSeqAccessions = func(ctx context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+		gotContext = ctx
 		gotAccessions = append([]string(nil), accessions...)
 		gotOutPath = outPath
 		gotOptions = opts
@@ -199,6 +202,8 @@ func TestDownloadCommandRoutesSequenceToSeqDownloader(t *testing.T) {
 
 	outPath := filepath.Join(t.TempDir(), "wp.fa")
 	cmd := newDownloadCmd()
+	requestContext := context.WithValue(context.Background(), struct{}{}, "download context")
+	cmd.SetContext(requestContext)
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
 	cmd.SetArgs([]string{
@@ -217,6 +222,9 @@ func TestDownloadCommandRoutesSequenceToSeqDownloader(t *testing.T) {
 	}
 	if !reflect.DeepEqual(gotAccessions, []string{"WP_002248791.1"}) {
 		t.Fatalf("accessions = %v, want WP_002248791.1", gotAccessions)
+	}
+	if gotContext != requestContext {
+		t.Fatal("sequence downloader did not receive the command context")
 	}
 	if gotOutPath != outPath {
 		t.Fatalf("outPath = %q, want %q", gotOutPath, outPath)
@@ -257,7 +265,7 @@ func TestDownloadCommandRoutesWGSMasterToSeqDownloader(t *testing.T) {
 		t.Fatalf("genome downloader should not be called")
 		return "", nil
 	}
-	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+	downloadSeqAccessions = func(_ context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
 		gotAccessions = append([]string(nil), accessions...)
 		return nil
 	}
@@ -280,7 +288,7 @@ func TestDownloadCommandBareNucleotideMeansFirst(t *testing.T) {
 	defer func() { downloadSeqAccessions = oldSeq }()
 
 	var gotOptions seqdl.DownloadOptions
-	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+	downloadSeqAccessions = func(_ context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
 		gotOptions = opts
 		return nil
 	}
@@ -308,7 +316,7 @@ func TestDownloadCommandUsesNCBIEnvironmentForSequences(t *testing.T) {
 	t.Setenv("NCBI_EMAIL", "env@example.org")
 
 	var gotOptions seqdl.DownloadOptions
-	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+	downloadSeqAccessions = func(_ context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
 		gotOptions = opts
 		return nil
 	}
@@ -409,7 +417,7 @@ func TestDownloadCommandReturnsDownloadError(t *testing.T) {
 	oldSeq := downloadSeqAccessions
 	defer func() { downloadSeqAccessions = oldSeq }()
 	wantErr := errors.New("download failed")
-	downloadSeqAccessions = func(accessions []string, outPath string, opts seqdl.DownloadOptions) error {
+	downloadSeqAccessions = func(_ context.Context, accessions []string, outPath string, opts seqdl.DownloadOptions) error {
 		return wantErr
 	}
 
