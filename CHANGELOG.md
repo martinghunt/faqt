@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-23
+
 ### Fixed
+- Validate every gzipped FASTQ through its CRC and uncompressed-length trailer before publishing downloaded or merged paired reads. Merged files are validated while they are built, invalid temporary outputs are removed, source files are preserved for retry, and faqt now returns an error instead of reporting success for truncated or corrupt gzip data.
+- Roll back already-renamed read files if publishing a multi-file download or merge fails partway through, so a failed operation does not leave a partial set of final outputs.
 - Read bgzipped text input instead of failing with `sam: magic number mismatch`. BGZF carries both BAM and bgzipped FASTA, FASTQ, SAM, PHYLIP, Clustal, GenBank, EMBL and GFF3, so `seqio` now decompresses the first block and looks for the BAM magic number before choosing a reader. Every text format was unreadable when compressed with `bgzip`, the tool the samtools ecosystem uses.
 
 ### Changed
@@ -187,7 +191,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/martinghunt/faqt/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/martinghunt/faqt/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/martinghunt/faqt/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/martinghunt/faqt/compare/v0.7.0...v0.8.0
