@@ -41,6 +41,14 @@ type alignmentTraceback struct {
 	refStart   int
 }
 
+type localDPResult struct {
+	dp        alignmentDP
+	score     int
+	queryEnd  int
+	refEnd    int
+	bestState byte
+}
+
 func newAlignmentDP(rows, cols, matchInit, gapInit int) alignmentDP {
 	size := rows * cols
 	dp := alignmentDP{
@@ -147,6 +155,85 @@ func traceContinues(local bool, i, j int) bool {
 	return i > 0 || j > 0
 }
 
+func fillLocalDP(query, ref []byte, scoring Scoring, xdrop, bandWidth int) localDPResult {
+	rows := len(query) + 1
+	cols := len(ref) + 1
+	dp := newAlignmentDP(rows, cols, 0, negInf)
+
+	result := localDPResult{dp: dp}
+	for i := 1; i < rows; i++ {
+		rowBest := negInf
+		for j := 1; j < cols; j++ {
+			if !inBand(i, j, len(query), len(ref), bandWidth) {
+				continue
+			}
+			idx := dp.index(i, j)
+			diagIdx := dp.index(i-1, j-1)
+			upIdx := dp.index(i-1, j)
+			leftIdx := dp.index(i, j-1)
+
+			bestPrev := 0
+			dp.traceM[idx] = 0
+			if dp.mm[diagIdx] > bestPrev {
+				bestPrev = dp.mm[diagIdx]
+				dp.traceM[idx] = 'M'
+			}
+			if dp.ix[diagIdx] > bestPrev {
+				bestPrev = dp.ix[diagIdx]
+				dp.traceM[idx] = 'X'
+			}
+			if dp.iy[diagIdx] > bestPrev {
+				bestPrev = dp.iy[diagIdx]
+				dp.traceM[idx] = 'Y'
+			}
+			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
+
+			bestX := 0
+			dp.traceX[idx] = 0
+			openX := dp.mm[upIdx] + scoring.GapOpen
+			if openX > bestX {
+				bestX = openX
+				dp.traceX[idx] = 'M'
+			}
+			extendX := dp.ix[upIdx] + scoring.GapExtend
+			if extendX > bestX {
+				bestX = extendX
+				dp.traceX[idx] = 'X'
+			}
+			dp.ix[idx] = bestX
+
+			bestY := 0
+			dp.traceY[idx] = 0
+			openY := dp.mm[leftIdx] + scoring.GapOpen
+			if openY > bestY {
+				bestY = openY
+				dp.traceY[idx] = 'M'
+			}
+			extendY := dp.iy[leftIdx] + scoring.GapExtend
+			if extendY > bestY {
+				bestY = extendY
+				dp.traceY[idx] = 'Y'
+			}
+			dp.iy[idx] = bestY
+
+			cellBest, cellState := dp.bestState(idx)
+			if cellBest > rowBest {
+				rowBest = cellBest
+			}
+			if cellBest > result.score {
+				result.score = cellBest
+				result.queryEnd = i
+				result.refEnd = j
+				result.bestState = cellState
+			}
+		}
+		if xdrop > 0 && rowBest != negInf && result.score-rowBest > xdrop {
+			break
+		}
+	}
+	return result
+}
+
 func globalAlign(query, ref []byte, scoring Scoring, xdrop, bandWidth int) (globalAlignment, error) {
 	if len(query) == 0 && len(ref) == 0 {
 		return globalAlignment{}, nil
@@ -249,98 +336,22 @@ func suffixAlign(query, ref []byte, scoring Scoring, xdrop int) (endAlignment, e
 	if len(query) == 0 && len(ref) == 0 {
 		return endAlignment{}, nil
 	}
-	rows := len(query) + 1
-	cols := len(ref) + 1
-	dp := newAlignmentDP(rows, cols, negInf, negInf)
-	for i := 0; i < rows; i++ {
-		dp.mm[dp.index(i, 0)] = 0
+	local := fillLocalDP(query, ref, scoring, xdrop, 0)
+	if local.score == 0 {
+		local.queryEnd = len(query)
+		local.refEnd = len(ref)
 	}
-	for j := 0; j < cols; j++ {
-		dp.mm[j] = 0
-	}
-
-	bestScore := 0
-	bestI, bestJ := rows-1, cols-1
-	bestState := byte(0)
-
-	for i := 1; i < rows; i++ {
-		rowBest := negInf
-		for j := 1; j < cols; j++ {
-			idx := dp.index(i, j)
-			diagIdx := dp.index(i-1, j-1)
-			upIdx := dp.index(i-1, j)
-			leftIdx := dp.index(i, j-1)
-
-			bestPrev := 0
-			dp.traceM[idx] = 0
-			if dp.mm[diagIdx] > bestPrev {
-				bestPrev = dp.mm[diagIdx]
-				dp.traceM[idx] = 'M'
-			}
-			if dp.ix[diagIdx] > bestPrev {
-				bestPrev = dp.ix[diagIdx]
-				dp.traceM[idx] = 'X'
-			}
-			if dp.iy[diagIdx] > bestPrev {
-				bestPrev = dp.iy[diagIdx]
-				dp.traceM[idx] = 'Y'
-			}
-			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
-
-			bestX := 0
-			dp.traceX[idx] = 0
-			openX := dp.mm[upIdx] + scoring.GapOpen
-			if openX > bestX {
-				bestX = openX
-				dp.traceX[idx] = 'M'
-			}
-			extendX := dp.ix[upIdx] + scoring.GapExtend
-			if extendX > bestX {
-				bestX = extendX
-				dp.traceX[idx] = 'X'
-			}
-			dp.ix[idx] = bestX
-
-			bestY := 0
-			dp.traceY[idx] = 0
-			openY := dp.mm[leftIdx] + scoring.GapOpen
-			if openY > bestY {
-				bestY = openY
-				dp.traceY[idx] = 'M'
-			}
-			extendY := dp.iy[leftIdx] + scoring.GapExtend
-			if extendY > bestY {
-				bestY = extendY
-				dp.traceY[idx] = 'Y'
-			}
-			dp.iy[idx] = bestY
-
-			cellBest, cellState := dp.bestState(idx)
-			if cellBest > rowBest {
-				rowBest = cellBest
-			}
-			if cellBest > bestScore {
-				bestScore = cellBest
-				bestI, bestJ = i, j
-				bestState = cellState
-			}
-		}
-		if xdrop > 0 && bestScore-rowBest > xdrop {
-			break
-		}
-	}
-
-	traceback, err := dp.trace(query, ref, bestI, bestJ, bestState, true, "suffix")
+	traceback, err := local.dp.trace(query, ref, local.queryEnd, local.refEnd, local.bestState, true, "suffix")
 	if err != nil {
 		return endAlignment{}, err
 	}
 	return endAlignment{
 		ops:       traceback.ops,
-		score:     bestScore,
+		score:     local.score,
 		matches:   traceback.matches,
 		aligned:   traceback.aligned,
 		queryClip: traceback.queryStart,
-		refClip:   traceback.refStart + (len(ref) - bestJ),
+		refClip:   traceback.refStart + (len(ref) - local.refEnd),
 	}, nil
 }
 

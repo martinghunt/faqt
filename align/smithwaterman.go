@@ -24,90 +24,15 @@ func smithWatermanAlign(candidate mapper.Candidate, opts Options) (Result, error
 
 	query := candidate.QuerySeq
 	ref := candidate.RefSeqOriented
-	rows := len(query) + 1
-	cols := len(ref) + 1
-	dp := newAlignmentDP(rows, cols, 0, negInf)
-
-	bestScore := 0
-	bestI, bestJ := 0, 0
-	bestState := byte(0)
-	for i := 1; i < rows; i++ {
-		rowBest := negInf
-		for j := 1; j < cols; j++ {
-			if !inBand(i, j, len(query), len(ref), opts.BandWidth) {
-				continue
-			}
-			idx := dp.index(i, j)
-			diagIdx := dp.index(i-1, j-1)
-			upIdx := dp.index(i-1, j)
-			leftIdx := dp.index(i, j-1)
-
-			bestPrev := 0
-			dp.traceM[idx] = 0
-			if dp.mm[diagIdx] > bestPrev {
-				bestPrev = dp.mm[diagIdx]
-				dp.traceM[idx] = 'M'
-			}
-			if dp.ix[diagIdx] > bestPrev {
-				bestPrev = dp.ix[diagIdx]
-				dp.traceM[idx] = 'X'
-			}
-			if dp.iy[diagIdx] > bestPrev {
-				bestPrev = dp.iy[diagIdx]
-				dp.traceM[idx] = 'Y'
-			}
-			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], opts.Scoring)
-
-			bestX := 0
-			dp.traceX[idx] = 0
-			openX := dp.mm[upIdx] + opts.Scoring.GapOpen
-			if openX > bestX {
-				bestX = openX
-				dp.traceX[idx] = 'M'
-			}
-			extendX := dp.ix[upIdx] + opts.Scoring.GapExtend
-			if extendX > bestX {
-				bestX = extendX
-				dp.traceX[idx] = 'X'
-			}
-			dp.ix[idx] = bestX
-
-			bestY := 0
-			dp.traceY[idx] = 0
-			openY := dp.mm[leftIdx] + opts.Scoring.GapOpen
-			if openY > bestY {
-				bestY = openY
-				dp.traceY[idx] = 'M'
-			}
-			extendY := dp.iy[leftIdx] + opts.Scoring.GapExtend
-			if extendY > bestY {
-				bestY = extendY
-				dp.traceY[idx] = 'Y'
-			}
-			dp.iy[idx] = bestY
-
-			score, state := dp.bestState(idx)
-			if score > bestScore {
-				bestScore = score
-				bestI, bestJ = i, j
-				bestState = state
-			}
-			if score > rowBest {
-				rowBest = score
-			}
-		}
-		if opts.XDrop > 0 && rowBest != negInf && bestScore-rowBest > opts.XDrop {
-			break
-		}
-	}
-	if bestScore == 0 {
+	local := fillLocalDP(query, ref, opts.Scoring, opts.XDrop, opts.BandWidth)
+	if local.score == 0 {
 		return Result{
 			Candidate: candidate,
 		}, nil
 	}
 
-	queryEnd, refEnd := bestI, bestJ
-	traceback, err := dp.trace(query, ref, bestI, bestJ, bestState, true, "")
+	queryEnd, refEnd := local.queryEnd, local.refEnd
+	traceback, err := local.dp.trace(query, ref, queryEnd, refEnd, local.bestState, true, "")
 	if err != nil {
 		return Result{}, err
 	}
@@ -126,7 +51,7 @@ func smithWatermanAlign(candidate mapper.Candidate, opts Options) (Result, error
 
 	return Result{
 		Candidate:       candidate,
-		Score:           bestScore,
+		Score:           local.score,
 		QueryRange:      queryRange,
 		RefRangeForward: refForwardRange,
 		CIGAR:           compressOps(traceback.ops),
