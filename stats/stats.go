@@ -9,6 +9,7 @@ import (
 
 	seqagc "github.com/martinghunt/faqt/agc"
 	"github.com/martinghunt/faqt/internal/closeutil"
+	"github.com/martinghunt/faqt/seq"
 	"github.com/martinghunt/faqt/seqio"
 )
 
@@ -30,6 +31,8 @@ type Stats struct {
 	Shortest    int
 	NCount      int
 	GapCount    int
+	GCPercent   float64
+	comp        seq.Composition
 	nxx         [9]int
 	nxxn        [9]int
 }
@@ -134,14 +137,15 @@ func addRecords(s *Stats, lengths *[]int, reader seqio.Reader, minimumLength int
 		l := len(rec.Seq)
 		*lengths = append(*lengths, l)
 		s.TotalLength += l
-		nCount, gapCount := countNsAndGaps(rec.Seq)
-		s.NCount += nCount
-		s.GapCount += gapCount
+		s.comp.Add(seq.CountComposition(rec.Seq))
 	}
 	return nil
 }
 
 func (s *Stats) finish(lengths []int) {
+	s.NCount = s.comp.N
+	s.GapCount = s.comp.NRuns
+	s.GCPercent = s.comp.GCPercent()
 	if len(lengths) == 0 {
 		return
 	}
@@ -199,7 +203,7 @@ func RenderMany(all []Stats, format Format) string {
 
 func (s Stats) humanString() string {
 	return fmt.Sprintf(
-		"stats for %s\nsum = %d, n = %d, ave = %.2f, largest = %d\nN50 = %d, n = %d\nN60 = %d, n = %d\nN70 = %d, n = %d\nN80 = %d, n = %d\nN90 = %d, n = %d\nN100 = %d, n = %d\nN_count = %d\nGaps = %d\n",
+		"stats for %s\nsum = %d, n = %d, ave = %.2f, largest = %d\nN50 = %d, n = %d\nN60 = %d, n = %d\nN70 = %d, n = %d\nN80 = %d, n = %d\nN90 = %d, n = %d\nN100 = %d, n = %d\nN_count = %d\nGaps = %d\nGC = %.2f\n",
 		s.Filename,
 		s.TotalLength,
 		s.Number,
@@ -213,6 +217,7 @@ func (s Stats) humanString() string {
 		s.Shortest, s.Number,
 		s.NCount,
 		s.GapCount,
+		s.GCPercent,
 	)
 }
 
@@ -225,6 +230,7 @@ func (s Stats) greppyString() string {
 	fmt.Fprintf(&buf, "%s\tshortest\t%d\n", s.Filename, s.Shortest)
 	fmt.Fprintf(&buf, "%s\tN_count\t%d\n", s.Filename, s.NCount)
 	fmt.Fprintf(&buf, "%s\tGaps\t%d\n", s.Filename, s.GapCount)
+	fmt.Fprintf(&buf, "%s\tGC\t%.2f\n", s.Filename, s.GCPercent)
 	for j := 0; j < 9; j++ {
 		fmt.Fprintf(&buf, "%s\tn%d0\t%d\n", s.Filename, j+1, s.nxx[j])
 		fmt.Fprintf(&buf, "%s\tn%d0n\t%d\n", s.Filename, j+1, s.nxxn[j])
@@ -233,11 +239,11 @@ func (s Stats) greppyString() string {
 }
 
 func tabHeader() string {
-	return "filename\ttotal_length\tnumber\tmean_length\tlongest\tshortest\tN_count\tGaps\tN50\tN50n\tN70\tN70n\tN90\tN90n\n"
+	return "filename\ttotal_length\tnumber\tmean_length\tlongest\tshortest\tN_count\tGaps\tGC\tN50\tN50n\tN70\tN70n\tN90\tN90n\n"
 }
 
 func (s Stats) tabRecord() string {
-	return fmt.Sprintf("%s\t%d\t%d\t%.2f\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+	return fmt.Sprintf("%s\t%d\t%d\t%.2f\t%d\t%d\t%d\t%d\t%.2f\t%d\t%d\t%d\t%d\t%d\t%d\n",
 		s.Filename,
 		s.TotalLength,
 		s.Number,
@@ -246,6 +252,7 @@ func (s Stats) tabRecord() string {
 		s.Shortest,
 		s.NCount,
 		s.GapCount,
+		s.GCPercent,
 		s.nxx[4], s.nxxn[4],
 		s.nxx[6], s.nxxn[6],
 		s.nxx[8], s.nxxn[8],
@@ -257,22 +264,6 @@ func (s Stats) tabString(header bool) string {
 		return tabHeader() + s.tabRecord()
 	}
 	return s.tabRecord()
-}
-
-func countNsAndGaps(seq []byte) (nCount int, gapCount int) {
-	inGap := false
-	for _, b := range seq {
-		if b == 'N' || b == 'n' {
-			nCount++
-			if !inGap {
-				gapCount++
-				inGap = true
-			}
-			continue
-		}
-		inGap = false
-	}
-	return nCount, gapCount
 }
 
 func RemoveDashes(rec *seqio.SeqRecord) (*seqio.SeqRecord, error) {

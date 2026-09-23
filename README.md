@@ -44,7 +44,7 @@ Local builds report version `dev` unless you pass an explicit release version.
 - `faqt interleave`: interleave two sequence files
 - `faqt to-perfect-reads`: simulate perfect FASTQ reads from a reference
 - `faqt make-random-contigs`: make random FASTA contigs
-- `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats))
+- `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats)), or one row per sequence with `--per-sequence`
 - `faqt download`: download genome or sequence data by accession
 - `faqt download-reads`: download run FASTQ files from ENA or with [`sracha`](https://rnabioco.github.io/sracha-rs/)
 - `faqt update`: update the installed `faqt` binary from the latest GitHub release
@@ -131,7 +131,25 @@ faqt stats assembly.fa
 faqt stats -t assembly.fa
 faqt stats genomes.agc
 faqt stats --combine-inputs assembly1.fa assembly2.fa genomes.agc
+faqt stats --per-sequence assembly.fa
+faqt stats -p -u reads.fastq.gz
 ```
+
+### Statistics Output
+
+`faqt stats` reports one result per input, and one per AGC sample, covering total length, sequence count, mean length, longest and shortest sequence, N count, gap count, GC content and the N50 to N90 values. Gaps are runs of one or more consecutive Ns, so `NNAANN` counts four Ns in two gaps.
+
+GC is a percentage of A+C+G+T, leaving Ns, gaps and ambiguity codes out of the denominator, which is the convention [seqkit](https://bioinf.shenwei.me/seqkit/) `fx2tab --gc` uses. A draft assembly padded with Ns therefore reports the GC of the sequence that was actually called, and a sequence of nothing but Ns reports `0.00`. Case is ignored, so soft-masked sequence counts, and U counts as T.
+
+`--per-sequence` (`-p`) reports one tab-delimited row per sequence instead, with the columns `file`, `name`, `length`, `N_count`, `Gaps` and `GC`:
+
+```
+file	name	length	N_count	Gaps	GC
+assembly.fa	contig1	45210	120	2	41.83
+assembly.fa	contig2	8801	0	0	39.12
+```
+
+The `file` column is the input path, or `path:sample` for an AGC sample, so sequences sharing a name across inputs stay distinguishable. Rows stream as they are read, nothing is held in memory, and `-l` filters short sequences as it does for the aggregate report. The header is dropped by `-u`; `-s` and `--combine-inputs` are rejected, because both describe a whole input rather than one sequence.
 
 ### Download Behavior
 
@@ -385,6 +403,7 @@ The `seq` package provides byte-slice sequence helpers:
 - `seq.ReverseComplement`
 - `seq.Subseq`
 - `seq.FindGaps`
+- `seq.CountComposition`
 - `seq.NormalizeDNA`
 - `seq.TranslateCodon`
 - `seq.Translate`
@@ -406,6 +425,20 @@ fmt.Print(s.String(stats.FormatHuman))
 ```
 
 Use `stats.RenderMany` to render multiple `stats.Stats` values in a shared output format. The available formats are `stats.FormatHuman`, `stats.FormatTab`, `stats.FormatTabNoHeader`, and `stats.FormatGreppy`.
+
+`stats.PerSequence` streams one `stats.SeqStats` per sequence instead of aggregating, and `stats.WritePerSequence` renders those rows as a tab-delimited table:
+
+```go
+err := stats.PerSequence([]string{"assembly.fa"}, 1, func(s stats.SeqStats) error {
+	fmt.Printf("%s has GC %.2f\n", s.Name, s.GCPercent)
+	return nil
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+GC percentages come from `seq.CountComposition`, which counts A, C, G, T, Ns and runs of Ns in one pass; `Composition.GCPercent` divides G+C by A+C+G+T.
 
 An empty input, or one with no sequences at or above the minimum length, gives a result of all zeroes rather than an error.
 

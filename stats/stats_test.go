@@ -28,7 +28,8 @@ func TestStatsHumanReadable(t *testing.T) {
 		"N90 = 2, n = 4\n" +
 		"N100 = 1, n = 5\n" +
 		"N_count = 4\n" +
-		"Gaps = 2\n"
+		"Gaps = 2\n" +
+		"GC = 58.82\n"
 	if got := s.String(stats.FormatHuman); got != expected {
 		t.Fatalf("human output = %q, want %q", got, expected)
 	}
@@ -47,6 +48,7 @@ func TestStatsGreppy(t *testing.T) {
 		path + "\tshortest\t1\n" +
 		path + "\tN_count\t4\n" +
 		path + "\tGaps\t2\n" +
+		path + "\tGC\t58.82\n" +
 		path + "\tn10\t8\n" +
 		path + "\tn10n\t1\n" +
 		path + "\tn20\t8\n" +
@@ -76,8 +78,8 @@ func TestStatsTabDelimited(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FromPath() error = %v", err)
 	}
-	expected := "filename\ttotal_length\tnumber\tmean_length\tlongest\tshortest\tN_count\tGaps\tN50\tN50n\tN70\tN70n\tN90\tN90n\n" +
-		path + "\t21\t5\t4.20\t8\t1\t4\t2\t6\t2\t4\t3\t2\t4\n"
+	expected := "filename\ttotal_length\tnumber\tmean_length\tlongest\tshortest\tN_count\tGaps\tGC\tN50\tN50n\tN70\tN70n\tN90\tN90n\n" +
+		path + "\t21\t5\t4.20\t8\t1\t4\t2\t58.82\t6\t2\t4\t3\t2\t4\n"
 	if got := s.String(stats.FormatTab); got != expected {
 		t.Fatalf("tab output = %q, want %q", got, expected)
 	}
@@ -89,7 +91,7 @@ func TestStatsTabDelimitedNoHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FromPath() error = %v", err)
 	}
-	expected := path + "\t21\t5\t4.20\t8\t1\t4\t2\t6\t2\t4\t3\t2\t4\n"
+	expected := path + "\t21\t5\t4.20\t8\t1\t4\t2\t58.82\t6\t2\t4\t3\t2\t4\n"
 	if got := s.String(stats.FormatTabNoHeader); got != expected {
 		t.Fatalf("tab no header output = %q, want %q", got, expected)
 	}
@@ -120,7 +122,7 @@ func TestStatsEmptyInput(t *testing.T) {
 		if err != nil {
 			t.Fatalf("FromPath(%q) error = %v", path, err)
 		}
-		expected := path + "\t0\t0\t0.00\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\n"
+		expected := path + "\t0\t0\t0.00\t0\t0\t0\t0\t0.00\t0\t0\t0\t0\t0\t0\n"
 		if got := s.String(stats.FormatTabNoHeader); got != expected {
 			t.Fatalf("FromPath(%q) tab output = %q, want %q", path, got, expected)
 		}
@@ -250,9 +252,9 @@ func writeStatsFixture(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "stats_unittest.fasta")
 	data := "" +
-		">a\nNNAAAAAA\n" +
-		">b\nAAAAAA\n" +
-		">c\nAAAA\n" +
+		">a\nNNGGAAAA\n" +
+		">b\nGGGCCC\n" +
+		">c\nACGT\n" +
 		">d\nNN\n" +
 		">e\nA\n"
 	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
