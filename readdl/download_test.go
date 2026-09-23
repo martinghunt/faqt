@@ -7,6 +7,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1145,6 +1146,40 @@ func TestMergeResults(t *testing.T) {
 	for _, path := range []string{firstMeta, secondMeta} {
 		if _, err := os.Stat(path); !os.IsNotExist(err) {
 			t.Fatalf("source metadata %s exists after merge, stat error = %v", path, err)
+		}
+	}
+}
+
+func TestPublishFileMovesRollsBackAfterRenameFailure(t *testing.T) {
+	root := t.TempDir()
+	moves := []fileMove{
+		{source: filepath.Join(root, "first.tmp"), target: filepath.Join(root, "first.fastq.gz")},
+		{source: filepath.Join(root, "second.tmp"), target: filepath.Join(root, "second.fastq.gz")},
+	}
+	for _, move := range moves {
+		if err := os.WriteFile(move.source, []byte(filepath.Base(move.source)), 0o644); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", move.source, err)
+		}
+	}
+
+	wantErr := errors.New("injected rename failure")
+	renameCalls := 0
+	err := publishFileMovesWith(moves, func(source, target string) error {
+		renameCalls++
+		if renameCalls == 2 {
+			return wantErr
+		}
+		return os.Rename(source, target)
+	})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("publishFileMovesWith() error = %v, want %v", err, wantErr)
+	}
+	for _, move := range moves {
+		if _, err := os.Stat(move.source); err != nil {
+			t.Errorf("source %s was not restored: %v", move.source, err)
+		}
+		if _, err := os.Stat(move.target); !os.IsNotExist(err) {
+			t.Errorf("target %s remains after rollback, stat error = %v", move.target, err)
 		}
 	}
 }

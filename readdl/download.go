@@ -204,16 +204,16 @@ func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]D
 			return nil, err
 		}
 	}
+	moves := make([]fileMove, 0, len(temporaryPaths)+1)
 	for index, temporaryPath := range temporaryPaths {
-		if err := os.Rename(temporaryPath, merged[index].Path); err != nil {
-			removeFiles(temporaryPaths[index:])
-			return nil, err
-		}
+		moves = append(moves, fileMove{source: temporaryPath, target: merged[index].Path})
 	}
 	if metadataTemporaryPath != "" {
-		if err := os.Rename(metadataTemporaryPath, metadataPath); err != nil {
-			return nil, err
-		}
+		moves = append(moves, fileMove{source: metadataTemporaryPath, target: metadataPath})
+	}
+	if err := publishFileMoves(moves); err != nil {
+		removeFiles(temporaryPaths)
+		return nil, err
 	}
 	if !opts.KeepOriginals {
 		if err := removeResultFiles(results); err != nil {
@@ -1166,31 +1166,62 @@ func removeResultFiles(results []Result) error {
 }
 
 func moveResultFiles(result Result, finalDir string) error {
-	moves := make(map[string]string, len(result.Files)+1)
+	moves := make([]fileMove, 0, len(result.Files)+1)
 	if result.MetaPath != "" {
-		moves[result.MetaPath] = filepath.Join(finalDir, filepath.Base(result.MetaPath))
+		moves = append(moves, fileMove{
+			source: result.MetaPath,
+			target: filepath.Join(finalDir, filepath.Base(result.MetaPath)),
+		})
 	}
 	for _, file := range result.Files {
-		moves[file.Path] = filepath.Join(finalDir, filepath.Base(file.Path))
+		moves = append(moves, fileMove{
+			source: file.Path,
+			target: filepath.Join(finalDir, filepath.Base(file.Path)),
+		})
 	}
+	return publishFileMoves(moves)
+}
+
+type fileMove struct {
+	source string
+	target string
+}
+
+func publishFileMoves(moves []fileMove) error {
+	return publishFileMovesWith(moves, os.Rename)
+}
+
+func publishFileMovesWith(moves []fileMove, rename func(string, string) error) error {
 	targets := make(map[string]struct{}, len(moves))
-	for _, target := range moves {
-		if _, ok := targets[target]; ok {
-			return fmt.Errorf("duplicate output path: %s", target)
+	for _, move := range moves {
+		if _, ok := targets[move.target]; ok {
+			return fmt.Errorf("duplicate output path: %s", move.target)
 		}
-		targets[target] = struct{}{}
-		if _, err := os.Stat(target); err == nil {
+		targets[move.target] = struct{}{}
+		if _, err := os.Stat(move.target); err == nil {
 			return errFilesAlreadyExist
 		} else if !os.IsNotExist(err) {
 			return err
 		}
 	}
-	for source, target := range moves {
-		if err := os.Rename(source, target); err != nil {
-			return err
+
+	for index, move := range moves {
+		if err := rename(move.source, move.target); err != nil {
+			return rollbackFileMoves(moves[:index], rename, err)
 		}
 	}
 	return nil
+}
+
+func rollbackFileMoves(moves []fileMove, rename func(string, string) error, publishErr error) error {
+	errs := []error{publishErr}
+	for index := len(moves) - 1; index >= 0; index-- {
+		move := moves[index]
+		if err := rename(move.target, move.source); err != nil {
+			errs = append(errs, fmt.Errorf("roll back %s: %w", move.target, err))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // readFileSuffix returns the suffix a read file should keep once renamed. A
