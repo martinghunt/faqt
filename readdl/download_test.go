@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -212,6 +213,52 @@ func TestDownloadReadsWithENAInvalidGzipFailsEvenWhenMD5Matches(t *testing.T) {
 	}
 	if _, statErr := os.Stat(filepath.Join(outDir, "ERR123456_1.fastq.gz")); !os.IsNotExist(statErr) {
 		t.Fatalf("final FASTQ stat error = %v, want not exist", statErr)
+	}
+}
+
+func TestDownloadReadsWithENABadGzipTrailerFailsEvenWhenMD5Matches(t *testing.T) {
+	valid := gzipBytes(t, []byte("@r1\nAC\n+\n!!\n"))
+	tests := []struct {
+		name string
+		data []byte
+	}{
+		{name: "truncated trailer", data: append([]byte(nil), valid[:len(valid)-4]...)},
+		{name: "bad CRC", data: append([]byte(nil), valid...)},
+	}
+	tests[1].data[len(tests[1].data)-8] ^= 0xff
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var server *httptest.Server
+			server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/search":
+					host := strings.TrimPrefix(server.URL, "https://")
+					_, _ = w.Write([]byte(`[{"run_accession":"ERR123456","fastq_ftp":"` + host + `/ERR123456_1.fastq.gz","fastq_md5":"` + md5Hex(tt.data) + `","fastq_bytes":"` + intString(len(tt.data)) + `"}]`))
+				case "/ERR123456_1.fastq.gz":
+					_, _ = w.Write(tt.data)
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+
+			outDir := t.TempDir()
+			downloader := &Downloader{
+				ENAClient:  &ichsm.Client{BaseURL: server.URL + "/", HTTPClient: server.Client()},
+				HTTPClient: server.Client(),
+			}
+			_, err := downloader.DownloadReads(context.Background(), "ERR123456", DownloadOptions{
+				OutputDir: outDir,
+				Attempts:  1,
+			})
+			if err == nil || !strings.Contains(err.Error(), "gzip validation failed") {
+				t.Fatalf("DownloadReads() error = %v, want gzip validation failure", err)
+			}
+			if _, statErr := os.Stat(filepath.Join(outDir, "ERR123456_1.fastq.gz")); !os.IsNotExist(statErr) {
+				t.Fatalf("final FASTQ stat error = %v, want not exist", statErr)
+			}
+		})
 	}
 }
 
@@ -1147,6 +1194,71 @@ func TestMergeResults(t *testing.T) {
 		if _, err := os.Stat(path); !os.IsNotExist(err) {
 			t.Fatalf("source metadata %s exists after merge, stat error = %v", path, err)
 		}
+	}
+}
+
+func TestMergeResultsRejectsInvalidGzipBeforePublishing(t *testing.T) {
+	valid := gzipBytes(t, []byte("@r1\nAC\n+\n!!\n"))
+	tests := []struct {
+		name string
+		bad  []byte
+	}{
+		{name: "truncated trailer", bad: append([]byte(nil), valid[:len(valid)-4]...)},
+		{name: "bad CRC", bad: append([]byte(nil), valid...)},
+	}
+	tests[1].bad[len(tests[1].bad)-8] ^= 0xff
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			results := make([]Result, 0, 2)
+			for runIndex, run := range []string{"ERR1", "ERR2"} {
+				files := make([]DownloadedFile, 0, 2)
+				for read := 1; read <= 2; read++ {
+					name := fmt.Sprintf("%s_%d.fastq.gz", run, read)
+					path := filepath.Join(root, name)
+					data := valid
+					if runIndex == 1 && read == 2 {
+						data = tt.bad
+					}
+					if err := os.WriteFile(path, data, 0o644); err != nil {
+						t.Fatalf("WriteFile(%s) error = %v", name, err)
+					}
+					files = append(files, DownloadedFile{Filename: name, Path: path})
+				}
+				results = append(results, Result{RunAccession: run, Files: files})
+			}
+
+			_, err := MergeResults(context.Background(), results, MergeOptions{
+				OutputDir:    root,
+				OutputPrefix: "sample",
+			})
+			if err == nil || !strings.Contains(err.Error(), "gzip validation failed while building sample_2.fastq.gz from") {
+				t.Fatalf("MergeResults() error = %v, want clear gzip validation failure", err)
+			}
+			if errors.Is(err, errFilesAlreadyExist) {
+				t.Fatalf("MergeResults() error = %v, want retryable validation failure", err)
+			}
+			for _, name := range []string{"sample_1.fastq.gz", "sample_2.fastq.gz"} {
+				if _, statErr := os.Stat(filepath.Join(root, name)); !os.IsNotExist(statErr) {
+					t.Fatalf("final output %s stat error = %v, want not exist", name, statErr)
+				}
+			}
+			for _, result := range results {
+				for _, file := range result.Files {
+					if _, statErr := os.Stat(file.Path); statErr != nil {
+						t.Fatalf("source %s was not preserved for retry: %v", file.Path, statErr)
+					}
+				}
+			}
+			matches, globErr := filepath.Glob(filepath.Join(root, ".sample_*-merge-*"))
+			if globErr != nil {
+				t.Fatalf("Glob() error = %v", globErr)
+			}
+			if len(matches) != 0 {
+				t.Fatalf("invalid temporary outputs remain: %v", matches)
+			}
+		})
 	}
 }
 

@@ -254,21 +254,10 @@ func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]D
 				removeFiles(temporaryPaths)
 				return nil, err
 			}
-			in, err := os.Open(file.Path)
-			if err != nil {
+			if err := appendValidatedGzip(tmp, file.Path); err != nil {
 				_ = tmp.Close()
 				removeFiles(temporaryPaths)
-				return nil, err
-			}
-			_, copyErr := io.Copy(tmp, in)
-			closeErr := in.Close()
-			if copyErr != nil || closeErr != nil {
-				_ = tmp.Close()
-				removeFiles(temporaryPaths)
-				if copyErr != nil {
-					return nil, copyErr
-				}
-				return nil, closeErr
+				return nil, fmt.Errorf("gzip validation failed while building %s from %s: %w", merged[index].Filename, file.Path, err)
 			}
 		}
 		if err := tmp.Close(); err != nil {
@@ -293,6 +282,27 @@ func MergeResults(ctx context.Context, results []Result, opts MergeOptions) ([]D
 		}
 	}
 	return merged, nil
+}
+
+// appendValidatedGzip copies a gzip stream verbatim while decompressing it.
+// Reading through EOF makes compress/gzip verify every member's CRC and size
+// trailer, so merged output construction does not require a second full-file
+// validation pass.
+func appendValidatedGzip(dst io.Writer, path string) (err error) {
+	in, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer closeutil.CloseWithError(&err, in)
+
+	gr, err := gzip.NewReader(io.TeeReader(in, dst))
+	if err != nil {
+		return err
+	}
+	defer closeutil.CloseWithError(&err, gr)
+
+	_, err = io.Copy(io.Discard, gr)
+	return err
 }
 
 func ParseMethods(value string) ([]Method, error) {
