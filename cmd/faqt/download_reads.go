@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var downloadReads = readdl.DownloadReads
+var downloadReadRuns = readdl.DownloadRuns
 
 func newDownloadReadsCmd() *cobra.Command {
 	var (
@@ -55,63 +55,29 @@ func newDownloadReadsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if attempts <= 0 {
-				return fmt.Errorf("--attempts must be greater than zero")
-			}
-			if delayMin < 0 || delayMax < 0 {
-				return fmt.Errorf("--retry-delay-min and --retry-delay-max must not be negative")
-			}
-			if delayMax < delayMin {
-				return fmt.Errorf("--retry-delay-max must be greater than or equal to --retry-delay-min")
-			}
-			if stallTimeout < 0 {
-				return fmt.Errorf("--download-stall-timeout must not be negative")
-			}
-			if srachaThreads <= 0 {
-				return fmt.Errorf("--sracha-threads must be greater than zero")
-			}
-			if srachaConnections <= 0 {
-				return fmt.Errorf("--sracha-connections must be greater than zero")
-			}
-			opts := readdl.DownloadOptions{
-				OutputDir:            outputDir,
-				OutputPrefix:         prefix,
-				WriteMetadata:        enaMeta,
-				MetadataSingleObject: enaMetaSingle && !merge,
-				Methods:              parsedMethods,
-				Attempts:             attempts,
-				SrachaPath:           srachaPath,
-				SrachaThreads:        srachaThreads,
-				SrachaConnections:    srachaConnections,
-				RetryDelayMin:        delayMin,
-				RetryDelayMax:        delayMax,
-				DownloadStallTimeout: stallTimeout,
+			opts := readdl.DownloadRunsOptions{
+				Download: readdl.DownloadOptions{
+					OutputDir:            outputDir,
+					OutputPrefix:         prefix,
+					WriteMetadata:        enaMeta,
+					MetadataSingleObject: enaMetaSingle && !merge,
+					Methods:              parsedMethods,
+					Attempts:             attempts,
+					SrachaPath:           srachaPath,
+					SrachaThreads:        srachaThreads,
+					SrachaConnections:    srachaConnections,
+					RetryDelayMin:        delayMin,
+					RetryDelayMax:        delayMax,
+					DownloadStallTimeout: stallTimeout,
+				},
+				Merge:         merge,
+				KeepOriginals: keepOriginals,
 			}
 			if verbose {
-				opts.ProgressWriter = cmd.ErrOrStderr()
+				opts.Download.ProgressWriter = cmd.ErrOrStderr()
 			}
-			results := make([]readdl.Result, 0, len(runAccessions))
-			for _, runAccession := range runAccessions {
-				runOpts := opts
-				if prefix != "" && len(runAccessions) > 1 {
-					runOpts.OutputPrefix = prefix + "_" + runAccession
-				}
-				result, err := downloadReads(cmd.Context(), runAccession, runOpts)
-				if err != nil {
-					return err
-				}
-				results = append(results, result)
-			}
-			if merge && len(results) > 1 {
-				if _, err := readdl.MergeResults(cmd.Context(), results, readdl.MergeOptions{
-					OutputDir:     outputDir,
-					OutputPrefix:  prefix,
-					KeepOriginals: keepOriginals,
-				}); err != nil {
-					return err
-				}
-			}
-			return nil
+			_, err = downloadReadRuns(cmd.Context(), runAccessions, opts)
+			return err
 		},
 	}
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", ".", "Directory where FASTQ files are written")

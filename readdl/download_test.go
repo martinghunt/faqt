@@ -1150,6 +1150,62 @@ func TestMergeResults(t *testing.T) {
 	}
 }
 
+func TestDownloadRunsOwnsMultiRunOrchestration(t *testing.T) {
+	ctx := context.WithValue(context.Background(), struct{}{}, "test context")
+	var (
+		gotRuns     []string
+		gotPrefixes []string
+		gotMerge    MergeOptions
+	)
+	download := func(gotCtx context.Context, run string, opts DownloadOptions) (Result, error) {
+		if gotCtx != ctx {
+			t.Fatal("download did not receive caller context")
+		}
+		gotRuns = append(gotRuns, run)
+		gotPrefixes = append(gotPrefixes, opts.OutputPrefix)
+		return Result{RunAccession: run}, nil
+	}
+	wantMerged := []DownloadedFile{{Filename: "sample.fastq.gz"}}
+	merge := func(gotCtx context.Context, results []Result, opts MergeOptions) ([]DownloadedFile, error) {
+		if gotCtx != ctx {
+			t.Fatal("merge did not receive caller context")
+		}
+		if got := []string{results[0].RunAccession, results[1].RunAccession}; !reflect.DeepEqual(got, []string{"ERR123456", "ERR123457"}) {
+			t.Fatalf("merge runs = %#v", got)
+		}
+		gotMerge = opts
+		return wantMerged, nil
+	}
+
+	got, err := downloadRuns(ctx, []string{"err123456", "ERR123457"}, DownloadRunsOptions{
+		Download: DownloadOptions{
+			OutputDir:         "reads",
+			OutputPrefix:      "sample",
+			Methods:           []Method{MethodENA},
+			Attempts:          1,
+			SrachaThreads:     1,
+			SrachaConnections: 1,
+		},
+		Merge:         true,
+		KeepOriginals: true,
+	}, download, merge)
+	if err != nil {
+		t.Fatalf("downloadRuns() error = %v", err)
+	}
+	if !reflect.DeepEqual(gotRuns, []string{"ERR123456", "ERR123457"}) {
+		t.Fatalf("download runs = %#v", gotRuns)
+	}
+	if !reflect.DeepEqual(gotPrefixes, []string{"sample_ERR123456", "sample_ERR123457"}) {
+		t.Fatalf("download prefixes = %#v", gotPrefixes)
+	}
+	if gotMerge != (MergeOptions{OutputDir: "reads", OutputPrefix: "sample", KeepOriginals: true}) {
+		t.Fatalf("merge options = %#v", gotMerge)
+	}
+	if !reflect.DeepEqual(got.Merged, wantMerged) {
+		t.Fatalf("merged files = %#v", got.Merged)
+	}
+}
+
 func TestPublishFileMovesRollsBackAfterRenameFailure(t *testing.T) {
 	root := t.TempDir()
 	moves := []fileMove{

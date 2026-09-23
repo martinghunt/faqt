@@ -87,6 +87,19 @@ type MergeOptions struct {
 	KeepOriginals bool
 }
 
+// DownloadRunsOptions controls a group of read downloads and their optional merge.
+type DownloadRunsOptions struct {
+	Download      DownloadOptions
+	Merge         bool
+	KeepOriginals bool
+}
+
+// DownloadRunsResult contains the individual run results and any merged files.
+type DownloadRunsResult struct {
+	Runs   []Result
+	Merged []DownloadedFile
+}
+
 type Downloader struct {
 	ENAClient  *ichsm.Client
 	HTTPClient *http.Client
@@ -107,6 +120,65 @@ func NewDownloader() *Downloader {
 
 func DownloadReads(ctx context.Context, runAccession string, opts DownloadOptions) (Result, error) {
 	return NewDownloader().DownloadReads(ctx, runAccession, opts)
+}
+
+// DownloadRuns downloads a group of runs and optionally merges like read files.
+func DownloadRuns(ctx context.Context, runAccessions []string, opts DownloadRunsOptions) (DownloadRunsResult, error) {
+	return NewDownloader().DownloadRuns(ctx, runAccessions, opts)
+}
+
+func (d *Downloader) DownloadRuns(ctx context.Context, runAccessions []string, opts DownloadRunsOptions) (DownloadRunsResult, error) {
+	return downloadRuns(ctx, runAccessions, opts, d.DownloadReads, MergeResults)
+}
+
+func downloadRuns(
+	ctx context.Context,
+	runAccessions []string,
+	opts DownloadRunsOptions,
+	download func(context.Context, string, DownloadOptions) (Result, error),
+	merge func(context.Context, []Result, MergeOptions) ([]DownloadedFile, error),
+) (DownloadRunsResult, error) {
+	if ctx == nil {
+		return DownloadRunsResult{}, fmt.Errorf("nil context")
+	}
+	if len(runAccessions) == 0 {
+		return DownloadRunsResult{}, fmt.Errorf("no run accessions")
+	}
+	downloadOpts, err := normalizeDownloadRunsOptions(opts.Download)
+	if err != nil {
+		return DownloadRunsResult{}, err
+	}
+	runs := make([]string, len(runAccessions))
+	for index, accession := range runAccessions {
+		run, err := cleanRunAccession(accession)
+		if err != nil {
+			return DownloadRunsResult{}, err
+		}
+		runs[index] = run
+	}
+	result := DownloadRunsResult{Runs: make([]Result, 0, len(runs))}
+	for _, run := range runs {
+		runOpts := downloadOpts
+		if runOpts.OutputPrefix != "" && len(runs) > 1 {
+			runOpts.OutputPrefix += "_" + run
+		}
+		runResult, err := download(ctx, run, runOpts)
+		if err != nil {
+			return DownloadRunsResult{}, err
+		}
+		result.Runs = append(result.Runs, runResult)
+	}
+	if opts.Merge && len(result.Runs) > 1 {
+		result.Merged, err = merge(ctx, result.Runs, MergeOptions{
+			OutputDir:     downloadOpts.OutputDir,
+			OutputPrefix:  downloadOpts.OutputPrefix,
+			KeepOriginals: opts.KeepOriginals,
+		})
+		if err != nil {
+			return DownloadRunsResult{}, err
+		}
+	}
+	return result, nil
 }
 
 // MergeResults concatenates the FASTQ files from multiple run download results.
@@ -242,32 +314,17 @@ func ParseMethods(value string) ([]Method, error) {
 }
 
 func (d *Downloader) DownloadReads(ctx context.Context, runAccession string, opts DownloadOptions) (Result, error) {
+	if ctx == nil {
+		return Result{}, fmt.Errorf("nil context")
+	}
 	run, err := cleanRunAccession(runAccession)
 	if err != nil {
 		return Result{}, err
 	}
-	methods, err := normalizeMethods(opts.Methods)
+	opts, err = normalizeDownloadOptions(opts)
 	if err != nil {
 		return Result{}, err
 	}
-	attempts, err := normalizeAttempts(opts.Attempts)
-	if err != nil {
-		return Result{}, err
-	}
-	retryDelayMin, retryDelayMax, err := normalizeRetryDelay(opts.RetryDelayMin, opts.RetryDelayMax)
-	if err != nil {
-		return Result{}, err
-	}
-	downloadStallTimeout, err := normalizeDownloadStallTimeout(opts.DownloadStallTimeout)
-	if err != nil {
-		return Result{}, err
-	}
-	opts.DownloadStallTimeout = downloadStallTimeout
-	downloadProgressInterval, err := normalizeDownloadProgressInterval(opts.DownloadProgressInterval)
-	if err != nil {
-		return Result{}, err
-	}
-	opts.DownloadProgressInterval = downloadProgressInterval
 	root := strings.TrimSpace(opts.OutputDir)
 	if root == "" {
 		root = "."
@@ -277,9 +334,9 @@ func (d *Downloader) DownloadReads(ctx context.Context, runAccession string, opt
 	}
 
 	var lastErr error
-	for attempt := 1; attempt <= attempts; attempt++ {
-		for methodIndex, method := range methods {
-			progressf(opts.ProgressWriter, "attempt %d/%d using %s", attempt, attempts, method)
+	for attempt := 1; attempt <= opts.Attempts; attempt++ {
+		for methodIndex, method := range opts.Methods {
+			progressf(opts.ProgressWriter, "attempt %d/%d using %s", attempt, opts.Attempts, method)
 			result, err := d.downloadAttempt(ctx, run, root, opts, method)
 			if err == nil {
 				progressf(opts.ProgressWriter, "wrote %d FASTQ file(s) to %s", len(result.Files), result.Dir)
@@ -290,8 +347,8 @@ func (d *Downloader) DownloadReads(ctx context.Context, runAccession string, opt
 			}
 			progressf(opts.ProgressWriter, "%s attempt failed: %v", method, err)
 			lastErr = err
-			if attempt < attempts || methodIndex < len(methods)-1 {
-				delay := randomRetryDelay(retryDelayMin, retryDelayMax)
+			if attempt < opts.Attempts || methodIndex < len(opts.Methods)-1 {
+				delay := randomRetryDelay(opts.RetryDelayMin, opts.RetryDelayMax)
 				if delay > 0 {
 					progressf(opts.ProgressWriter, "waiting %s before next attempt", delay)
 					if err := d.sleep(ctx, delay); err != nil {
@@ -301,7 +358,7 @@ func (d *Downloader) DownloadReads(ctx context.Context, runAccession string, opt
 			}
 		}
 	}
-	return Result{}, fmt.Errorf("%d rounds of download attempts failed for methods: %s: %w", attempts, methodList(methods), lastErr)
+	return Result{}, fmt.Errorf("%d rounds of download attempts failed for methods: %s: %w", opts.Attempts, methodList(opts.Methods), lastErr)
 }
 
 func (d *Downloader) downloadAttempt(ctx context.Context, run, root string, opts DownloadOptions, method Method) (Result, error) {
@@ -746,6 +803,52 @@ func normalizeMethods(methods []Method) ([]Method, error) {
 		out = append(out, parsed...)
 	}
 	return out, nil
+}
+
+func normalizeDownloadOptions(opts DownloadOptions) (DownloadOptions, error) {
+	var err error
+	opts.Methods, err = normalizeMethods(opts.Methods)
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	opts.Attempts, err = normalizeAttempts(opts.Attempts)
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	opts.RetryDelayMin, opts.RetryDelayMax, err = normalizeRetryDelay(opts.RetryDelayMin, opts.RetryDelayMax)
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	opts.DownloadStallTimeout, err = normalizeDownloadStallTimeout(opts.DownloadStallTimeout)
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	opts.DownloadProgressInterval, err = normalizeDownloadProgressInterval(opts.DownloadProgressInterval)
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	opts.SrachaThreads, err = normalizePositiveDefault(opts.SrachaThreads, DefaultSrachaThreads, "sracha threads")
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	opts.SrachaConnections, err = normalizePositiveDefault(opts.SrachaConnections, DefaultSrachaConnections, "sracha connections")
+	if err != nil {
+		return DownloadOptions{}, err
+	}
+	return opts, nil
+}
+
+func normalizeDownloadRunsOptions(opts DownloadOptions) (DownloadOptions, error) {
+	if opts.Attempts <= 0 {
+		return DownloadOptions{}, fmt.Errorf("attempts must be greater than zero")
+	}
+	if opts.SrachaThreads <= 0 {
+		return DownloadOptions{}, fmt.Errorf("sracha threads must be greater than zero")
+	}
+	if opts.SrachaConnections <= 0 {
+		return DownloadOptions{}, fmt.Errorf("sracha connections must be greater than zero")
+	}
+	return normalizeDownloadOptions(opts)
 }
 
 func normalizeAttempts(attempts int) (int, error) {

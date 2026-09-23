@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -32,17 +31,17 @@ func TestDownloadReadsCommandExists(t *testing.T) {
 }
 
 func TestDownloadReadsCommandRoutesToDownloader(t *testing.T) {
-	old := downloadReads
-	defer func() { downloadReads = old }()
+	old := downloadReadRuns
+	defer func() { downloadReadRuns = old }()
 
 	var (
-		gotRun  string
-		gotOpts readdl.DownloadOptions
+		gotRuns []string
+		gotOpts readdl.DownloadRunsOptions
 	)
-	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
-		gotRun = runAccession
+	downloadReadRuns = func(ctx context.Context, runAccessions []string, opts readdl.DownloadRunsOptions) (readdl.DownloadRunsResult, error) {
+		gotRuns = append([]string(nil), runAccessions...)
 		gotOpts = opts
-		return readdl.Result{}, nil
+		return readdl.DownloadRunsResult{}, nil
 	}
 
 	outDir := filepath.Join(t.TempDir(), "reads")
@@ -69,58 +68,58 @@ func TestDownloadReadsCommandRoutesToDownloader(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
-	if gotRun != "ERR123456" {
-		t.Fatalf("run accession = %q, want ERR123456", gotRun)
+	if !reflect.DeepEqual(gotRuns, []string{"ERR123456"}) {
+		t.Fatalf("run accessions = %#v, want ERR123456", gotRuns)
 	}
-	if gotOpts.OutputDir != outDir {
-		t.Fatalf("output dir = %q, want %q", gotOpts.OutputDir, outDir)
+	if gotOpts.Download.OutputDir != outDir {
+		t.Fatalf("output dir = %q, want %q", gotOpts.Download.OutputDir, outDir)
 	}
-	if gotOpts.OutputPrefix != "sampleA" {
-		t.Fatalf("output prefix = %q, want sampleA", gotOpts.OutputPrefix)
+	if gotOpts.Download.OutputPrefix != "sampleA" {
+		t.Fatalf("output prefix = %q, want sampleA", gotOpts.Download.OutputPrefix)
 	}
-	if !gotOpts.WriteMetadata {
+	if !gotOpts.Download.WriteMetadata {
 		t.Fatal("WriteMetadata = false, want true")
 	}
-	if !gotOpts.MetadataSingleObject {
+	if !gotOpts.Download.MetadataSingleObject {
 		t.Fatal("MetadataSingleObject = false, want true")
 	}
-	if !reflect.DeepEqual(gotOpts.Methods, []readdl.Method{readdl.MethodENA, readdl.MethodSRACHA}) {
-		t.Fatalf("methods = %#v", gotOpts.Methods)
+	if !reflect.DeepEqual(gotOpts.Download.Methods, []readdl.Method{readdl.MethodENA, readdl.MethodSRACHA}) {
+		t.Fatalf("methods = %#v", gotOpts.Download.Methods)
 	}
-	if gotOpts.Attempts != 2 {
-		t.Fatalf("attempts = %d, want 2", gotOpts.Attempts)
+	if gotOpts.Download.Attempts != 2 {
+		t.Fatalf("attempts = %d, want 2", gotOpts.Download.Attempts)
 	}
-	if gotOpts.SrachaPath != "/usr/local/bin/sracha" {
-		t.Fatalf("sracha path = %q", gotOpts.SrachaPath)
+	if gotOpts.Download.SrachaPath != "/usr/local/bin/sracha" {
+		t.Fatalf("sracha path = %q", gotOpts.Download.SrachaPath)
 	}
-	if gotOpts.SrachaThreads != 4 {
-		t.Fatalf("sracha threads = %d, want 4", gotOpts.SrachaThreads)
+	if gotOpts.Download.SrachaThreads != 4 {
+		t.Fatalf("sracha threads = %d, want 4", gotOpts.Download.SrachaThreads)
 	}
-	if gotOpts.SrachaConnections != 2 {
-		t.Fatalf("sracha connections = %d, want 2", gotOpts.SrachaConnections)
+	if gotOpts.Download.SrachaConnections != 2 {
+		t.Fatalf("sracha connections = %d, want 2", gotOpts.Download.SrachaConnections)
 	}
-	if gotOpts.RetryDelayMin != time.Second {
-		t.Fatalf("retry delay min = %s, want 1s", gotOpts.RetryDelayMin)
+	if gotOpts.Download.RetryDelayMin != time.Second {
+		t.Fatalf("retry delay min = %s, want 1s", gotOpts.Download.RetryDelayMin)
 	}
-	if gotOpts.RetryDelayMax != 3*time.Second {
-		t.Fatalf("retry delay max = %s, want 3s", gotOpts.RetryDelayMax)
+	if gotOpts.Download.RetryDelayMax != 3*time.Second {
+		t.Fatalf("retry delay max = %s, want 3s", gotOpts.Download.RetryDelayMax)
 	}
-	if gotOpts.DownloadStallTimeout != 10*time.Minute {
-		t.Fatalf("download stall timeout = %s, want 10m", gotOpts.DownloadStallTimeout)
+	if gotOpts.Download.DownloadStallTimeout != 10*time.Minute {
+		t.Fatalf("download stall timeout = %s, want 10m", gotOpts.Download.DownloadStallTimeout)
 	}
-	if gotOpts.ProgressWriter == nil {
+	if gotOpts.Download.ProgressWriter == nil {
 		t.Fatal("progress writer = nil, want stderr writer")
 	}
 }
 
 func TestDownloadReadsCommandRoutesCommaSeparatedRunsToDownloader(t *testing.T) {
-	old := downloadReads
-	defer func() { downloadReads = old }()
+	old := downloadReadRuns
+	defer func() { downloadReadRuns = old }()
 
 	var gotRuns []string
-	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
-		gotRuns = append(gotRuns, runAccession)
-		return readdl.Result{}, nil
+	downloadReadRuns = func(ctx context.Context, runAccessions []string, opts readdl.DownloadRunsOptions) (readdl.DownloadRunsResult, error) {
+		gotRuns = append([]string(nil), runAccessions...)
+		return readdl.DownloadRunsResult{}, nil
 	}
 
 	cmd := newDownloadReadsCmd()
@@ -138,13 +137,13 @@ func TestDownloadReadsCommandRoutesCommaSeparatedRunsToDownloader(t *testing.T) 
 }
 
 func TestDownloadReadsCommandRoutesAccessionsFileToDownloader(t *testing.T) {
-	old := downloadReads
-	defer func() { downloadReads = old }()
+	old := downloadReadRuns
+	defer func() { downloadReadRuns = old }()
 
 	var gotRuns []string
-	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
-		gotRuns = append(gotRuns, runAccession)
-		return readdl.Result{}, nil
+	downloadReadRuns = func(ctx context.Context, runAccessions []string, opts readdl.DownloadRunsOptions) (readdl.DownloadRunsResult, error) {
+		gotRuns = append([]string(nil), runAccessions...)
+		return readdl.DownloadRunsResult{}, nil
 	}
 
 	path := filepath.Join(t.TempDir(), "runs.txt")
@@ -165,18 +164,18 @@ func TestDownloadReadsCommandRoutesAccessionsFileToDownloader(t *testing.T) {
 	}
 }
 
-func TestDownloadReadsCommandUsesRunSpecificPrefixWithMultipleRuns(t *testing.T) {
-	old := downloadReads
-	defer func() { downloadReads = old }()
+func TestDownloadReadsCommandPassesBasePrefixToDownloader(t *testing.T) {
+	old := downloadReadRuns
+	defer func() { downloadReadRuns = old }()
 
 	var (
-		gotRuns     []string
-		gotPrefixes []string
+		gotRuns   []string
+		gotPrefix string
 	)
-	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
-		gotRuns = append(gotRuns, runAccession)
-		gotPrefixes = append(gotPrefixes, opts.OutputPrefix)
-		return readdl.Result{}, nil
+	downloadReadRuns = func(ctx context.Context, runAccessions []string, opts readdl.DownloadRunsOptions) (readdl.DownloadRunsResult, error) {
+		gotRuns = append([]string(nil), runAccessions...)
+		gotPrefix = opts.Download.OutputPrefix
+		return readdl.DownloadRunsResult{}, nil
 	}
 
 	cmd := newDownloadReadsCmd()
@@ -191,87 +190,56 @@ func TestDownloadReadsCommandUsesRunSpecificPrefixWithMultipleRuns(t *testing.T)
 	if !reflect.DeepEqual(gotRuns, wantRuns) {
 		t.Fatalf("run accessions = %#v, want %#v", gotRuns, wantRuns)
 	}
-	wantPrefixes := []string{"sampleA_ERR123456", "sampleA_ERR123457"}
-	if !reflect.DeepEqual(gotPrefixes, wantPrefixes) {
-		t.Fatalf("output prefixes = %#v, want %#v", gotPrefixes, wantPrefixes)
+	if gotPrefix != "sampleA" {
+		t.Fatalf("output prefix = %q, want sampleA", gotPrefix)
 	}
 }
 
 func TestDownloadReadsCommandIgnoresSingleObjectMetadataWhenMerging(t *testing.T) {
-	old := downloadReads
-	defer func() { downloadReads = old }()
+	old := downloadReadRuns
+	defer func() { downloadReadRuns = old }()
 
-	outDir := t.TempDir()
-	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
-		if opts.MetadataSingleObject {
+	downloadReadRuns = func(ctx context.Context, runAccessions []string, opts readdl.DownloadRunsOptions) (readdl.DownloadRunsResult, error) {
+		if opts.Download.MetadataSingleObject {
 			t.Fatal("MetadataSingleObject = true with --merge, want false")
 		}
-		fastqPath := filepath.Join(outDir, runAccession+".fastq.gz")
-		if err := os.WriteFile(fastqPath, []byte(runAccession), 0o644); err != nil {
-			return readdl.Result{}, err
+		if !opts.Merge {
+			t.Fatal("Merge = false, want true")
 		}
-		metaPath := filepath.Join(outDir, runAccession+"_ena_meta.json")
-		if err := os.WriteFile(metaPath, []byte("[{\"run_accession\":\""+runAccession+"\"}]\n"), 0o644); err != nil {
-			return readdl.Result{}, err
-		}
-		return readdl.Result{
-			MetaPath: metaPath,
-			Files:    []readdl.DownloadedFile{{Filename: filepath.Base(fastqPath), Path: fastqPath}},
-		}, nil
+		return readdl.DownloadRunsResult{}, nil
 	}
 
 	cmd := newDownloadReadsCmd()
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
-	cmd.SetArgs([]string{"ERR123456,ERR123457", "--output-dir", outDir, "--ena-meta", "--ena-meta-single-object", "--merge"})
+	cmd.SetArgs([]string{"ERR123456,ERR123457", "--ena-meta", "--ena-meta-single-object", "--merge"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)
-	}
-	data, err := os.ReadFile(filepath.Join(outDir, "merged_ena_meta.json"))
-	if err != nil {
-		t.Fatalf("ReadFile(merged metadata) error = %v", err)
-	}
-	var records []map[string]string
-	if err := json.Unmarshal(data, &records); err != nil {
-		t.Fatalf("Unmarshal(merged metadata) error = %v", err)
-	}
-	if len(records) != 2 || records[0]["run_accession"] != "ERR123456" || records[1]["run_accession"] != "ERR123457" {
-		t.Fatalf("merged metadata = %s", data)
 	}
 }
 
-func TestDownloadReadsCommandMergesMultipleRuns(t *testing.T) {
-	old := downloadReads
-	defer func() { downloadReads = old }()
+func TestDownloadReadsCommandPassesMergeOptions(t *testing.T) {
+	old := downloadReadRuns
+	defer func() { downloadReadRuns = old }()
 
-	outDir := t.TempDir()
-	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
-		path := filepath.Join(outDir, opts.OutputPrefix+".fastq.gz")
-		contents := []byte(runAccession)
-		if err := os.WriteFile(path, contents, 0o644); err != nil {
-			return readdl.Result{}, err
-		}
-		return readdl.Result{Files: []readdl.DownloadedFile{{Filename: filepath.Base(path), Path: path}}}, nil
+	var gotOpts readdl.DownloadRunsOptions
+	downloadReadRuns = func(ctx context.Context, runAccessions []string, opts readdl.DownloadRunsOptions) (readdl.DownloadRunsResult, error) {
+		gotOpts = opts
+		return readdl.DownloadRunsResult{}, nil
 	}
 
 	cmd := newDownloadReadsCmd()
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
-	cmd.SetArgs([]string{"ERR123456,ERR123457", "--prefix", "sampleA", "--output-dir", outDir, "--merge"})
+	cmd.SetArgs([]string{"ERR123456,ERR123457", "--prefix", "sampleA", "--merge", "--keep-originals"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
-	contents, err := os.ReadFile(filepath.Join(outDir, "sampleA.fastq.gz"))
-	if err != nil {
-		t.Fatalf("ReadFile(merged) error = %v", err)
+	if !gotOpts.Merge {
+		t.Fatal("Merge = false, want true")
 	}
-	if string(contents) != "ERR123456ERR123457" {
-		t.Fatalf("merged contents = %q, want concatenated runs", contents)
-	}
-	for _, name := range []string{"sampleA_ERR123456.fastq.gz", "sampleA_ERR123457.fastq.gz"} {
-		if _, err := os.Stat(filepath.Join(outDir, name)); !os.IsNotExist(err) {
-			t.Fatalf("per-run file %s exists after merge, stat error = %v", name, err)
-		}
+	if !gotOpts.KeepOriginals {
+		t.Fatal("KeepOriginals = false, want true")
 	}
 }
 
@@ -296,12 +264,12 @@ func TestDownloadReadsCommandRejectsInvalidSrachaOptions(t *testing.T) {
 		{
 			name: "threads",
 			args: []string{"ERR123456", "--sracha-threads", "0"},
-			want: "--sracha-threads must be greater than zero",
+			want: "sracha threads must be greater than zero",
 		},
 		{
 			name: "connections",
 			args: []string{"ERR123456", "--sracha-connections", "0"},
-			want: "--sracha-connections must be greater than zero",
+			want: "sracha connections must be greater than zero",
 		},
 	}
 
@@ -339,7 +307,7 @@ func TestDownloadReadsCommandRejectsNonPositiveAttempts(t *testing.T) {
 	cmd.SetArgs([]string{"ERR123456", "--attempts", "0"})
 
 	err := cmd.Execute()
-	if err == nil || err.Error() != "--attempts must be greater than zero" {
+	if err == nil || err.Error() != "attempts must be greater than zero" {
 		t.Fatalf("Execute() error = %v, want attempts error", err)
 	}
 }
@@ -351,7 +319,7 @@ func TestDownloadReadsCommandRejectsInvalidRetryDelayRange(t *testing.T) {
 	cmd.SetArgs([]string{"ERR123456", "--retry-delay-min", "20s", "--retry-delay-max", "5s"})
 
 	err := cmd.Execute()
-	if err == nil || err.Error() != "--retry-delay-max must be greater than or equal to --retry-delay-min" {
+	if err == nil || err.Error() != "retry delay max must be greater than or equal to retry delay min" {
 		t.Fatalf("Execute() error = %v, want retry delay range error", err)
 	}
 }
@@ -363,18 +331,18 @@ func TestDownloadReadsCommandRejectsInvalidDownloadStallTimeout(t *testing.T) {
 	cmd.SetArgs([]string{"ERR123456", "--download-stall-timeout=-1s"})
 
 	err := cmd.Execute()
-	if err == nil || err.Error() != "--download-stall-timeout must not be negative" {
+	if err == nil || err.Error() != "download stall timeout must not be negative" {
 		t.Fatalf("Execute() error = %v, want download stall timeout error", err)
 	}
 }
 
 func TestDownloadReadsCommandReturnsDownloadError(t *testing.T) {
-	old := downloadReads
-	defer func() { downloadReads = old }()
+	old := downloadReadRuns
+	defer func() { downloadReadRuns = old }()
 
 	wantErr := errors.New("download failed")
-	downloadReads = func(ctx context.Context, runAccession string, opts readdl.DownloadOptions) (readdl.Result, error) {
-		return readdl.Result{}, wantErr
+	downloadReadRuns = func(ctx context.Context, runAccessions []string, opts readdl.DownloadRunsOptions) (readdl.DownloadRunsResult, error) {
+		return readdl.DownloadRunsResult{}, wantErr
 	}
 
 	cmd := newDownloadReadsCmd()
