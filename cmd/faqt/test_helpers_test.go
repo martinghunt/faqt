@@ -1,9 +1,28 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
+
+func runWithCapturedOutput(t *testing.T, cmd *cobra.Command) (string, error) {
+	t.Helper()
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+func runWithCapturedStdinOutput(t *testing.T, input string, cmd *cobra.Command) (string, error) {
+	t.Helper()
+	return runWithStdin(t, input, func() (string, error) {
+		return runWithCapturedOutput(t, cmd)
+	})
+}
 
 func runWithCapturedStdout(t *testing.T, run func() error) (string, error) {
 	t.Helper()
@@ -30,7 +49,13 @@ func runWithCapturedStdout(t *testing.T, run func() error) (string, error) {
 
 func runWithCapturedStdinStdout(t *testing.T, input string, run func() error) (string, error) {
 	t.Helper()
+	return runWithStdin(t, input, func() (string, error) {
+		return runWithCapturedStdout(t, run)
+	})
+}
 
+func runWithStdin(t *testing.T, input string, run func() (string, error)) (string, error) {
+	t.Helper()
 	in, err := os.CreateTemp(t.TempDir(), "stdin-*")
 	if err != nil {
 		t.Fatalf("CreateTemp(stdin) error = %v", err)
@@ -51,5 +76,5 @@ func runWithCapturedStdinStdout(t *testing.T, input string, run func() error) (s
 	os.Stdin = in
 	defer func() { os.Stdin = oldStdin }()
 
-	return runWithCapturedStdout(t, run)
+	return run()
 }

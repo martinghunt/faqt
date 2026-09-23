@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -95,5 +96,25 @@ func TestToPerfectReadsCommandRejectsMixedOutputs(t *testing.T) {
 	err := cmd.Execute()
 	if err == nil || !strings.Contains(err.Error(), "use either --out") {
 		t.Fatalf("Execute() error = %v, want mixed output validation error", err)
+	}
+}
+
+func TestToPerfectReadsCommandWritesWarningsToCommandErrorStream(t *testing.T) {
+	dir := t.TempDir()
+	in := filepath.Join(dir, "short.fa")
+	out := filepath.Join(dir, "reads.fq")
+	if err := os.WriteFile(in, []byte(">short\nAC\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	var stderr bytes.Buffer
+	cmd := newToPerfectReadsCmd()
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{in, "--out", out, "--coverage", "1", "--read-length", "4"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if got := stderr.String(); !strings.Contains(got, "sequence short too short") {
+		t.Fatalf("stderr = %q, want skipped-sequence warning", got)
 	}
 }

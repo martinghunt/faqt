@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/martinghunt/faqt/stats"
 	"github.com/spf13/cobra"
@@ -38,13 +37,13 @@ func newStatsCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				return stats.WritePerSequence(os.Stdout, args, minimumLength, format, input.seqioOptions()...)
+				return stats.WritePerSequence(cmd.OutOrStdout(), args, minimumLength, format, input.seqioOptions()...)
 			}
 			results, err := stats.FromPaths(args, minimumLength, combineInputs, input.seqioOptions()...)
 			if err != nil {
 				return err
 			}
-			_, err = fmt.Fprint(os.Stdout, stats.RenderMany(results, format))
+			_, err = fmt.Fprint(cmd.OutOrStdout(), stats.RenderMany(results, format))
 			return err
 		},
 	}

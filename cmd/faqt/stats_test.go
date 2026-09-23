@@ -21,7 +21,7 @@ func TestStatsCommandTabDelimited(t *testing.T) {
 
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-t", path})
-	got, err := runWithCapturedStdout(t, cmd.Execute)
+	got, err := runWithCapturedOutput(t, cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -35,7 +35,7 @@ func TestStatsCommandTabDelimited(t *testing.T) {
 func TestStatsCommandDefaultsToStdin(t *testing.T) {
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-u"})
-	got, err := runWithCapturedStdinStdout(t, ">a\nACGT\n>b\nNN\n", cmd.Execute)
+	got, err := runWithCapturedStdinOutput(t, ">a\nACGT\n>b\nNN\n", cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -49,7 +49,7 @@ func TestStatsCommandReportsAGCPerSampleByDefault(t *testing.T) {
 	path := writeCommandAGC(t)
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-u", path})
-	got, err := runWithCapturedStdout(t, cmd.Execute)
+	got, err := runWithCapturedOutput(t, cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -75,7 +75,7 @@ func TestStatsCommandCombineInputsMergesMultipleFiles(t *testing.T) {
 	}
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-u", "--combine-inputs", one, two})
-	got, err := runWithCapturedStdout(t, cmd.Execute)
+	got, err := runWithCapturedOutput(t, cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -99,7 +99,7 @@ func TestStatsCommandPerSequence(t *testing.T) {
 
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-p", path})
-	got, err := runWithCapturedStdout(t, cmd.Execute)
+	got, err := runWithCapturedOutput(t, cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -117,7 +117,7 @@ func TestStatsCommandPerSequence(t *testing.T) {
 func TestStatsCommandPerSequenceNoHeaderFromStdin(t *testing.T) {
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-p", "-u"})
-	got, err := runWithCapturedStdinStdout(t, ">a\nACGT\n>b\nNN\n", cmd.Execute)
+	got, err := runWithCapturedStdinOutput(t, ">a\nACGT\n>b\nNN\n", cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -131,7 +131,7 @@ func TestStatsCommandPerSequenceNoHeaderFromStdin(t *testing.T) {
 func TestStatsCommandPerSequenceMinimumLength(t *testing.T) {
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-p", "-u", "-l", "4"})
-	got, err := runWithCapturedStdinStdout(t, ">a\nACGT\n>b\nNN\n", cmd.Execute)
+	got, err := runWithCapturedStdinOutput(t, ">a\nACGT\n>b\nNN\n", cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
@@ -171,7 +171,7 @@ func TestStatsCommandPerSequenceRejectsIncompatibleFlags(t *testing.T) {
 			cmd.SetArgs(tc.args)
 			cmd.SilenceUsage = true
 			cmd.SilenceErrors = true
-			got, err := runWithCapturedStdout(t, cmd.Execute)
+			got, err := runWithCapturedOutput(t, cmd)
 			if err == nil {
 				t.Fatalf("Execute() expected an error, stdout = %q", got)
 			}
@@ -189,7 +189,7 @@ func TestStatsCommandPerSequenceReportsAGCSamples(t *testing.T) {
 	path := writeCommandAGC(t)
 	cmd := newStatsCmd()
 	cmd.SetArgs([]string{"-p", "-u", path})
-	got, err := runWithCapturedStdout(t, cmd.Execute)
+	got, err := runWithCapturedOutput(t, cmd)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}

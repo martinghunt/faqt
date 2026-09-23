@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/martinghunt/faqt/internal/closeutil"
 	"github.com/martinghunt/faqt/perfectreads"
@@ -51,7 +50,7 @@ func newToPerfectReadsCmd() *cobra.Command {
 				return err
 			}
 			for _, name := range report.SkippedShort {
-				_, _ = fmt.Fprintf(os.Stderr, "Warning, sequence %s too short. Skipping it...\n", name)
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning, sequence %s too short. Skipping it...\n", name)
 			}
 			return nil
 		},
