@@ -1,5 +1,7 @@
 package minimizer
 
+const invalidMinimizerHash = ^uint64(0)
+
 func Sketch(seq []byte, k, w int) []Minimizer {
 	if err := (Options{K: k, W: w}).validate(); err != nil {
 		panic(err)
@@ -15,7 +17,7 @@ func Sketch(seq []byte, k, w int) []Minimizer {
 
 	buffer := make([]Minimizer, w)
 	for i := range buffer {
-		buffer[i].Hash = ^uint64(0)
+		buffer[i].Hash = invalidMinimizerHash
 	}
 	var out []Minimizer
 	bufPos := 0
@@ -50,53 +52,25 @@ func Sketch(seq []byte, k, w int) []Minimizer {
 
 		buffer[bufPos] = info
 
-		if valid == w+k-1 && min.Hash != ^uint64(0) {
-			for j := bufPos + 1; j < w; j++ {
-				if sameMinimizer(min, buffer[j]) {
-					out = append(out, buffer[j])
-				}
-			}
-			for j := 0; j < bufPos; j++ {
-				if sameMinimizer(min, buffer[j]) {
-					out = append(out, buffer[j])
-				}
-			}
+		if valid == w+k-1 && min.Hash != invalidMinimizerHash {
+			out = appendMatchingMinimizers(out, buffer[bufPos+1:], min)
+			out = appendMatchingMinimizers(out, buffer[:bufPos], min)
 		}
 
 		if info.Hash <= min.Hash {
-			if valid >= w+k && min.Hash != ^uint64(0) {
+			if valid >= w+k && min.Hash != invalidMinimizerHash {
 				out = append(out, min)
 			}
 			min = info
 			minPos = bufPos
 		} else if bufPos == minPos {
-			if valid >= w+k-1 && min.Hash != ^uint64(0) {
+			if valid >= w+k-1 && min.Hash != invalidMinimizerHash {
 				out = append(out, min)
 			}
-			min = invalidMinimizer()
-			for j := bufPos + 1; j < w; j++ {
-				if buffer[j].Hash <= min.Hash {
-					min = buffer[j]
-					minPos = j
-				}
-			}
-			for j := 0; j <= bufPos; j++ {
-				if buffer[j].Hash <= min.Hash {
-					min = buffer[j]
-					minPos = j
-				}
-			}
-			if valid >= w+k-1 && min.Hash != ^uint64(0) {
-				for j := bufPos + 1; j < w; j++ {
-					if sameMinimizer(min, buffer[j]) {
-						out = append(out, buffer[j])
-					}
-				}
-				for j := 0; j <= bufPos; j++ {
-					if sameMinimizer(min, buffer[j]) {
-						out = append(out, buffer[j])
-					}
-				}
+			min, minPos = windowMinimum(buffer, bufPos)
+			if valid >= w+k-1 && min.Hash != invalidMinimizerHash {
+				out = appendMatchingMinimizers(out, buffer[bufPos+1:], min)
+				out = appendMatchingMinimizers(out, buffer[:bufPos+1], min)
 			}
 		}
 
@@ -106,14 +80,44 @@ func Sketch(seq []byte, k, w int) []Minimizer {
 		}
 	}
 
-	if min.Hash != ^uint64(0) {
+	if min.Hash != invalidMinimizerHash {
 		out = append(out, min)
 	}
 	return out
 }
 
 func invalidMinimizer() Minimizer {
-	return Minimizer{Hash: ^uint64(0)}
+	return Minimizer{Hash: invalidMinimizerHash}
+}
+
+// windowMinimum scans a circular window from the position after current
+// through current. Using <= keeps the last equal minimum in that ring order,
+// matching the tie-breaking used while the window advances.
+func windowMinimum(buffer []Minimizer, current int) (Minimizer, int) {
+	min := invalidMinimizer()
+	minPos := 0
+	for i := current + 1; i < len(buffer); i++ {
+		if buffer[i].Hash <= min.Hash {
+			min = buffer[i]
+			minPos = i
+		}
+	}
+	for i := 0; i <= current; i++ {
+		if buffer[i].Hash <= min.Hash {
+			min = buffer[i]
+			minPos = i
+		}
+	}
+	return min, minPos
+}
+
+func appendMatchingMinimizers(out, candidates []Minimizer, min Minimizer) []Minimizer {
+	for _, candidate := range candidates {
+		if sameMinimizer(min, candidate) {
+			out = append(out, candidate)
+		}
+	}
+	return out
 }
 
 func sameMinimizer(a, b Minimizer) bool {
