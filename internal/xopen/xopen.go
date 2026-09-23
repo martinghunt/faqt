@@ -147,6 +147,10 @@ func Open(path string, threads int) (io.ReadCloser, error) {
 // decompression on the calling goroutine, so faqt uses a single core unless
 // asked for more.
 func WrapReader(r io.Reader, threads int) (io.ReadCloser, error) {
+	return wrapReader(r, threads, openZstdReader)
+}
+
+func wrapReader(r io.Reader, threads int, openZstd func(io.Reader, int) (io.ReadCloser, error)) (io.ReadCloser, error) {
 	threads = normalizeThreads(threads)
 	br, ok := r.(*bufio.Reader)
 	if !ok {
@@ -183,14 +187,18 @@ func WrapReader(r io.Reader, threads int) (io.ReadCloser, error) {
 		}
 		return io.NopCloser(xzr), nil
 	case bytes.HasPrefix(magic, []byte{0x28, 0xb5, 0x2f, 0xfd}):
-		zr, err := zstd.NewReader(br, zstd.WithDecoderConcurrency(threads))
-		if err != nil {
-			return nil, err
-		}
-		return zr.IOReadCloser(), nil
+		return openZstd(br, threads)
 	default:
 		return io.NopCloser(br), nil
 	}
+}
+
+func openZstdReader(r io.Reader, threads int) (io.ReadCloser, error) {
+	zr, err := zstd.NewReader(r, zstd.WithDecoderConcurrency(threads))
+	if err != nil {
+		return nil, err
+	}
+	return zr.IOReadCloser(), nil
 }
 
 // WrapWriter compresses output with c. threads bounds the worker goroutines

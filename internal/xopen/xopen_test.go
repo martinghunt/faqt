@@ -120,6 +120,40 @@ func TestWrapReader(t *testing.T) {
 	}
 }
 
+func TestWrapReaderPassesNormalizedThreadsToZstd(t *testing.T) {
+	tests := []struct {
+		name        string
+		threads     int
+		wantThreads int
+	}{
+		{name: "requested workers", threads: 4, wantThreads: 4},
+		{name: "zero clamps to one", threads: 0, wantThreads: 1},
+		{name: "negative clamps to one", threads: -1, wantThreads: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotThreads := 0
+			openZstd := func(r io.Reader, threads int) (io.ReadCloser, error) {
+				gotThreads = threads
+				return io.NopCloser(r), nil
+			}
+			input := append([]byte{0x28, 0xb5, 0x2f, 0xfd}, make([]byte, sniffSize-4)...)
+
+			reader, err := wrapReader(bytes.NewReader(input), tt.threads, openZstd)
+			if err != nil {
+				t.Fatalf("wrapReader() error = %v", err)
+			}
+			if err := reader.Close(); err != nil {
+				t.Fatalf("Close() error = %v", err)
+			}
+			if gotThreads != tt.wantThreads {
+				t.Fatalf("zstd threads = %d, want %d", gotThreads, tt.wantThreads)
+			}
+		})
+	}
+}
+
 func TestWrapWriterAndOpen(t *testing.T) {
 	tests := []struct {
 		name        string
