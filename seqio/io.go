@@ -16,6 +16,7 @@ import (
 	"github.com/martinghunt/faqt/genbank"
 	"github.com/martinghunt/faqt/gff3"
 	"github.com/martinghunt/faqt/internal/closeutil"
+	"github.com/martinghunt/faqt/internal/seqcheck"
 	"github.com/martinghunt/faqt/internal/sniff"
 	"github.com/martinghunt/faqt/internal/xopen"
 	"github.com/martinghunt/faqt/phylip"
@@ -65,6 +66,10 @@ type WriteCloser interface {
 type readerWithCloser struct {
 	Reader
 	closer io.Closer
+}
+
+func (r *readerWithCloser) Check(report func(error)) (int, error) {
+	return seqcheck.Check(r.Reader, report)
 }
 
 func (r *readerWithCloser) Close() error {

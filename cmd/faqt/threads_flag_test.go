@@ -12,7 +12,7 @@ import (
 // TestThreadsFlagDefaultsToOne checks every command that reads or writes
 // sequence data offers --threads and defaults it to one core.
 func TestThreadsFlagDefaultsToOne(t *testing.T) {
-	for _, name := range []string{"to-fasta", "stats", "interleave", "to-perfect-reads"} {
+	for _, name := range []string{"to-fasta", "stats", "check", "interleave", "to-perfect-reads"} {
 		t.Run(name, func(t *testing.T) {
 			root := newRootCmd()
 			cmd, _, err := root.Find([]string{name})

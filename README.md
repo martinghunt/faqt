@@ -45,6 +45,7 @@ Local builds report version `dev` unless you pass an explicit release version.
 - `faqt to-perfect-reads`: simulate perfect FASTQ reads from a reference
 - `faqt make-random-contigs`: make random FASTA contigs
 - `faqt stats`: report assembly-style sequence statistics (reimplementation of [assembly-stats](https://github.com/sanger-pathogens/assembly-stats)), or one row per sequence with `--per-sequence`
+- `faqt check`: read every sequence record and report parser or decompression errors
 - `faqt download`: download genome or sequence data by accession
 - `faqt download-reads`: download run FASTQ files from ENA or with [`sracha`](https://rnabioco.github.io/sracha-rs/)
 - `faqt update`: update the installed `faqt` binary from the latest GitHub release
@@ -55,6 +56,35 @@ Use `faqt -h` or `faqt --help` for top-level help. Use `-h` or `--help` after a 
 faqt to-fasta --help
 faqt stats -h
 ```
+
+`faqt check [files...]` prints tab-separated results: filename, `OK` or `ERROR`,
+and a record count or error message. It defaults to stdin, accepts `-` explicitly,
+and stops at the first error with a nonzero exit status. Empty inputs fail because
+their format cannot be detected.
+
+Use `--all-errors` to continue across files and report recoverable problems within
+each file: FASTA NUL bytes (one diagnostic per contiguous run, including headers),
+and FASTQ sequence/quality length mismatches. GFF3 embedded FASTA is checked the
+same way; its line numbers are relative to the FASTA section. Other parser errors,
+damaged record structure, and decompression failures stop the affected file;
+checking continues with the next input. Both modes leave input untouched and
+exit nonzero if any error is found. FASTA sequence diagnostics include the contig
+name, 1-based inclusive sequence positions, byte count, and line/column range.
+Sequence positions include the invalid bytes and exclude line breaks and trimmed
+surrounding whitespace. Runs spanning wrapped lines are reported together;
+header errors use header column ranges instead of sequence positions.
+
+```bash
+faqt check assembly.fa.gz reads.fastq.gz
+faqt check --all-errors assembly.fa.gz reads.fastq.gz
+cat assembly.fa | faqt check
+```
+
+Checks use faqt's sequence parsers and, when parsing can reach the end of the
+input, read through compression trailers to detect corruption. They cover
+sequence parsing rather than annotations,
+alignment correctness, or a specific biological alphabet. Inputs are never
+modified.
 
 Command-line input can be any supported sequence format:
 

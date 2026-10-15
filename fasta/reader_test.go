@@ -35,7 +35,7 @@ func TestReaderRejectsNULBytes(t *testing.T) {
 					continue
 				}
 				want := fmt.Sprintf("fasta: NUL byte (0x00) on line %d", tc.line)
-				if err.Error() != want {
+				if !strings.HasPrefix(err.Error(), want+",") {
 					t.Fatalf("Read() error = %v, want %q", err, want)
 				}
 				if rec != nil {
@@ -171,5 +171,63 @@ func TestReaderCRLF(t *testing.T) {
 	}
 	if rec.Name != "rec2" || string(rec.Seq) != "TT" {
 		t.Fatalf("second record = %+v", rec)
+	}
+}
+
+func TestCheckReportsNULsAndKeepsNormalReadsStrict(t *testing.T) {
+	r := NewReader(bufio.NewReader(strings.NewReader(">one\nA\x00C\n>two\x00\nT\x00\n")))
+	var diagnostics []error
+	count, err := r.Check(func(err error) { diagnostics = append(diagnostics, err) })
+	if err != nil || count != 2 || len(diagnostics) != 3 {
+		t.Fatalf("Check() = (%d, %v), diagnostics = %v", count, err, diagnostics)
+	}
+	if r.report != nil {
+		t.Fatal("Check() left diagnostic mode enabled")
+	}
+}
+
+func TestCheckNULRunPositions(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{"multiple runs on one line", ">one description\n\x00\x00AC\x00G\x00\x00\n", []string{
+			`line 2, contig "one", sequence positions 1-2 (2 bytes; line:column 2:1-2:2)`,
+			`line 2, contig "one", sequence positions 5-5 (1 bytes; line:column 2:5-2:5)`,
+			`line 2, contig "one", sequence positions 7-8 (2 bytes; line:column 2:7-2:8)`,
+		}},
+		{"wrapped and multiple records", ">one\r\nAC\x00\r\n\x00\x00T\x00\r\n>two\r\nG\x00", []string{
+			`line 2, contig "one", sequence positions 3-5 (3 bytes; line:column 2:3-3:2)`,
+			`line 3, contig "one", sequence positions 7-7 (1 bytes; line:column 3:4-3:4)`,
+			`line 5, contig "two", sequence positions 2-2 (1 bytes; line:column 5:2-5:2)`,
+		}},
+		{"trimmed whitespace", ">one\n AC\x00 \n \x00T \n", []string{
+			`line 2, contig "one", sequence positions 3-4 (2 bytes; line:column 2:4-3:2)`,
+		}},
+		{"header runs", ">one bad\x00text\x00\x00\nAC\n>two bad\x00\nTT\n", []string{
+			`line 1, contig "one", header columns 9-9 (1 bytes)`,
+			`line 1, contig "one", header columns 14-15 (2 bytes)`,
+			`line 3, contig "two", header columns 9-9 (1 bytes)`,
+		}},
+		{"long line", ">long\n" + strings.Repeat("A", 10000) + "\x00\x00T\x00", []string{
+			`line 2, contig "long", sequence positions 10001-10002 (2 bytes; line:column 2:10001-2:10002)`,
+			`line 2, contig "long", sequence positions 10004-10004 (1 bytes; line:column 2:10004-2:10004)`,
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewReader(bufio.NewReader(strings.NewReader(tc.input)))
+			var got []string
+			_, err := r.Check(func(err error) { got = append(got, err.Error()) })
+			if err != nil || len(got) != len(tc.want) {
+				t.Fatalf("Check() error=%v, diagnostics=%q, want %q", err, got, tc.want)
+			}
+			for i, want := range tc.want {
+				if got[i] != "fasta: NUL byte (0x00) on "+want {
+					t.Errorf("diagnostic %d=%q, want %q", i, got[i], want)
+				}
+			}
+		})
 	}
 }

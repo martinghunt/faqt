@@ -5,16 +5,27 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/martinghunt/faqt/internal/seqcheck"
 	"github.com/martinghunt/faqt/internal/seqrecord"
 )
 
 type Reader struct {
-	r    *bufio.Reader
-	long []byte // scratch for lines longer than the read buffer
+	r      *bufio.Reader
+	long   []byte // scratch for lines longer than the read buffer
+	report func(error)
 }
 
 func NewReader(r *bufio.Reader) *Reader {
 	return &Reader{r: r}
+}
+
+// Check consumes records, reporting length mismatches and continuing at the
+// next four-line record. Structural or read errors stop the check.
+// The count includes records containing reported errors.
+func (r *Reader) Check(report func(error)) (int, error) {
+	r.report = report
+	defer func() { r.report = nil }()
+	return seqcheck.ReadAll(r)
 }
 
 func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
@@ -29,7 +40,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 
 	seqLine, err := r.readLine()
 	if err != nil {
-		return nil, err
+		return nil, requiredLineError(err)
 	}
 	// Sequence and quality are the same length in a valid record, so one
 	// allocation sized from the sequence line holds both and every base is
@@ -41,7 +52,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 
 	plus, err := r.readLine()
 	if err != nil {
-		return nil, err
+		return nil, requiredLineError(err)
 	}
 	if len(plus) == 0 || plus[0] != '+' {
 		return nil, fmt.Errorf("fastq separator line must start with +")
@@ -49,7 +60,7 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 
 	qualLine, err := r.readLine()
 	if err != nil {
-		return nil, err
+		return nil, requiredLineError(err)
 	}
 	buf = append(buf, qualLine...)
 
@@ -60,9 +71,19 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 		Qual:        buf[seqLen:],
 	}
 	if err := rec.ValidateFASTQ(); err != nil {
-		return nil, err
+		if r.report == nil {
+			return nil, err
+		}
+		r.report(err)
 	}
 	return rec, nil
+}
+
+func requiredLineError(err error) error {
+	if err == io.EOF {
+		return io.ErrUnexpectedEOF
+	}
+	return err
 }
 
 // readLine returns the next line with any trailing \r and \n removed. The

@@ -38,6 +38,32 @@ func TestReaderMultiRecord(t *testing.T) {
 	}
 }
 
+func TestReaderRejectsTruncatedRecords(t *testing.T) {
+	for _, suffix := range []string{"@two\n", "@two\nAC\n", "@two\nAC\n+\n"} {
+		t.Run(strings.ReplaceAll(suffix, "\n", "/"), func(t *testing.T) {
+			r := NewReader(bufio.NewReader(strings.NewReader("@one\nAC\n+\n!!\n" + suffix)))
+			if _, err := r.Read(); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := r.Read(); err != io.ErrUnexpectedEOF {
+				t.Fatalf("Read() error = %v, want unexpected EOF", err)
+			}
+		})
+	}
+}
+
+func TestCheckReportsLengthMismatches(t *testing.T) {
+	r := NewReader(bufio.NewReader(strings.NewReader("@one\nACGT\n+\n!!!\n@two\nAC\n+\n!!!\n")))
+	var diagnostics []error
+	count, err := r.Check(func(err error) { diagnostics = append(diagnostics, err) })
+	if err != nil || count != 2 || len(diagnostics) != 2 {
+		t.Fatalf("Check() = (%d, %v), diagnostics = %v", count, err, diagnostics)
+	}
+	if r.report != nil {
+		t.Fatal("Check() left diagnostic mode enabled")
+	}
+}
+
 func TestReaderHandlesLongHeaderAndSeparator(t *testing.T) {
 	longName := "read" + strings.Repeat("x", 64)
 	input := "@" + longName + " desc\tone\nAC\n+" + strings.Repeat("q", 64) + "\n!!\n"

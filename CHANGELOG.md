@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add `faqt check [files...]` to stream through sequence inputs and report parser or decompression errors, including corrupt compression trailers. It accepts stdin and stops at the first error by default. `--all-errors` continues across files and reports recoverable FASTA NUL errors and FASTQ length mismatches within each file, including embedded FASTA in GFF3. NUL diagnostics identify each run with the contig name, 1-based inclusive sequence positions, byte count, and line/column range. Validation failures exit nonzero without printing usage.
+
 ### Fixed
+- Reject truncated FASTQ records missing required lines instead of treating them as normal end-of-file.
 - Reject NUL bytes (`0x00`) in FASTA headers and sequences with an error identifying the offending line. Previously these bytes were accepted as sequence characters, inflating lengths reported by `faqt stats`.
 
 ## [0.10.0] - 2026-09-23

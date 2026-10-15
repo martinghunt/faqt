@@ -100,4 +100,10 @@ func TestBGZFBAMStillReadsAsBAM(t *testing.T) {
 			t.Fatalf("Close() error = %v", err)
 		}
 	}
+	for _, allErrors := range []bool{false, true} {
+		count, err := seqio.CheckPath(path, allErrors, nil)
+		if err != nil || count != 1 {
+			t.Fatalf("CheckPath(BAM) = (%d, %v), want one record", count, err)
+		}
+	}
 }
