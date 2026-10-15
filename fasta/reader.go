@@ -29,9 +29,15 @@ func NewReader(r *bufio.Reader) *Reader {
 // and continuing without modifying input. Other errors stop the check.
 // The count includes records containing reported errors.
 func (r *Reader) Check(report func(error)) (int, error) {
+	return r.CheckRecords(report, nil)
+}
+
+// CheckRecords is Check with an additional callback for each parsed record.
+// visit may inspect invalid records; returning an error stops the check.
+func (r *Reader) CheckRecords(report func(error), visit func(*seqrecord.SeqRecord) error) (int, error) {
 	r.report = report
 	defer func() { r.report = nil }()
-	return seqcheck.ReadAll(r)
+	return seqcheck.ReadAll(r, visit)
 }
 
 func (r *Reader) Read() (*seqrecord.SeqRecord, error) {

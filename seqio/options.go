@@ -30,9 +30,23 @@ const (
 )
 
 type options struct {
-	wrap        int
-	compression Compression
-	threads     int
+	wrap          int
+	compression   Compression
+	threads       int
+	checkAlphabet string
+	checkGaps     bool
+}
+
+// WithCheckAlphabet enables sequence alphabet validation in CheckPath only.
+// Values are dna, rna, protein, or empty to disable it (the default).
+func WithCheckAlphabet(name string) Option {
+	return func(o *options) { o.checkAlphabet = name }
+}
+
+// WithCheckGaps allows '-' and '.' when CheckPath validates an alphabet.
+// It requires WithCheckAlphabet to be set.
+func WithCheckGaps(allow bool) Option {
+	return func(o *options) { o.checkGaps = allow }
 }
 
 type Option func(*options)

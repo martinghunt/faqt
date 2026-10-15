@@ -69,7 +69,11 @@ type readerWithCloser struct {
 }
 
 func (r *readerWithCloser) Check(report func(error)) (int, error) {
-	return seqcheck.Check(r.Reader, report)
+	return r.CheckRecords(report, nil)
+}
+
+func (r *readerWithCloser) CheckRecords(report func(error), visit func(*SeqRecord) error) (int, error) {
+	return seqcheck.Check(r.Reader, report, visit)
 }
 
 func (r *readerWithCloser) Close() error {

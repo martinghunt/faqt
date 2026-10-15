@@ -151,3 +151,53 @@ func TestCheckCommandDoesNotPrintUsageOnFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckCommandAlphabet(t *testing.T) {
+	for _, tc := range []struct {
+		name, input string
+		args        []string
+		gzip        bool
+		errors      int
+		want        string
+	}{
+		{"off by default", ">one\nAX?\n", nil, false, 0, "OK"},
+		{"DNA ambiguity", ">one\nacgtryswkmbdhvn\n", []string{"--alphabet", "dna"}, false, 0, "OK"},
+		{"DNA invalid", ">one\nACXE\n", []string{"--alphabet", "dna"}, false, 1, `record "one", characters outside dna alphabet at sequence positions 3-4`},
+		{"RNA", ">one\nacgu\n", []string{"--alphabet", "rna"}, false, 0, "OK"},
+		{"protein", ">one\nMEKXUOBZJ*\n", []string{"--alphabet", "protein"}, false, 0, "OK"},
+		{"gaps", ">one\nAC-.N\n", []string{"--alphabet", "dna", "--allow-gaps"}, false, 0, "OK"},
+		{"gaps rejected", ">one\nAC-.N\n", []string{"--alphabet", "dna"}, false, 1, `sequence positions 3-4`},
+		{"NUL still rejected", ">one\nAC\x00N\n", nil, false, 1, "NUL byte"},
+		{"first invalid run", ">one\nACXXG?\n>two\nE\n", []string{"--alphabet", "dna"}, false, 1, `sequence positions 3-4`},
+		{"all invalid runs", ">one\nACXXG?\n>two\nE\n", []string{"--alphabet", "dna", "--all-errors"}, false, 3, `record "two"`},
+		{"gzip invalid runs", ">one\nACXXG?\n>two\nE\n", []string{"--alphabet", "dna", "--all-errors"}, true, 3, `record "two"`},
+		{"unknown alphabet", ">one\nACGT\n", []string{"--alphabet", "auto"}, false, 1, "unknown alphabet"},
+		{"gaps without alphabet", ">one\nACGT\n", []string{"--allow-gaps"}, false, 1, "requires an alphabet"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := newRootCmd()
+			root.SetArgs(append([]string{"check"}, tc.args...))
+			var stderr bytes.Buffer
+			root.SetErr(&stderr)
+			input := tc.input
+			if tc.gzip {
+				var buf bytes.Buffer
+				zw := gzip.NewWriter(&buf)
+				if _, err := zw.Write([]byte(input)); err != nil {
+					t.Fatal(err)
+				}
+				if err := zw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				input = buf.String()
+			}
+			out, err := runWithCapturedStdinOutput(t, input, root)
+			if (err != nil) != (tc.errors > 0) || strings.Count(out, "\tERROR\t") != tc.errors || !strings.Contains(out, tc.want) {
+				t.Fatalf("Execute()=(%q,%v), want %d errors and %q", out, err, tc.errors, tc.want)
+			}
+			if strings.Contains(out+stderr.String(), "Usage:") {
+				t.Fatalf("unexpected usage: %q %q", out, stderr.String())
+			}
+		})
+	}
+}

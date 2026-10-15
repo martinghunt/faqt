@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add optional `faqt check --alphabet dna|rna|protein` validation of normalized sequence characters, accepting upper- and lowercase IUPAC symbols. `--allow-gaps` additionally accepts `-` and `.`. Invalid runs report record names and 1-based inclusive sequence positions, and `--all-errors` continues across runs and records. Alphabet validation is off by default.
 - Add `faqt check [files...]` to stream through sequence inputs and report parser or decompression errors, including corrupt compression trailers. It accepts stdin and stops at the first error by default. `--all-errors` continues across files and reports recoverable FASTA NUL errors and FASTQ length mismatches within each file, including embedded FASTA in GFF3. NUL diagnostics identify each run with the contig name, 1-based inclusive sequence positions, byte count, and line/column range. Validation failures exit nonzero without printing usage.
 
 ### Fixed

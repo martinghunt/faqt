@@ -13,19 +13,19 @@ type Reader interface {
 
 // Check uses a format's recovery support when available. Returned errors are
 // fatal for this input; recoverable errors are sent to report.
-func Check(r Reader, report func(error)) (int, error) {
+func Check(r Reader, report func(error), visit func(*seqrecord.SeqRecord) error) (int, error) {
 	if checker, ok := r.(interface {
-		Check(func(error)) (int, error)
+		CheckRecords(func(error), func(*seqrecord.SeqRecord) error) (int, error)
 	}); ok {
-		return checker.Check(report)
+		return checker.CheckRecords(report, visit)
 	}
-	return ReadAll(r)
+	return ReadAll(r, visit)
 }
 
-func ReadAll(r Reader) (int, error) {
+func ReadAll(r Reader, visit func(*seqrecord.SeqRecord) error) (int, error) {
 	count := 0
 	for {
-		_, err := r.Read()
+		record, err := r.Read()
 		if err == io.EOF {
 			return count, nil
 		}
@@ -33,5 +33,10 @@ func ReadAll(r Reader) (int, error) {
 			return count, err
 		}
 		count++
+		if visit != nil {
+			if err := visit(record); err != nil {
+				return count, err
+			}
+		}
 	}
 }

@@ -49,7 +49,7 @@ func TestCheckPathAGC(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, allErrors := range []bool{false, true} {
-		count, err := seqio.CheckPath(path, allErrors, nil)
+		count, err := seqio.CheckPath(path, allErrors, nil, seqio.WithCheckAlphabet("dna"))
 		if err != nil || count != 13 {
 			t.Fatalf("CheckPath() = (%d, %v), want 13 records", count, err)
 		}
@@ -108,7 +108,7 @@ func TestCheckEveryTextFormatAndCompression(t *testing.T) {
 				if err := os.WriteFile(path, comp.compress(t, []byte(fixture.plain)), 0o600); err != nil {
 					t.Fatal(err)
 				}
-				count, err := seqio.CheckPath(path, true, func(err error) { t.Errorf("unexpected diagnostic: %v", err) })
+				count, err := seqio.CheckPath(path, true, func(err error) { t.Errorf("unexpected diagnostic: %v", err) }, seqio.WithCheckAlphabet("dna"), seqio.WithCheckGaps(true))
 				if err != nil || count != len(fixture.want) {
 					t.Fatalf("CheckPath() = (%d, %v), want %d records", count, err, len(fixture.want))
 				}

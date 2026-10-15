@@ -10,12 +10,16 @@ import (
 func newCheckCmd() *cobra.Command {
 	var input inputOptions
 	var allErrors bool
+	var alphabet string
+	var allowGaps bool
 	cmd := &cobra.Command{
 		Use:   "check [files...]",
 		Short: "Check that every sequence record can be read",
 		Long: "Read every record using faqt's sequence parsers, detecting format and compression from content.\n" +
 			"Report parser and decompression errors, including corrupt compression trailers.\n" +
-			"This checks sequence parsing, not annotations, alignments, or a specific biological alphabet.\n" +
+			"Use --alphabet dna|rna|protein to additionally validate normalized sequence characters.\n" +
+			"Alphabet checks ignore case; --allow-gaps also accepts '-' and '.'.\n" +
+			"This checks sequence parsing, not annotations or alignment correctness.\n" +
 			"Defaults to stdin and stops at the first error.\n" +
 			"With --all-errors, reports recoverable errors within files and continues across files.\n" +
 			"Structural and decompression errors stop checking the affected file.",
@@ -25,13 +29,14 @@ func newCheckCmd() *cobra.Command {
 				args = []string{"-"}
 			}
 			failed := 0
+			options := append(input.seqioOptions(), seqio.WithCheckAlphabet(alphabet), seqio.WithCheckGaps(allowGaps))
 			for _, path := range args {
 				var writeErr error
 				count, err := seqio.CheckPath(path, allErrors, func(diagnostic error) {
 					if writeErr == nil {
 						_, writeErr = fmt.Fprintf(cmd.OutOrStdout(), "%s\tERROR\t%v\n", path, diagnostic)
 					}
-				}, input.seqioOptions()...)
+				}, options...)
 				if err != nil {
 					failed++
 				} else {
@@ -52,5 +57,7 @@ func newCheckCmd() *cobra.Command {
 	}
 	addInputFlags(cmd, &input)
 	cmd.Flags().BoolVar(&allErrors, "all-errors", false, "Report recoverable errors within each input and continue checking other files")
+	cmd.Flags().StringVar(&alphabet, "alphabet", "", "Validate sequence characters against dna, rna, or protein (off by default)")
+	cmd.Flags().BoolVar(&allowGaps, "allow-gaps", false, "Allow '-' and '.' in sequences checked with --alphabet")
 	return cmd
 }

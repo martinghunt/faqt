@@ -74,17 +74,38 @@ Sequence positions include the invalid bytes and exclude line breaks and trimmed
 surrounding whitespace. Runs spanning wrapped lines are reported together;
 header errors use header column ranges instead of sequence positions.
 
+Sequence alphabet validation is **off by default**. Add `--alphabet dna`,
+`--alphabet rna`, or `--alphabet protein` to enable it. Existing parser, NUL,
+and decompression checks run regardless of this option. All alphabets accept
+upper- and lowercase letters:
+
+| Alphabet | Accepted symbols |
+| --- | --- |
+| `dna` | `ACGTRYSWKMBDHVN` |
+| `rna` | `ACGURYSWKMBDHVN` |
+| `protein` | `A`–`Z`, including ambiguity codes `B/J/X/Z` and residues `O/U`, plus `*` for stop |
+
+`--allow-gaps` additionally accepts `-` and `.` and requires `--alphabet`.
+Invalid-character diagnostics identify the record, 1-based inclusive sequence
+positions, run length, and first invalid byte. `--all-errors` reports all invalid
+runs across records. These checks examine normalized sequences returned by the
+parsers, excluding headers, quality strings, and annotations. They cannot detect
+characters a parser discards during normalization, such as non-letter characters
+in GenBank/EMBL sequence sections. Positions include gap and invalid bytes.
+
 ```bash
 faqt check assembly.fa.gz reads.fastq.gz
 faqt check --all-errors assembly.fa.gz reads.fastq.gz
+faqt check --alphabet dna --all-errors assembly.fa.gz
+faqt check --alphabet protein proteins.fa
+faqt check --alphabet dna --allow-gaps alignment.fa
 cat assembly.fa | faqt check
 ```
 
 Checks use faqt's sequence parsers and, when parsing can reach the end of the
 input, read through compression trailers to detect corruption. They cover
-sequence parsing rather than annotations,
-alignment correctness, or a specific biological alphabet. Inputs are never
-modified.
+sequence parsing rather than annotations or alignment correctness. Biological
+alphabet checking is enabled only with `--alphabet`. Inputs are never modified.
 
 Command-line input can be any supported sequence format:
 

@@ -31,10 +31,16 @@ func (r *Reader) Read() (*seqrecord.SeqRecord, error) {
 // Check checks the embedded FASTA section, continuing past NUL errors.
 // Diagnostic line numbers are relative to that section.
 func (r *Reader) Check(report func(error)) (int, error) {
+	return r.CheckRecords(report, nil)
+}
+
+// CheckRecords is Check with an additional callback for each parsed record.
+// visit may inspect invalid records; returning an error stops the check.
+func (r *Reader) CheckRecords(report func(error), visit func(*seqrecord.SeqRecord) error) (int, error) {
 	if err := r.startFASTA(); err != nil {
 		return 0, err
 	}
-	count, err := r.fastaPart.Check(report)
+	count, err := r.fastaPart.CheckRecords(report, visit)
 	if count == 0 && err == nil && !r.seenSequence {
 		return 0, fmt.Errorf("gff3 input does not contain sequence records in ##FASTA section")
 	}

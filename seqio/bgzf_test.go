@@ -101,7 +101,7 @@ func TestBGZFBAMStillReadsAsBAM(t *testing.T) {
 		}
 	}
 	for _, allErrors := range []bool{false, true} {
-		count, err := seqio.CheckPath(path, allErrors, nil)
+		count, err := seqio.CheckPath(path, allErrors, nil, seqio.WithCheckAlphabet("dna"))
 		if err != nil || count != 1 {
 			t.Fatalf("CheckPath(BAM) = (%d, %v), want one record", count, err)
 		}
