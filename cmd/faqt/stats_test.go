@@ -1,11 +1,57 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestStatsCommandRejectsFASTANULBytes(t *testing.T) {
+	input := ">one\nACGT\n>two\nAC\x00GT\n"
+	var compressed bytes.Buffer
+	zw := gzip.NewWriter(&compressed)
+	if _, err := zw.Write([]byte(input)); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name  string
+		data  string
+		stdin bool
+	}{
+		{"plain file", input, false},
+		{"gzip file with misleading extension", compressed.String(), false},
+		{"stdin", input, true},
+		{"gzip stdin", compressed.String(), true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newStatsCmd()
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+			var err error
+			if tc.stdin {
+				cmd.SetArgs([]string{"-u", "-"})
+				_, err = runWithCapturedStdinOutput(t, tc.data, cmd)
+			} else {
+				path := filepath.Join(t.TempDir(), "input.fastq")
+				if err := os.WriteFile(path, []byte(tc.data), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				cmd.SetArgs([]string{"-u", path})
+				_, err = runWithCapturedOutput(t, cmd)
+			}
+			if err == nil || !strings.Contains(err.Error(), "fasta: NUL byte (0x00) on line 4") {
+				t.Fatalf("Execute() error = %v, want FASTA NUL byte error on line 4", err)
+			}
+		})
+	}
+}
 
 func TestStatsCommandTabDelimited(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "stats.fa")

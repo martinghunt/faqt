@@ -2,10 +2,50 @@ package fasta
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
 )
+
+func TestReaderRejectsNULBytes(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		line  int
+	}{
+		{"name", ">seq\x00one\nACGT\n", 1},
+		{"description", ">seq description\x00here\nACGT\n", 1},
+		{"sequence start", ">seq\n\x00ACGT\n", 2},
+		{"sequence middle", ">seq\nAC\x00GT\n", 2},
+		{"sequence end without newline", ">seq\nACGT\x00", 2},
+		{"NUL only line", ">seq\n\x00\n", 2},
+		{"wrapped sequence", ">seq\nACGT\nAC\x00GT\n", 3},
+		{"long sequence", ">seq\n" + strings.Repeat("A", 10000) + "\x00GT\n", 2},
+		{"long header", ">seq " + strings.Repeat("d", 10000) + "\x00\nACGT\n", 1},
+		{"later record", ">one\nACGT\n>two\nAC\x00GT\n", 4},
+		{"later header", ">one\nACGT\n>two\x00\nACGT\n", 3},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewReader(bufio.NewReader(strings.NewReader(tc.input)))
+			for {
+				rec, err := r.Read()
+				if err == nil {
+					continue
+				}
+				want := fmt.Sprintf("fasta: NUL byte (0x00) on line %d", tc.line)
+				if err.Error() != want {
+					t.Fatalf("Read() error = %v, want %q", err, want)
+				}
+				if rec != nil {
+					t.Fatalf("Read() returned a record with invalid input: %+v", rec)
+				}
+				break
+			}
+		})
+	}
+}
 
 func TestReaderMultiRecord(t *testing.T) {
 	r := NewReader(bufio.NewReader(strings.NewReader(">seq1 desc one\nACG\nT\n>seq2\nNN-\n")))

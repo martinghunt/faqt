@@ -3,6 +3,7 @@ package fasta
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/martinghunt/faqt/internal/seqrecord"
@@ -15,6 +16,7 @@ type Reader struct {
 	eof         bool
 	long        []byte // scratch for lines longer than the read buffer
 	seq         []byte // sequence accumulator, reused between records
+	lineNumber  int
 }
 
 func NewReader(r *bufio.Reader) *Reader {
@@ -99,6 +101,10 @@ func (r *Reader) readLine() ([]byte, error) {
 	}
 	if err != nil && err != io.EOF {
 		return nil, err
+	}
+	r.lineNumber++
+	if bytes.IndexByte(line, 0) >= 0 {
+		return nil, fmt.Errorf("fasta: NUL byte (0x00) on line %d", r.lineNumber)
 	}
 	return trimEOL(line), err
 }
