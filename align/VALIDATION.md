@@ -58,3 +58,10 @@ FAQT_SEQHIKER_DEBUG="$HOME/Work/Seqhiker_debug" \
 
 The normal suite skips this test unless that environment variable is set. The
 engine and normal tests do not need minimap2 installed.
+
+## Repeat-rich benchmark
+
+See [the full benchmark report](../benchmarks/assembly/RESULTS.md) for repeated
+measurements against minimap2 on both this pair and Shigella. The Shigella pair
+exceeds the default raw-anchor budget; the report records that failure separately
+from successful runs with a larger budget and compares repeat placements.
