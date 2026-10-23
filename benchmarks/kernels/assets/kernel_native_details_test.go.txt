@@ -1,0 +1,64 @@
+package align
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+	"reflect"
+	"testing"
+)
+
+func TestStudyNativeDetails(t *testing.T) {
+	if !studyNativeAvailable {
+		t.Skip("build with --wfa2")
+	}
+	samples := loadStudySamples(t)
+	ctx := context.Background()
+	o := DefaultOptions()
+	type tally struct{ Calls, ScoreDifferences, LowerScores, HigherScores, EndpointDifferences, TraceDifferences, DifferentFromNoDrop int }
+	result := map[string]*tally{"extension": {}, "gap": {}}
+	for _, s := range samples {
+		kind := "gap"
+		if s.Extend {
+			kind = "extension"
+		}
+		c := result[kind]
+		c.Calls++
+		got, err := alignWFA2(ctx, s.Q, s.T, s.Band, s.Extend, o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.score != s.Score {
+			c.ScoreDifferences++
+			if got.score < s.Score {
+				c.LowerScores++
+			} else {
+				c.HigherScores++
+			}
+		}
+		if got.q != s.EndQ || got.t != s.EndT {
+			c.EndpointDifferences++
+		}
+		if !reflect.DeepEqual(got.ops, s.Ops) {
+			c.TraceDifferences++
+		}
+		if got.score != s.Score || got.q != s.EndQ || got.t != s.EndT {
+			noDrop := o
+			noDrop.ZDrop = 100000000
+			want, err := alignDPScalar(ctx, s.Q, s.T, s.Band, s.Extend, noDrop)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.score != want.score || got.q != want.q || got.t != want.t {
+				c.DifferentFromNoDrop++
+			}
+		}
+	}
+	data, _ := json.MarshalIndent(result, "", "  ")
+	t.Log(string(data))
+	if path := os.Getenv("FAQT_NATIVE_DETAILS"); path != "" {
+		if err := os.WriteFile(path, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

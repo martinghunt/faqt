@@ -1,0 +1,193 @@
+package align
+
+import (
+	"context"
+	"slices"
+)
+
+// WFA experiment: dual affine costs, positive match reward transformed into
+// nonnegative costs, anchored origin, optimal endpoint search. Unlike the DP,
+// it has no row-order Z-drop. Differences caused by that are measured explicitly.
+func alignWFA(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
+	r, ok, err := tryWFA(ctx, q, t, band, extend, o, 512)
+	if ok || err != nil {
+		return r, err
+	}
+	return alignDPScalar(ctx, q, t, band, extend, o)
+}
+
+type wave struct {
+	v      [5][]int
+	from   [5][]uint8
+	before []int
+}
+
+func tryWFA(ctx context.Context, q, t []byte, band int, extend bool, o Options, budget int) (dpResult, bool, error) {
+	m, n := len(q), len(t)
+	if m == 0 || n == 0 {
+		return dpResult{}, false, nil
+	}
+	gcd := func(a, b int) int {
+		for b != 0 {
+			a, b = b, a%b
+		}
+		return a
+	}
+	x := 2 * (o.Mismatch + o.Match)
+	opens := [5]int{0, 2 * o.GapOpen, 2 * o.GapOpen, 2 * o.LongGapOpen, 2 * o.LongGapOpen}
+	exts := [5]int{0, 2*o.GapExtend + o.Match, 2*o.GapExtend + o.Match, 2*o.LongGapExtend + o.Match, 2*o.LongGapExtend + o.Match}
+	g := x
+	for z := 1; z < 5; z++ {
+		g = gcd(g, opens[z])
+		g = gcd(g, exts[z])
+	}
+	x /= g
+	for z := 1; z < 5; z++ {
+		opens[z] /= g
+		exts[z] /= g
+	}
+	width := 2*band + 3
+	waves := make([]wave, 0, budget+1)
+	at := func(s, z, k int) int {
+		if s < 0 || s >= len(waves) || k < -band || k > band {
+			return minusInfinity
+		}
+		return waves[s].v[z][k+band+1]
+	}
+	best, bi, bj, bc, bk := 0, 0, 0, 0, 0
+	cells := int64(0)
+	found := false
+	for cost := 0; cost <= budget; cost++ {
+		if cost%32 == 0 {
+			if err := ctx.Err(); err != nil {
+				return dpResult{}, true, err
+			}
+		}
+		w := wave{before: make([]int, width)}
+		for z := 0; z < 5; z++ {
+			w.v[z] = make([]int, width)
+			w.from[z] = make([]uint8, width)
+			for j := range w.v[z] {
+				w.v[z][j] = minusInfinity
+			}
+		}
+		waves = append(waves, w)
+		radius := min(band, cost/min(exts[1], exts[3]))
+		for k := max(-n, -radius); k <= min(m, radius); k++ {
+			idx := k + band + 1
+			v, from := minusInfinity, uint8(0)
+			if cost == 0 && k == 0 {
+				v = 0
+			} else {
+				pv := at(cost-x, 0, k)
+				if pv >= 0 && pv < m && pv-k < n {
+					v = pv + 1
+				}
+				for z := 1; z < 5; z++ {
+					pk := k + 1
+					advance := 0
+					if z == 1 || z == 3 {
+						pk = k - 1
+						advance = 1
+					}
+					op, cont := at(cost-opens[z]-exts[z], 0, pk), at(cost-exts[z], z, pk)
+					end, pred := op, uint8(0)
+					if cont >= op {
+						end, pred = cont, uint8(z)
+					}
+					if end < 0 {
+						continue
+					}
+					end += advance
+					j := end - k
+					if end < 0 || end > m || j < 0 || j > n {
+						continue
+					}
+					w.v[z][idx], w.from[z][idx] = end, pred
+					if end > v {
+						v, from = end, uint8(z)
+					}
+				}
+			}
+			if v < 0 {
+				continue
+			}
+			w.before[idx], w.from[0][idx] = v, from
+			for v < m && v-k < n && exact(q[v], t[v-k]) {
+				v++
+			}
+			w.v[0][idx] = v
+			cells++
+			score := (o.Match*(2*v-k) - cost*g) / 2
+			if extend && (score > best || (score == best && (v < bi || (v == bi && v-k < bj)))) {
+				best, bi, bj, bc, bk = score, v, v-k, cost, k
+			}
+			if !extend && v == m && v-k == n {
+				best, bi, bj, bc, bk = score, m, n, cost, k
+				found = true
+				break
+			}
+		}
+		if o.MaxCells > 0 && cells > o.MaxCells {
+			return dpResult{}, false, nil
+		}
+		if found {
+			break
+		}
+		if extend && (cost+1)*g > o.Match*(m+n)-2*best {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return dpResult{}, false, nil
+	}
+	i, j, cost, k, state := bi, bj, bc, bk, 0
+	var ops []Op
+	edge := false
+	for i > 0 || j > 0 {
+		if (j == i-band && j > 0) || (j == i+band && j < n) {
+			edge = true
+		}
+		idx := k + band + 1
+		w := waves[cost]
+		if state == 0 {
+			pre := w.before[idx]
+			if i > pre {
+				ops = addOp(ops, '=', i-pre)
+				j -= i - pre
+				i = pre
+			}
+			if i == 0 && j == 0 {
+				break
+			}
+			from := int(w.from[0][idx])
+			if from == 0 {
+				ops = addOp(ops, 'X', 1)
+				i--
+				j--
+				cost -= x
+			} else {
+				state = from
+			}
+		} else {
+			from := int(w.from[state][idx])
+			if state == 1 || state == 3 {
+				ops = addOp(ops, 'I', 1)
+				i--
+				k--
+			} else {
+				ops = addOp(ops, 'D', 1)
+				j--
+				k++
+			}
+			cost -= exts[state]
+			if from == 0 {
+				cost -= opens[state]
+			}
+			state = from
+		}
+	}
+	slices.Reverse(ops)
+	return dpResult{ops, best, bi, bj, edge}, true, nil
+}

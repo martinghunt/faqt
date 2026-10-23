@@ -1,0 +1,521 @@
+{
+  "results": {
+    "samples": [
+      {
+        "dataset": "debug",
+        "engine": "old",
+        "run": 1,
+        "wall": 3.6092322500189766,
+        "cpu": 2.302694,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "-test.run=^TestOriginalEngineTiming$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.060326666,
+          "AlignSeconds": 2.265376625,
+          "WriteSeconds": 0,
+          "Count": 2720,
+          "AllocatedBytes": 2091041192
+        },
+        "output_sha256": "49a2b33e37a5a6288fe3415df7f0b421ddcd5c294b3a0624e497c31cde732a1d"
+      },
+      {
+        "dataset": "debug",
+        "engine": "new",
+        "run": 1,
+        "wall": 6.152678832993843,
+        "cpu": 5.734513000000001,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "-test.run=^TestComparison$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.14762125,
+          "AlignSeconds": 5.583801833,
+          "WriteSeconds": 0.015683125,
+          "Count": 7116,
+          "AllocatedBytes": 381608784,
+          "Error": "",
+          "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+        },
+        "output_sha256": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270"
+      },
+      {
+        "dataset": "debug",
+        "engine": "old",
+        "run": 2,
+        "wall": 2.335608166002203,
+        "cpu": 2.2724669999999993,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "-test.run=^TestOriginalEngineTiming$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.035226375,
+          "AlignSeconds": 2.240875875,
+          "WriteSeconds": 0,
+          "Count": 2720,
+          "AllocatedBytes": 2091705208
+        },
+        "output_sha256": "49a2b33e37a5a6288fe3415df7f0b421ddcd5c294b3a0624e497c31cde732a1d"
+      },
+      {
+        "dataset": "debug",
+        "engine": "new",
+        "run": 2,
+        "wall": 5.7331112080137245,
+        "cpu": 5.686159999999999,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "-test.run=^TestComparison$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.147674708,
+          "AlignSeconds": 5.533785125,
+          "WriteSeconds": 0.010277,
+          "Count": 7116,
+          "AllocatedBytes": 381215424,
+          "Error": "",
+          "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+        },
+        "output_sha256": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270"
+      },
+      {
+        "dataset": "debug",
+        "engine": "old",
+        "run": 3,
+        "wall": 2.336554541019723,
+        "cpu": 2.2804290000000025,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "-test.run=^TestOriginalEngineTiming$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.039262209,
+          "AlignSeconds": 2.245101125,
+          "WriteSeconds": 0,
+          "Count": 2720,
+          "AllocatedBytes": 2090893968
+        },
+        "output_sha256": "49a2b33e37a5a6288fe3415df7f0b421ddcd5c294b3a0624e497c31cde732a1d"
+      },
+      {
+        "dataset": "debug",
+        "engine": "new",
+        "run": 3,
+        "wall": 5.757364207995124,
+        "cpu": 5.688137999999999,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "-test.run=^TestComparison$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.143590625,
+          "AlignSeconds": 5.537045417,
+          "WriteSeconds": 0.010675042,
+          "Count": 7116,
+          "AllocatedBytes": 381215296,
+          "Error": "",
+          "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+        },
+        "output_sha256": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270"
+      },
+      {
+        "dataset": "repeats",
+        "engine": "old",
+        "run": 1,
+        "wall": 3.1750027500092983,
+        "cpu": 3.0630129999999967,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "-test.run=^TestOriginalEngineTiming$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.120364333,
+          "AlignSeconds": 2.986773417,
+          "WriteSeconds": 0,
+          "Count": 1024,
+          "AllocatedBytes": 3327797840
+        },
+        "output_sha256": "cf4792ddd395a122f14bf3ac8633c6fcf755b8199060e2d0d0f2c2ed1b0508e0"
+      },
+      {
+        "dataset": "repeats",
+        "engine": "new",
+        "run": 1,
+        "wall": 25.13817041600123,
+        "cpu": 25.062564,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "-test.run=^TestComparison$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.409830709,
+          "AlignSeconds": 24.621930792,
+          "WriteSeconds": 0.058158333,
+          "Count": 42414,
+          "AllocatedBytes": 3514578160,
+          "Error": "",
+          "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+        },
+        "output_sha256": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4"
+      },
+      {
+        "dataset": "repeats",
+        "engine": "old",
+        "run": 2,
+        "wall": 3.3622645830037072,
+        "cpu": 3.022162999999998,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "-test.run=^TestOriginalEngineTiming$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.081110792,
+          "AlignSeconds": 2.957148958,
+          "WriteSeconds": 0,
+          "Count": 1024,
+          "AllocatedBytes": 3326789296
+        },
+        "output_sha256": "cf4792ddd395a122f14bf3ac8633c6fcf755b8199060e2d0d0f2c2ed1b0508e0"
+      },
+      {
+        "dataset": "repeats",
+        "engine": "new",
+        "run": 2,
+        "wall": 25.21323975000996,
+        "cpu": 25.092170000000007,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "-test.run=^TestComparison$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.402442792,
+          "AlignSeconds": 24.646431791,
+          "WriteSeconds": 0.071125583,
+          "Count": 42414,
+          "AllocatedBytes": 3515572200,
+          "Error": "",
+          "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+        },
+        "output_sha256": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4"
+      },
+      {
+        "dataset": "repeats",
+        "engine": "old",
+        "run": 3,
+        "wall": 3.1949002910405397,
+        "cpu": 3.047368999999989,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "-test.run=^TestOriginalEngineTiming$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.065069208,
+          "AlignSeconds": 2.9889747079999998,
+          "WriteSeconds": 0,
+          "Count": 1024,
+          "AllocatedBytes": 3329716376
+        },
+        "output_sha256": "cf4792ddd395a122f14bf3ac8633c6fcf755b8199060e2d0d0f2c2ed1b0508e0"
+      },
+      {
+        "dataset": "repeats",
+        "engine": "new",
+        "run": 3,
+        "wall": 25.28284233395243,
+        "cpu": 25.181019000000003,
+        "exit": 0,
+        "command": [
+          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "-test.run=^TestComparison$",
+          "-test.v",
+          "-test.timeout=5m"
+        ],
+        "detail": {
+          "PrepareSeconds": 0.404451709,
+          "AlignSeconds": 24.751403,
+          "WriteSeconds": 0.055779083,
+          "Count": 42414,
+          "AllocatedBytes": 3516053032,
+          "Error": "",
+          "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+        },
+        "output_sha256": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4"
+      }
+    ],
+    "inputs": {
+      "31585_6#49.fasta": "13825cc1dd3278cf4779618772457d97d716d5310fb0d904ff7e4f37c8b35077",
+      "barcode10_ICESp23_spliced.fasta": "a40111a72cc312d930a32eca3a362155baa33db5e3061d2e4e48ea81c3ae55d3",
+      "repeats.CP026802.1.fa": "154cb600134eca83c70f34dd53af821434499539574e9b5fe50ec61abe0c1515",
+      "repeats.CP151312.1.fa": "1c76545066c3503febd6a3a53c61afc5efcb4e95ed023009789f898f3ab990d5"
+    },
+    "machine": "Darwin mib121157s 25.6.0 Darwin Kernel Version 25.6.0: Tue Aug 18 17:48:46 PDT 2026; root:xnu-12377.161.15.700.19~2/RELEASE_ARM64_T6041 arm64",
+    "method": "GOMAXPROCS=1; sequential fresh processes; current Seqhiker initial summary API vs current faqt full paths; faqt full extension and MaxAnchors=20M",
+    "summary": [
+      {
+        "dataset": "debug",
+        "engine": "old",
+        "wall_median": 2.336554541019723,
+        "align_median": 2.245101125,
+        "counts": [
+          2720,
+          2720,
+          2720
+        ]
+      },
+      {
+        "dataset": "debug",
+        "engine": "new",
+        "wall_median": 5.757364207995124,
+        "align_median": 5.537045417,
+        "counts": [
+          7116,
+          7116,
+          7116
+        ]
+      },
+      {
+        "dataset": "repeats",
+        "engine": "old",
+        "wall_median": 3.1949002910405397,
+        "align_median": 2.986773417,
+        "counts": [
+          1024,
+          1024,
+          1024
+        ]
+      },
+      {
+        "dataset": "repeats",
+        "engine": "new",
+        "wall_median": 25.21323975000996,
+        "align_median": 24.646431791,
+        "counts": [
+          42414,
+          42414,
+          42414
+        ]
+      }
+    ]
+  },
+  "build": {
+    "go": "go version go1.27.2 darwin/arm64",
+    "binaries": {
+      "old.test": "2503237aaf73e926e68a6fd74bb1c83d1bac5773e5cd56b1536fae7f4ae6c2b9",
+      "new.test": "71bc3c217d7ccf500cde2bd78083c114f4283dc5e68dcdd8c946b081ed97b76a"
+    },
+    "seqhiker_commit": "0ae2273f6942216194393b564ee56d9bbb9a8358",
+    "faqt_commit": "09dcd181d7328f169457583be1203f1be292e47a",
+    "seqhiker_worktree": "current worktree including pre-existing comparison.go/comparison_test.go edits; isolated copy for harness",
+    "new_build": "CGO_ENABLED=0 GOEXPERIMENT=simd go test -c ./benchmarks/assembly",
+    "old_build": "go test -c . in isolated zem copy; original_timing_test.go invokes existing engine APIs"
+  },
+  "sources": {
+    "seqhiker": {
+      "annotations.go": "0c1045a74fe9ecaaa5bb58bb06498318ea1b4f7e9c2424c0ff9a3db4d063a246",
+      "bam_sources.go": "b11234eb5b91a9e9aad711a80652fbad35115e73bb28687bf295d5106dbbc242",
+      "comparison.go": "953435ceaa12f2137f5b3ffd8f38558a25c74c3027126449809da4a3e1c7fa5a",
+      "comparison_detail_cache.go": "5058b2d2e9fc479c445bc4406dc4ff1996abb9467502a958fb66bbe4d1c456a1",
+      "comparison_session.go": "e091c7ebe54ad53c17104afcace62dec1ad9cb91bc2f8d0df08e237756473c63",
+      "comparison_test.go": "eb609b3530df43e07d6e63c3501a4e6b69efa0ddc9333160bef74800dec4250a",
+      "comparison_test_data.go": "a089d5444f03fb1dc66228f211b05f4d5d11e8d5ff8b63b47a558b7d1c9d72aa",
+      "dna_utils.go": "c4a349860eb25cba3f118e78afd21822a70432ef6c7d2f35a7f418ff89330bd7",
+      "download.go": "71712c70e491fafc2e3150d5f002450df49e83cbc66f115ec88d530a9580544e",
+      "download_test.go": "a5b3701bb702089b7ff703e663da6ce7d15e27c78550ff31e015e07a2f005bf2",
+      "engine.go": "7bafa38d6195915c048cfc388558fa40f22a138a5478066900de80c3f6d0dc47",
+      "engine_test.go": "cf69dbec19e2eb4c159cfd398250f48d92aa13a0c06d75c576cfb2d9bdb59c69",
+      "input_detect.go": "0218e40dd442bf3035028544f75e30489c402184ed2cb26a249d811703efa779",
+      "main.go": "aa896187fb439a8a848f1ab9d22fc7a90518e9ac93541cac29b3029469e7f37d",
+      "orientation.go": "c4a88c32b61f7cf1d4da539220751fec7e5e31cb16c1dae96b57ae79481afeb6",
+      "parsers.go": "21e881ea96c464ed36aaab4394e6da3ad12a82debd146ddcec8c6c5ce7b7870e",
+      "parsers_test.go": "7c8a9b1acddb155c6c112e6a2e588c770a59ea6258b23eb976714df385f43290",
+      "protocol.go": "c570dc6edcb8064078e7740147a7f23e2b233cadd8f5ba5bbd1298a6f02d7707",
+      "protocol_test.go": "2ab1a4395c11ea5a5fafc6c98bd354b79ad6ff658ad4df7b3ccf34954ff99c41",
+      "search.go": "e3e8b1094e37ffe674a5c893a85dcf90bd8f31578d4678c0d3913338dfa317c1",
+      "server.go": "7eaa3fb33027d769b97b0697d43c44abdcbbecb3d7fe31c170c81d648c1ad224",
+      "stop_codons.go": "2357ea9c73b9f499997a5086d92a1c6e682d1d4f4d62d6a5b820f6a4016bf568",
+      "test_data.go": "5e3387ab10ed2ed4e0c76079e93f2635ad0a717abf1abc76929a7740d0e16ed4",
+      "tiles.go": "8b35a3d0d0604922fe2251e4547256358d921fa3c9e56cc698b120cd9243047b",
+      "vcf_sources.go": "25aee35198ba5d33f8deba70a874ba8c7693904d4180dcb22cf017732e055e04",
+      "vcf_sources_test.go": "385d4f2742b70fc9b40585f620363c905ee74588c05e09fbff1d41118b2bc0d3",
+      "version.go": "606a2d0be6e042be81025cc8dd19356300e5578238f5934607f6bf2465444b8d"
+    },
+    "faqt": {
+      "agc/reader.go": "29b48761e9ffe1646b2ed2d071e23f9a72a3401a23fba57e336f20c9632cc59f",
+      "agc/reader_test.go": "029a186a2c0567f1dd6dce40326593aa9747ab7603400b2fff062b8851f12c6e",
+      "align/align.go": "d15010fae16a2c28ed357695d93325b140660e5a1089d39308896ff71a9db437",
+      "align/align_test.go": "e8483eda404ca94dae3e8ac5cffa3f7c48ca41c69defc1e3fda53714858aac7c",
+      "align/chain.go": "5d5b71515702b0fbdb26a368ddd747d4ecea6532dfc32ae904d6a315a9bea1f3",
+      "align/containment.go": "7e15a7021ccc4551496c8203cfeae44ead1875b92630f28434f8571c84a6663c",
+      "align/containment_test.go": "48eeed31ea1d37e61a15bd7a656699d849df3b955eaa91ac0d011bc7076eae89",
+      "align/dp.go": "c746c4957fbc7087f394bffa877233b6863b19166f9834b418e09edef7f117cc",
+      "align/dp_backend_test.go": "54373d64916374af736c5a66b39bd1ab1cb603607070fb88060949020f71b511",
+      "align/dp_captured_test.go": "387b09757064db88ecd5daf180686c0168b166b2670ebf16136d07aac2f73657",
+      "align/dp_difference_amd64.go": "93ff987bdeb22d081247e6231fe66425d6c7332c08390692ef80c9d276334dd8",
+      "align/dp_difference_arm64.go": "cad40765235781e0e7b293d10d361b2a4d47ad3f76ab35e4e1c5a86a8db02ee5",
+      "align/dp_difference_lanes_test.go": "255fd9103826c7049ab174b665ccdb308e43dadf92d80d6eb98dc78a2d4f480d",
+      "align/dp_difference_simd.go": "ad7265dc6f1460d072c926accaca495417b85851262dcd2fb13ce5857ff1312d",
+      "align/dp_difference_test.go": "225f396a024c84f9682891855f54d60bd26c9908070b2205a669cd897e3a7b0b",
+      "align/dp_kernel_fuzz_test.go": "fefb27de62b5b7ea02f39ad5f575420547104520cb7dd41196464fe0cb7901fd",
+      "align/dp_kernel_test.go": "ebf6c94304095b59d8bc6b508b9b4957b1e3bed320409669fa2d4bf66a60d278",
+      "align/dp_scalar.go": "33e7a79b234d50a5a73cb39ad91cd551efcad84eb391c83b3ffdb75fef38ee0b",
+      "align/dp_simd_arm64.go": "c58e382dbbe97d083d628a4d71909388808d1616a20a440ef52c468e18ab3b3a",
+      "align/dp_test.go": "0f66ebd09e53d7ddec6350a790aedf9505d021f57630788dfbe1fc57ebdbaad7",
+      "align/end_extension.go": "cea18a6d68ce490954745f9eb5c2147a978657834646410e54e479da629ae59c",
+      "align/end_extension_test.go": "e86af0d36ea62c2420bc07a45d6cb52c9da0f9536d8cbab9c1e88de341c50240",
+      "align/realdata_test.go": "597c7aeab1c1474a4b5cc65f0c57d509a002afceb5c0f76659194db9cd0e3768",
+      "align/refine.go": "bd83c9126b1d139b6b354fa28849ccace0b288c0104902e39942cf867a67f4fc",
+      "bam/reader.go": "421b6d4032262d1e66ee69b737497098b7ee313f9ce1dd67ffebbae837b4cc38",
+      "bam/reader_test.go": "33e5871c6c8d01a2975f6572117859c7cc37af5c63e0fa83d890744f1dd67ab3",
+      "benchmarks/assembly/benchmark_test.go": "d30b990b8746e159ed4e9edabe9ae20802496b07a2dd725ad6988da147af52b6",
+      "benchmarks/remote/main.go": "c4fe79eab12c4f235f7e04f0ba66a72fb22851d6716c38a6ed94dc80c12ab854",
+      "benchmarks/remote/main_test.go": "53dfbcee6604b4ec6163ae32c3f6a021b422b20d370d88f2fe798d1ad8d8aecd",
+      "clustal/reader.go": "d2410b1ec0aafed76fd2e638b9a6839d846492046dac934f443e3a539dfff006",
+      "clustal/reader_test.go": "acd79c7ce0b6bb8dc7a7e08668e3f4f6c1acb55a09576ceaef125b7685f2b4e3",
+      "cmd/faqt/check.go": "6905ebc0c262c84b7ea10cab2fd0317e3babee069db5324116f7b23c5f518557",
+      "cmd/faqt/check_test.go": "f88b27938211334dc21aa7043f327efc128b6a9dfa52c2eb11ddc781208b4719",
+      "cmd/faqt/download.go": "86ea52e2b630bb29b810993822656e7caa7646d94ce5633fbaac1146ed3a1e61",
+      "cmd/faqt/download_reads.go": "66514378cd178930d541316b2d849ce06620e0fcf3e5bd314e218bd2e27d0d59",
+      "cmd/faqt/download_reads_test.go": "55a605dc85b856e2bdfcf30031837c42fe5d00c3c57fe72e44ad5dd6404c060e",
+      "cmd/faqt/download_test.go": "af53df1e541e9157974f6959039cb5a753e1176c8afb2bacdf6ff82b7a393489",
+      "cmd/faqt/input_options.go": "8c3beedac52517f9f633faf33c3fef07deb4e716ed732ca81723d12f82ae47cd",
+      "cmd/faqt/interleave.go": "7360769b0f97b6a054c542a3c9a665374e1e1d2ab9d89f1d2ef6376792a8dece",
+      "cmd/faqt/interleave_test.go": "3246ba542ce59002d88d3c7059b54772b55e00bd651361e3b606132d10734a49",
+      "cmd/faqt/main.go": "c822476e80546c02ed948a8679c08a018e85ad732efba1d3a5385d96eefccfdd",
+      "cmd/faqt/make_random_contigs.go": "85da3368e691cded19788a6135feb370293b2d781d28210d866359c2b46cd777",
+      "cmd/faqt/make_random_contigs_test.go": "b014d2e9877922914cce461c173c5d547df9905472bf81568ebb81c7e8b4aa86",
+      "cmd/faqt/output_options.go": "674886c60331c19dc9f1aa75c9c38d8cc4c6ae8826be554b8b11c5d20e7bcfbc",
+      "cmd/faqt/root.go": "fa5563157a47f1b1c30425ee03569af76f16c7823dc816fc4406cb7a05707cab",
+      "cmd/faqt/root_test.go": "2f5d22788a7d79e0e196111085a19ed524853fc0eae65092c9cfdd3ef9472a9d",
+      "cmd/faqt/stats.go": "6334b1f1f6b03297280e7bda8761a6481a0ad5f387db40261129e1bce04cd23b",
+      "cmd/faqt/stats_test.go": "d6f0065228b55a99d15ade57de0c7c739980a9621f6c5bd21bfa26a367ee239e",
+      "cmd/faqt/test_helpers_test.go": "5936958adfe20e375a76c9abc9c30b78daca9a26cc154c18cee6054ac629ec40",
+      "cmd/faqt/threads_flag_test.go": "9b4924d85c190a4e4263f73392e813465eb0b507a7b188f8fc758dab1852ea2b",
+      "cmd/faqt/to_fasta.go": "7428a2584addc331f6ccf0861288d9f8c80dfe76dbcf5422dbb06e4a58be3232",
+      "cmd/faqt/to_fasta_test.go": "d34225102f59085615484550b7ac3e89fff5a56278059b38a1507c23da88937f",
+      "cmd/faqt/to_perfect_reads.go": "9e91dc0a665640cd4770fffaf3e38c63d6097a3256c92285b961e21cb75ccf05",
+      "cmd/faqt/to_perfect_reads_test.go": "91611a51c99b350900d74bdced33906200c6b433f137d3eeb3da30d3891a7293",
+      "cmd/faqt/update.go": "6a5523be105a17e2e2b6b9d20dbbab28f3cc1d2afe16a633e8bc78c4f90b9f1a",
+      "cmd/faqt/update_test.go": "e89126e2c6872a521db50e3c22b24d3a90ac29b3e34d97adff0b2580e259f7b4",
+      "embl/reader.go": "5e4ec279ef5bdf5da4dd5ade7569aaebb5c78703f885426baafcf2ef8d5f6192",
+      "embl/reader_test.go": "df1008fb0c64cbac1718214efe90e9a68254222958375ee95bc8ae28800f5078",
+      "fasta/reader.go": "c6fad7d1b5158d3b94334f74e316748f157cc5c069213b569a2ac6321f3c0faf",
+      "fasta/reader_test.go": "1d6e4c2e52c24f337ab04b82e01b06cd15fd5e095c0efa86a7cc39b12f7c046b",
+      "fasta/writer.go": "46f44328e67ea01e0c441267dcc584629871ce3e4980709bc5be7c426ac4d058",
+      "fasta/writer_test.go": "aec3e6829335e33a8e8ec28a0f2147bc72f4f61d62035fb8c5987cd53011c1a8",
+      "fastq/reader.go": "2c7cf76025a1b98d16cef51353329c6f499cbdf8487775743df60c1507b946ec",
+      "fastq/reader_test.go": "354a204fa684192d194d7654e7a5d1251755835e4e7955ed9b665f63eb9a911a",
+      "fastq/writer.go": "b72cdbcc586147070c2f7079b04bc8bf5ac812f9c3cd1f61444eec6fda3fbc41",
+      "fastq/writer_test.go": "a640b82654490ee035407f8f3c627af52b765f8703359ce90ded2a479948197f",
+      "genbank/reader.go": "b5e4ba4be4ee78e8d015ddfa15743285df21869096030d54be938d236fd56d31",
+      "genbank/reader_test.go": "080777fec42839680680fa369fecc242ffb38c0535a527fca430d86df5c78828",
+      "genomedl/archive.go": "72cac49057c4e9181375227ce4eda809f3146ffdbe1afe7b741e6b0443b756bf",
+      "genomedl/download.go": "fb531a0b65c94a8dcc12df6faf5842b82041c641473535a10c579342425609ce",
+      "genomedl/download_test.go": "dc77d13d88db8079e41a92d4efae795880abfc295863c8a89b87ae668c3fdea0",
+      "genomedl/output.go": "fb570d1fe8bb30651c9ea85d6496c826d95aa87c1ace85f7fa748da28a7532a5",
+      "gff3/reader.go": "3b7041c10744b9a51e668247f65a8d2fcbad57bb1828aaa7de1e8684a097d1a5",
+      "gff3/reader_test.go": "0f8cef1ecba62d2ea509de3f53d03c71ac431a25525d541a6f09e90918534af3",
+      "internal/buildinfo/version.go": "edd416e8373d33d2df8d257046aa491b9b8b1a620f10d555d4d54f3be73689db",
+      "internal/closeutil/multicloser.go": "675c741f4721f16196080e71277ac0c62b0687af5d505ff2038a7851ecaf5a69",
+      "internal/closeutil/multicloser_test.go": "1f3f90aedd3e9fe10328d5c8a63380c3c868acff71306b3f9b2049e44ec3c481",
+      "internal/flatseq/flatseq.go": "ee78baf1d22fa16bd28a8c826c54628282b9372c964d1fb28d3415d8a8edf48e",
+      "internal/flatseq/flatseq_test.go": "1933694e4ca8c8ed8e133f8d9620a2996d8eed788e7d12d37b0b48563cd45539",
+      "internal/htsseq/record.go": "807513943acbcb8c5f216eb2fef436b7d5261623120912175eb025eaa242e14b",
+      "internal/htsseq/record_test.go": "3948f9c645cc7fc278c1f33ab23e452b6b3e5bbcc9130c7d59076a709a72ce54",
+      "internal/selfupdate/update.go": "45e94795520dcf9ec18ff336040d894f80cc20538094028a16526f62b6da7984",
+      "internal/selfupdate/update_test.go": "236ecef68416b689fe2d4599483a86117f6c18b2ed859532e548f11dc88d5665",
+      "internal/seqcheck/check.go": "771ebe4c482f8d36301b75af1b9b1453cc8ad13636ad0b1877af479dd9dac800",
+      "internal/seqrecord/record.go": "e85eec3cbc32291e737ae345dba3597965d7c929d319f6c266fbd928f87b4aec",
+      "internal/seqrecord/record_test.go": "452a254a8517692a3421d5a855ee60751f1d7e91496fa6b282c445bf4610e1f4",
+      "internal/sniff/sniff.go": "1a4e627fcfa5dd6aa898fdcf9325be21cbfd4dd6c8ce630ab5f6ecb0f1c47607",
+      "internal/sniff/sniff_test.go": "95fd9f6386662a215454a79ba10f1ee30ef7ff09352ca8e1549d104668e49e70",
+      "internal/xopen/xopen.go": "e14c61edf0a255796c29b36ff4abf0cf17e184da2d319a592535a2caa7369d7e",
+      "internal/xopen/xopen_test.go": "006048df8fbd655119267eb93a0e828cb6d769133c42173e899c682a8eae3cd9",
+      "minimizer/minimizer.go": "8fbbe2c24d623cd87818ce4585dc88dc7332dd33c65821dc17396a4b5f502ecd",
+      "minimizer/minimizer_test.go": "25d27e8b1fb3416fdb5966e7d5dc59ffb19c543ce49aab336933278e8450a5b7",
+      "minimizer/query.go": "c95a77736e549a95a70d82bb02ccf07e78adcd6f8c5c6f9aec91a49b69759fae",
+      "minimizer/sketch.go": "a709e39669ae7f9d9b403e22bff8ac0d581d2901ac23c295b930b52fffcc5cf3",
+      "minimizer/sketch_test.go": "42de7556e0fb049f36e5b6a55d9089e5d39c664ea9e9454dfa668e21487e13e3",
+      "orf/orf.go": "8e9fa53f45851d320061c6d03a2d1a51a6050570d65753961b75245e71bb281c",
+      "orf/orf_test.go": "80d763862cbaa2b528f07b2cfb547f575098dac607645accce1584e0d38b8e6e",
+      "perfectreads/perfectreads.go": "d641e37b80943e7edef6482129f5f454e774af71e8d28716488027f65ec73bad",
+      "perfectreads/perfectreads_test.go": "d0784bba9f8c14291a07d27acc5d6b08a2958c04e987cdfb9382a965a10d5da8",
+      "phylip/reader.go": "63cc260084eb4080fdc04761d7366626b5743b973521678977ab6c962577d7f3",
+      "phylip/reader_test.go": "540ef48e6405ce9e4ee52f005ce82744c92da6eab78bcf118db74511cd35362e",
+      "randomcontigs/randomcontigs.go": "e356c235d6ee0b0123efb8c300c482569f6313e17190fb8a10d105c5cdd89bd4",
+      "randomcontigs/randomcontigs_test.go": "5d5f0de8299f87e5e8322c9a755f6ffa38d6dfad1bfa80863309a149fe259a91",
+      "readdl/download.go": "2b49664651d20450d46841ff77cf5ccf0f713c2d7693a143c2f1eb11d5f9a1fe",
+      "readdl/download_test.go": "97e8b606002c37e8df9bb741918f0391ea5aa33205f1c5ddeffc8d878542e758",
+      "sam/reader.go": "120fa101fa9193bce29dce0b5ac0dd4f14067073761d7c3f8ba13697eb4f804b",
+      "sam/reader_test.go": "0de52a3a121bffb3aac27a05d4f24640fcb3a0c7f597ddcc11e6dff82bb1d463",
+      "seq/alphabet.go": "732069daa89e8aea7ac3f78bbdc74dce402dc79e29528b81c0fc5bb7f3c8c4fa",
+      "seq/alphabet_test.go": "4458ef647e51c7b40c6f0441c7132b8ce81c3f118c9a556963f92d57682e18b3",
+      "seq/composition.go": "7b2216a8382d01f01334724726a904ea45d47f5a436f5c4f1110454567bf6817",
+      "seq/composition_test.go": "fe5aeb3423a8ec70c98e50fae418cb26877ff9b93869b9d443ec4d7c1914b0f6",
+      "seq/gaps.go": "8fea32d9289dd5d216d53bf2bd88e03fb6d284ea7aefac11350f7acc88480df0",
+      "seq/interval.go": "a9692d5c97a228bbb3cf53c08a3a734fc01d128e695871d78cccee67fa885b41",
+      "seq/interval_test.go": "31767375f3f2e42b2b916d6188cbd7604e36933daf385ec1092a4f77866fc282",
+      "seq/transform.go": "49f883369665f560694e0de32ece9424ee72eb30209d4cf131f318c543f235ce",
+      "seq/transform_test.go": "6e137dfae4b361a2c0c968c8e0e96e1b7a12cae8ad589e63c39883e921cc36a1",
+      "seqdl/download.go": "622fa052630c06cb556d6ff5d22449a26d9a0f817019cd7a02bac9f076fdd4e0",
+      "seqdl/download_test.go": "41821e8f8c850e1c6e5bb10991f9c0af253bf147f584f5f228b6130788df4e71",
+      "seqio/benchmark_test.go": "a83adfdbab63b387c7df3e99378a44441e217f7fbaee198bf5728e2509f0eb9a",
+      "seqio/bgzf_test.go": "193f3ac1a8ab38e76c97b65918f750c352e93e7cc117ffa0059be7024700ed80",
+      "seqio/check.go": "9a833a034722beb55addaf32c4b78e922ac66ba1b84776c910acebf2c7c54604",
+      "seqio/check_alphabet_test.go": "2374a0bf805c4ae4412fa26a39b95884d8803b1324290e382f35492789532a82",
+      "seqio/check_test.go": "d42815fbf67e6f26ec4a9da556311a9410c9955e64d118a74a8c7bc0a8eabca3",
+      "seqio/compression_matrix_test.go": "749069841acb686be968b0a5858c11f2e77898cd32c2298bd903826191e3aa2a",
+      "seqio/count.go": "afe220c5b55a26e98e9c43b4ca333c8bc496aa6e44eaec28f24826d7d4109eae",
+      "seqio/interleave.go": "641635076d22cdd5c1c453915fa2dfc305e91981c28bc093229b8af7bfb03627",
+      "seqio/interleave_test.go": "b4cf48f5a614c178dd8f7afd6ec3911b68fb9d11afec8f3154debd78acc708c8",
+      "seqio/io.go": "f5515994e4cdece0635c3c99b45a50c43df4faaa18df681f16b606813ef2a051",
+      "seqio/options.go": "f1e48d5487571c86f6e785f9754ff1a49bf0f91c82ad35d3d8a44afb11462919",
+      "seqio/readall.go": "42f098c87c857f53ba1d67c1d1c20c2e004d3449a22e19c650981770f6356398",
+      "seqio/record.go": "797c64c5b63dcb1e6f31cff299e3ad2ff246d301c221b814c07459ef06f2a821",
+      "seqio/seqio_test.go": "81f932ec092afd7612e62c9c400af538b83aed467ae1945d238245ca9e233280",
+      "seqio/threads_test.go": "146a846c0ddbd80f67754a1eadb8900c6b5cd8a2edcc412395c7120a6128ad6b",
+      "seqio/transform.go": "7d9542884833225423c28ec1efd2679d36bd6d8fbff3c8501881be511967ef53",
+      "seqio/transform_test.go": "25b1ab05e2a9ee4491830a0a662f796c98ae47186376aff494a62b6ffa69982d",
+      "seqio/zz_pipe_test.go": "523ea4e82822aa74ea19904adcd6f731ce5a0d74696867e95f7893e578aad92e",
+      "stats/persequence.go": "357028d2fbc58fea68c99d1d36fe52a307fcd28e0f3c0211cdfbf60941bcfbf3",
+      "stats/persequence_test.go": "eddb967aa415f659ae9ad0e10bf8b8416c82cffb76f54119ae01d4dc941e4569",
+      "stats/stats.go": "c40cf945ec40ba79bfe70fed83910d496b1ec28771927bc7457a3f9673888c84",
+      "stats/stats_test.go": "fb28431bcb9a53188b03fce07ce9521e5f8bd2c0a1228255ad7e24362a5053a3"
+    }
+  }
+}

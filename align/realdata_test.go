@@ -14,7 +14,13 @@ import (
 
 // Opt-in because the user's original genomes are not bundled with the library.
 // This exercises the complete assembly stack, rather than a cropped sequence.
-func TestSeqhikerDebugPair(t *testing.T) {
+func TestSeqhikerDebugPair(t *testing.T) { testSeqhikerDebugPair(t, DefaultOptions()) }
+func TestSeqhikerDebugPairAdaptive(t *testing.T) {
+	o := DefaultOptions()
+	o.EndExtension = EndExtensionAdaptive
+	testSeqhikerDebugPair(t, o)
+}
+func testSeqhikerDebugPair(t *testing.T, o Options) {
 	dir := os.Getenv("FAQT_SEQHIKER_DEBUG")
 	if dir == "" {
 		t.Skip("set FAQT_SEQHIKER_DEBUG to the directory containing the original debug FASTA files")
@@ -39,7 +45,6 @@ func TestSeqhikerDebugPair(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	start := time.Now()
-	o := DefaultOptions()
 	ms, e := Compare(ctx, gs[0], gs[1], o)
 	if e != nil {
 		t.Fatal(e)

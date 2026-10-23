@@ -14,9 +14,13 @@ import time
 
 DATASETS={
  'debug':('31585_6#49.fasta','barcode10_ICESp23_spliced.fasta'),
- 'shigella':('shigella.CP026802.1.fa','shigella.CP151312.1.fa'),
+ 'shigella':('repeats.CP026802.1.fa','repeats.CP151312.1.fa'),
 }
-PROFILES=['mm-asm5-t3','mm-asm5-t1','mm-asm5-both','mm-similar-both','faqt-default','faqt-raised']
+PROFILES=['mm-asm5-t3','mm-asm5-t1','mm-asm5-both','mm-similar-both','faqt-default','faqt-raised','faqt-full','faqt-adaptive']
+
+def faqt_settings(profile,raised_anchors):
+    return {'FAQT_MAX_ANCHORS':str(raised_anchors if profile in ('faqt-raised','faqt-full','faqt-adaptive') else 2000000),
+            'FAQT_BENCH_END_EXTENSION':'adaptive' if profile=='faqt-adaptive' else 'dp'}
 
 def file_sha256(path):
     digest=hashlib.sha256()
@@ -70,7 +74,9 @@ def main():
     args=p.parse_args()
     if args.runs<1 or args.timeout<=0:p.error('runs and timeout must be positive')
     if not hasattr(os,'wait4'):p.error('process resource accounting requires macOS or Linux')
-    if not args.minimap2:p.error('minimap2 executable is required')
+    profiles=args.profile or PROFILES
+    needs_minimap2=any(profile.startswith('mm-') for profile in profiles)
+    if needs_minimap2 and not args.minimap2:p.error('minimap2 executable is required for minimap2 profiles')
     args.out.mkdir(parents=True,exist_ok=True)
     if args.faqt_bin is None:
         args.faqt_bin=(args.out/'assembly.test').resolve()
@@ -78,7 +84,7 @@ def main():
         subprocess.run(['go','test','-c','-o',str(args.faqt_bin),'./benchmarks/assembly'],cwd=args.repo,env=env,check=True)
     args.faqt_bin=args.faqt_bin.resolve()
     metadata={'platform':platform.platform(),'processor':platform.processor(),
-       'minimap2':subprocess.check_output([args.minimap2,'--version'],text=True).strip(),
+       'minimap2':subprocess.check_output([args.minimap2,'--version'],text=True).strip() if needs_minimap2 else None,
        'go':subprocess.check_output(['go','version'],text=True).strip(),
        'faqt_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=args.repo,text=True).strip(),
        'runs':args.runs,'timeout_seconds':args.timeout,'raised_anchors':args.raised_anchors,
@@ -92,19 +98,19 @@ def main():
     results=[]
     for ds in args.dataset or DATASETS:
         a,b=[(args.debug_dir/name).resolve() for name in DATASETS[ds]]
-        for profile in args.profile or PROFILES:
+        for profile in profiles:
             # Raising the budget changes nothing on the non-limiting debug pair.
             if ds=='debug' and profile=='faqt-raised':continue
             for repeat in range(args.runs):
                 case={'dataset':ds,'profile':profile,'repeat':repeat+1,'legs':[]}
-                directions=[0] if profile in ('faqt-default','faqt-raised','mm-asm5-t3','mm-asm5-t1') else [0,1]
+                directions=[0] if profile.startswith('faqt') or profile in ('mm-asm5-t3','mm-asm5-t1') else [0,1]
                 for direction in directions:
                     name=f'{ds}.{profile}.{repeat+1}.{direction}'
                     stem=(args.out/name).resolve()
                     env=os.environ.copy();env['GOMAXPROCS']='1'
                     if profile.startswith('faqt'):
                         env.update(FAQT_BENCH_A=str(a),FAQT_BENCH_B=str(b),FAQT_BENCH_OUTPUT=str(stem))
-                        env['FAQT_MAX_ANCHORS']=str(args.raised_anchors if profile=='faqt-raised' else 2000000)
+                        env.update(faqt_settings(profile,args.raised_anchors))
                         cmd=[str(args.faqt_bin),'-test.run=^TestComparison$','-test.v','-test.timeout=11m']
                     else:
                         cmd=[args.minimap2,'-x','asm5','-c','--eqx','-P','-t','3' if profile=='mm-asm5-t3' else '1']

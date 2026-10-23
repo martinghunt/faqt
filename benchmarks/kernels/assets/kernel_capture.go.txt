@@ -1,0 +1,57 @@
+package align
+
+import (
+	"encoding/json"
+	"os"
+	"sync"
+)
+
+type studySample struct {
+	Q, T    []byte
+	Band    int
+	Extend  bool
+	Options Options
+	Result  dpResult
+}
+type savedSample struct {
+	Q, T              []byte
+	Band              int
+	Extend            bool
+	Ops               []Op
+	Score, EndQ, EndT int
+	Edge              bool
+}
+
+var captureMu sync.Mutex
+var captureSeen [2]int
+var captureWritten [2]int
+var captureFile *os.File
+var capturePath = os.Getenv("FAQT_CAPTURE")
+
+func captureKernel(q, t []byte, band int, ext bool, r dpResult) {
+	if capturePath == "" {
+		return
+	}
+	captureMu.Lock()
+	defer captureMu.Unlock()
+	typ := 0
+	if ext {
+		typ = 1
+	}
+	captureSeen[typ]++
+	if captureWritten[typ] >= 1800 || captureSeen[typ]%17 != 1 {
+		return
+	}
+	if captureFile == nil {
+		var err error
+		captureFile, err = os.Create(capturePath)
+		if err != nil {
+			panic(err)
+		}
+	}
+	sample := savedSample{q, t, band, ext, r.ops, r.score, r.q, r.t, r.edge}
+	if err := json.NewEncoder(captureFile).Encode(sample); err != nil {
+		panic(err)
+	}
+	captureWritten[typ]++
+}

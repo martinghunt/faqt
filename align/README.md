@@ -82,7 +82,7 @@ can have a genuinely quadratic number of distinct placements.
    Transitions reward covered sequence and penalize diagonal displacement.
    Backtracking retains all best-predecessor leaves and allows shared ancestors;
    significant standalone exact runs are candidates as well.
-4. Align chain gaps with scalar, banded, two-piece affine-gap DP. Traceback uses
+4. Align chain gaps with banded, two-piece affine-gap DP. Traceback uses
    two bytes per visited cell; scores retain two rolling rows. The initial band
    includes the endpoint length difference plus padding and widens until an outside-band score bound proves that no better
    global path was excluded, or until the full matrix is covered.
@@ -96,9 +96,49 @@ can have a genuinely quadratic number of distinct placements.
 The chaining transition is adapted from minimap2 v2.30, with attribution in
 `third_party/minimap2`. This is not a bit-for-bit minimap2 port or a claim of
 minimap2-equivalent sensitivity. The main remaining performance risks are
-quadratic chaining in dense repeat regions and scalar base alignment. There is
-no dependency on the external executable, cgo, assembly or architecture-specific
-instructions.
+quadratic chaining in dense repeat regions and repeated base alignment. The
+normal build uses portable Go. An experimental SIMD kernel can be enabled with
+`GOEXPERIMENT=simd` on a supporting Go toolchain (tested with Go 1.27.2): NEON
+on ARM64 and runtime-guarded AVX2 on amd64. Other amd64 CPUs use scalar DP. It uses the Suzuki-Kasahara score-difference recurrence
+with sixteen 8-bit lanes where scoring bounds permit, and preserves the scalar
+kernel's scoring, traceback priorities, band and row-order Z-drop. Completed
+rows are checked during the anti-diagonal computation. Scratch buffers are
+reused with `sync.Pool`; oversized scratch buffers are not retained, and
+returned operations own their storage.
+Short/narrow or oversized matrices, unsupported scoring ranges and restrictive cell budgets
+use the existing four-lane fallback on ARM64 or scalar DP on amd64. There is no external executable,
+cgo or handwritten assembly dependency.
+
+Subpath containment uses an index of paired diagonals and gap segments to select
+possible containing paths. Every selected candidate still passes the original
+CIGAR-level `pathContains` check. No repeat placement is removed merely because
+its intervals overlap another match.
+
+See [the kernel study](../benchmarks/assembly/KERNELS.md) for measurements and
+wavefront alignment experiments.
+
+## Optional adaptive end extension
+
+Full end DP remains the default. To select the faster heuristic policy:
+
+```go
+opts := align.DefaultOptions()
+opts.EndExtension = align.EndExtensionAdaptive
+```
+
+This starts with 64 bases per end and doubles the search while an edge path
+remains within 24 match rewards of the best prefix (48 points with default
+scoring), up to `Options.Extension`. It stops on the existing Z-drop rule.
+Internal gaps still receive full alignment. Competing paths are retained by
+recomputing each larger window from its anchor, rather than appending chunks.
+
+Adaptive mode can miss later score recovery after a poor stretch; it does not
+promise the same output as `EndExtensionDP`. On the two current fixtures it
+retains 99.971% / 99.985% of full-mode coordinate pairs at about 1.8× / 2.3× the
+speed. These are data-specific observations, not sensitivity guarantees. See
+[selection experiments and validation](../benchmarks/assembly/ADAPTIVE-STUDY.md).
+The mode works with scalar, NEON and AVX2 dispatch; SIMD still requires the
+SIMD-enabled build. Reuse the same prepared genomes when changing this mode.
 
 ## Coordinates and operations
 
@@ -143,3 +183,11 @@ also checked against an independent exhaustive small-matrix scoring oracle.
 
 See [validation observations](VALIDATION.md) for the original Seqhiker debug pair
 and reproducible checks.
+
+See the [indexed-containment and sixteen-lane follow-up](../benchmarks/assembly/OPTIMIZATION.md)
+for component benchmarks, unchanged output hashes and current comparisons with minimap2.
+
+The amd64 backend passed native Ryzen 5 7600X validation, including exact
+whole-input output hashes and feature-mask fallback tests. See the
+[native AVX2 results](../benchmarks/remote/RESULTS-2026-10-23.md) and
+[Linux validation bundle](../benchmarks/remote/README.md).

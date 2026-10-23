@@ -57,6 +57,15 @@ func TestComparison(t *testing.T) {
 		}
 		o.MaxAnchors = n
 	}
+	switch os.Getenv("FAQT_BENCH_END_EXTENSION") {
+	case "", "dp":
+	case "snp1":
+		o.EndExtension = align.EndExtensionOneSNP
+	case "adaptive":
+		o.EndExtension = align.EndExtensionAdaptive
+	default:
+		t.Fatal("FAQT_BENCH_END_EXTENSION must be dp, snp1 or adaptive")
+	}
 	summary := Summary{PrepareSeconds: time.Since(start).Seconds(), Options: fmt.Sprintf("%+v", o)}
 	var before, after runtime.MemStats
 	runtime.ReadMemStats(&before)
@@ -148,6 +157,7 @@ func TestHarnessOutput(t *testing.T) {
 	t.Setenv("FAQT_MAX_ANCHORS", "2000000")
 	t.Setenv("FAQT_CPU_PROFILE", "")
 	t.Setenv("FAQT_BENCH_TIMEOUT", "")
+	t.Setenv("FAQT_BENCH_END_EXTENSION", "")
 	if !t.Run("run", TestComparison) {
 		return
 	}

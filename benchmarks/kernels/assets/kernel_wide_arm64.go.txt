@@ -1,0 +1,9 @@
+//go:build goexperiment.simd && arm64
+
+package align
+
+import "context"
+
+func studyWide(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
+	return alignDPWide(ctx, q, t, band, extend, o)
+}

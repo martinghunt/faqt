@@ -116,7 +116,23 @@ func gapCost(n int, o Options) int {
 	return min(o.GapOpen+n*o.GapExtend, o.LongGapOpen+n*o.LongGapExtend)
 }
 
-func alignDP(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
+// dpBoundary reports best scores on the finite input edges, through the last
+// row accepted by scalar-order Z-drop. It is optional and never affects DP.
+type dpBoundary struct {
+	q, t    int
+	dropped bool
+}
+
+func (b *dpBoundary) reset() {
+	if b != nil {
+		*b = dpBoundary{q: minusInfinity, t: minusInfinity}
+	}
+}
+func alignDPScalar(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
+	return alignDPScalarBoundary(ctx, q, t, band, extend, o, nil)
+}
+func alignDPScalarBoundary(ctx context.Context, q, t []byte, band int, extend bool, o Options, boundary *dpBoundary) (dpResult, error) {
+	boundary.reset()
 	m, n := len(q), len(t)
 	if extend && (m == 0 || n == 0) {
 		return dpResult{}, nil
@@ -170,29 +186,58 @@ func alignDP(ctx context.Context, q, t []byte, band int, extend bool, o Options)
 					row.score[0][idx] = v + pair
 					packed |= uint16(s)
 				}
-				for s := 1; s < 5; s++ {
-					source, pos := &prev, j
-					if s == 2 || s == 4 {
-						source, pos = &row, j-1
-					}
-					open, extension := o.GapOpen, o.GapExtend
-					if s >= 3 {
-						open, extension = o.LongGapOpen, o.LongGapExtend
-					}
-					// Open from the best other state. This also permits adjacent opposite
-					// gaps when that scores better than an extremely costly substitution.
-					v, from := source.best(pos)
-					v -= open + extension
-					cont := source.get(s, pos) - extension
+				{
+					v, from := prev.best(j)
+					v -= o.GapOpen + o.GapExtend
+					cont := prev.get(1, j) - o.GapExtend
 					if cont >= v {
-						v, from = cont, s
+						v, from = cont, 1
 					}
-					row.score[s][idx] = v
-					packed |= uint16(from) << uint(3*s)
+					row.score[1][idx] = v
+					packed |= uint16(from) << 3
+				}
+				{
+					v, from := row.best(j - 1)
+					v -= o.GapOpen + o.GapExtend
+					cont := row.get(2, j-1) - o.GapExtend
+					if cont >= v {
+						v, from = cont, 2
+					}
+					row.score[2][idx] = v
+					packed |= uint16(from) << 6
+				}
+				{
+					v, from := prev.best(j)
+					v -= o.LongGapOpen + o.LongGapExtend
+					cont := prev.get(3, j) - o.LongGapExtend
+					if cont >= v {
+						v, from = cont, 3
+					}
+					row.score[3][idx] = v
+					packed |= uint16(from) << 9
+				}
+				{
+					v, from := row.best(j - 1)
+					v -= o.LongGapOpen + o.LongGapExtend
+					cont := row.get(4, j-1) - o.LongGapExtend
+					if cont >= v {
+						v, from = cont, 4
+					}
+					row.score[4][idx] = v
+					packed |= uint16(from) << 12
 				}
 			}
 			trace[offset[i]+idx] = packed
 			v, s := row.finish(j)
+			if boundary != nil {
+				if i == m {
+					boundary.q = max(boundary.q, v)
+				}
+				if j == n {
+					boundary.t = max(boundary.t, v)
+				}
+			}
+
 			if v > rowBest {
 				rowBest = v
 				rowBestJ = j
@@ -213,6 +258,9 @@ func alignDP(ctx context.Context, q, t []byte, band int, extend bool, o Options)
 			drift = min(drift, abs(m-n))
 		}
 		if best-rowBest > o.ZDrop+drift*min(o.GapExtend, o.LongGapExtend) {
+			if boundary != nil {
+				boundary.dropped = true
+			}
 			if extend {
 				break
 			}
@@ -257,4 +305,10 @@ func alignDP(ctx context.Context, q, t []byte, band int, extend bool, o Options)
 	}
 	slices.Reverse(reverseOps)
 	return dpResult{reverseOps, score, endI, endJ, edge}, nil
+}
+
+// alignDP selects the architecture kernel at build time. The scalar kernel
+// remains the reference and the fallback for unsupported sizes and score ranges.
+func alignDP(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
+	return alignDPPlatform(ctx, q, t, band, extend, o)
 }

@@ -48,6 +48,7 @@ func compareContigs(ctx context.Context, q, t contig, sketch SketchOptions, o Op
 		}
 	}
 	var out []Match
+	var index containmentIndex
 	for strand, seeds := range buckets {
 		target := t.bases
 		if strand != 0 {
@@ -84,14 +85,7 @@ func compareContigs(ctx context.Context, q, t contig, sketch SketchOptions, o Op
 				if candidate.Reverse {
 					candidate.B.Start, candidate.B.End = len(t.bases)-candidate.B.End, len(t.bases)-candidate.B.Start
 				}
-				contained := false
-				for _, m := range out {
-					if pathContains(m, candidate) {
-						contained = true
-						break
-					}
-				}
-				if contained {
+				if index.contains(candidate) {
 					continue
 				}
 			}
@@ -111,6 +105,7 @@ func compareContigs(ctx context.Context, q, t contig, sketch SketchOptions, o Op
 					m.B.Start, m.B.End = len(t.bases)-m.B.End, len(t.bases)-m.B.Start
 				}
 				out = append(out, m)
+				index.add(m)
 			}
 		}
 	}

@@ -88,7 +88,7 @@ func extendMatch(ctx context.Context, q, t []byte, qs, ts, qe, te int, ops []Op,
 		slices.Reverse(lq)
 		slices.Reverse(lt)
 		var err error
-		left, err = alignDP(ctx, lq, lt, o.BandWidth, true, o)
+		left, err = alignEnd(ctx, lq, lt, o)
 		if err != nil {
 			return Match{}, err
 		}
@@ -97,7 +97,7 @@ func extendMatch(ctx context.Context, q, t []byte, qs, ts, qe, te int, ops []Op,
 	right, ok := cache.right[[2]int{qe, te}]
 	if !ok {
 		var err error
-		right, err = alignDP(ctx, q[qe:min(len(q), qe+o.Extension)], t[te:min(len(t), te+o.Extension)], o.BandWidth, true, o)
+		right, err = alignEnd(ctx, q[qe:min(len(q), qe+o.Extension)], t[te:min(len(t), te+o.Extension)], o)
 		if err != nil {
 			return Match{}, err
 		}
@@ -142,21 +142,16 @@ func deduplicateContext(ctx context.Context, matches []Match) ([]Match, error) {
 		return compareMatch(a, b)
 	})
 	out := make([]Match, 0, len(matches))
+	var index containmentIndex
 	for i, m := range matches {
 		if i%64 == 0 {
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
 		}
-		redundant := false
-		for _, big := range out {
-			if pathContains(big, m) {
-				redundant = true
-				break
-			}
-		}
-		if !redundant {
+		if !index.contains(m) {
 			out = append(out, m)
+			index.add(m)
 		}
 	}
 	SortMatches(out)

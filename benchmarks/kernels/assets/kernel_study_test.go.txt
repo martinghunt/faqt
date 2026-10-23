@@ -1,0 +1,105 @@
+package align
+
+import (
+	"context"
+	"fmt"
+	"math/rand/v2"
+	"reflect"
+	"testing"
+)
+
+func TestKernelStudy(t *testing.T) {
+	r := rand.New(rand.NewPCG(178, 642))
+	ctx := context.Background()
+	for trial := 0; trial < 1500; trial++ {
+		m, n := r.IntN(90)+1, r.IntN(90)+1
+		q, targ := dna(m, uint64(trial+11)), dna(n, uint64(trial+319))
+		if trial%3 == 0 {
+			n = m
+			targ = slicesCopy(q)
+			for k := 0; k < m/10; k++ {
+				targ[r.IntN(m)] = 'N'
+			}
+		}
+		o := DefaultOptions()
+		o.ZDrop = r.IntN(80)
+		band := r.IntN(100) + 1
+		if trial%5 == 0 {
+			o.Match = 1 + r.IntN(5)
+			o.Mismatch = 1 + r.IntN(8)
+			o.GapOpen = 1 + r.IntN(8)
+			o.LongGapOpen = 1 + r.IntN(30)
+		}
+		for _, ext := range []bool{true, false} {
+			a, ea := alignDPReference(ctx, q, targ, band, ext, o)
+			for name, fn := range map[string]func(context.Context, []byte, []byte, int, bool, Options) (dpResult, error){"fast": alignDPScalar, "simd": alignDPPlatform} {
+				b, eb := fn(ctx, q, targ, band, ext, o)
+				if fmt.Sprint(ea) != fmt.Sprint(eb) || !reflect.DeepEqual(a, b) {
+					t.Fatalf("%s trial=%d ext=%v band=%d\nref=%+v %v\ngot=%+v %v", name, trial, ext, band, a, ea, b, eb)
+				}
+			}
+		}
+	}
+}
+
+func TestWFAStudy(t *testing.T) {
+	ctx := context.Background()
+	r := rand.New(rand.NewPCG(88, 72))
+	ties := 0
+	for trial := 0; trial < 800; trial++ {
+		q, targ := dna(r.IntN(45)+1, uint64(trial+11)), dna(r.IntN(45)+1, uint64(trial+319))
+		if trial%3 == 0 {
+			targ = slicesCopy(q)
+			for k := 0; k < len(q)/10; k++ {
+				targ[r.IntN(len(q))] = 'N'
+			}
+		}
+		o := DefaultOptions()
+		o.ZDrop = 1000000
+		if trial%5 == 0 {
+			o.Match = 1 + r.IntN(5)
+			o.Mismatch = 1 + r.IntN(8)
+			o.GapOpen = 1 + r.IntN(8)
+			o.LongGapOpen = 1 + r.IntN(30)
+		}
+		for _, ext := range []bool{false, true} {
+			a, ea := alignDPReference(ctx, q, targ, 100, ext, o)
+			b, ok, eb := tryWFA(ctx, q, targ, 100, ext, o, 1024)
+			if !ok || ea != nil || eb != nil || a.score != b.score || a.q != b.q || a.t != b.t {
+				t.Fatalf("trial=%d ext=%v ok=%v ref=%+v %v got=%+v %v", trial, ext, ok, a, ea, b, eb)
+			}
+			i, j, score := 0, 0, 0
+			for _, op := range b.ops {
+				switch op.Code {
+				case '=', 'X':
+					for z := 0; z < op.Length; z++ {
+						eq := exact(q[i], targ[j])
+						if eq != (op.Code == '=') {
+							t.Fatal("WFA op mismatch")
+						}
+						if eq {
+							score += o.Match
+						} else {
+							score -= o.Mismatch
+						}
+						i++
+						j++
+					}
+				case 'I':
+					i += op.Length
+					score -= gapCost(op.Length, o)
+				case 'D':
+					j += op.Length
+					score -= gapCost(op.Length, o)
+				}
+			}
+			if i != b.q || j != b.t || score != b.score {
+				t.Fatalf("WFA invalid replay %+v score=%d", b, score)
+			}
+			if !reflect.DeepEqual(a.ops, b.ops) {
+				ties++
+			}
+		}
+	}
+	t.Logf("equally scoring paths with different traceback: %d", ties)
+}

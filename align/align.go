@@ -122,17 +122,35 @@ func ReadGenome(reader seqio.Reader, sketch SketchOptions) (*Genome, error) {
 	return prepare(reader.Read, sketch)
 }
 
+// EndExtensionMode selects how candidate alignments grow beyond their outermost
+// exact anchors. Internal gaps between anchors always use gapped alignment.
+type EndExtensionMode uint8
+
+const (
+	// EndExtensionDP uses the full banded, two-piece affine extension kernel.
+	EndExtensionDP EndExtensionMode = iota
+	// EndExtensionOneSNP scans without gaps, allowing at most one canonical
+	// DNA substitution per end and retaining the highest-scoring prefix.
+	EndExtensionOneSNP
+
+	// EndExtensionAdaptive grows a banded end search from 64 bases when boundary
+	// paths remain competitive. It is faster but heuristic: later recovery across
+	// a score valley can be missed. Internal gaps retain full alignment.
+	EndExtensionAdaptive
+)
+
 // Options controls sensitivity, alignment scoring, and explicit resource limits.
 // Use DefaultOptions and modify fields; Compare does not fill individual zeros.
 type Options struct {
 	MinLength                  int
-	MinIdentity                float64 // [0,1], exact A/C/G/T matches / all alignment columns
-	MinChainScore              int     // minimum chaining coverage score
-	MinScore                   int     // minimum final base-alignment score
-	MaxGap                     int     // maximum unanchored distance on either sequence
-	BandWidth                  int     // initial DP band; global gaps widen adaptively
-	Extension                  int     // maximum unseeded extension on either side of a chain
-	ZDrop                      int     // split a chain when an intervening alignment scores below -ZDrop
+	MinIdentity                float64          // [0,1], exact A/C/G/T matches / all alignment columns
+	MinChainScore              int              // minimum chaining coverage score
+	MinScore                   int              // minimum final base-alignment score
+	MaxGap                     int              // maximum unanchored distance on either sequence
+	BandWidth                  int              // initial DP band; global gaps widen adaptively
+	Extension                  int              // maximum unseeded extension on either side of a chain
+	EndExtension               EndExtensionMode // zero value keeps full DP extension
+	ZDrop                      int              // split a chain when an intervening alignment scores below -ZDrop
 	Match, Mismatch            int
 	GapOpen, GapExtend         int            // positive penalties: open + length*extend
 	LongGapOpen, LongGapExtend int            // second affine cost; lower cost wins
@@ -150,7 +168,7 @@ func DefaultOptions() Options {
 	return Options{MinLength: 100, MinIdentity: 0.7, MinChainScore: 40, MinScore: 40, MaxGap: 2000, BandWidth: 96, Extension: 256, ZDrop: 200, Match: 2, Mismatch: 4, GapOpen: 4, GapExtend: 2, LongGapOpen: 24, LongGapExtend: 1, MaxAnchors: 2000000, MaxCells: 16000000}
 }
 func (o Options) validate() error {
-	if o.MinLength < 1 || math.IsNaN(o.MinIdentity) || o.MinIdentity < 0 || o.MinIdentity > 1 || o.MinChainScore < 1 || o.MinScore < 0 || o.MaxGap < 1 || o.BandWidth < 1 || o.Extension < 0 || o.ZDrop < 0 || o.Match < 1 || o.Mismatch < 1 || o.GapOpen < 1 || o.GapExtend < 1 || o.LongGapOpen < 1 || o.LongGapExtend < 1 || o.MaxAnchors < 0 || o.MaxCells < 0 {
+	if o.MinLength < 1 || math.IsNaN(o.MinIdentity) || o.MinIdentity < 0 || o.MinIdentity > 1 || o.MinChainScore < 1 || o.MinScore < 0 || o.MaxGap < 1 || o.BandWidth < 1 || o.Extension < 0 || o.EndExtension > EndExtensionAdaptive || o.ZDrop < 0 || o.Match < 1 || o.Mismatch < 1 || o.GapOpen < 1 || o.GapExtend < 1 || o.LongGapOpen < 1 || o.LongGapExtend < 1 || o.MaxAnchors < 0 || o.MaxCells < 0 {
 		return fmt.Errorf("invalid alignment options; start with DefaultOptions()")
 	}
 	return nil

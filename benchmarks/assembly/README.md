@@ -19,8 +19,8 @@ python3 -m unittest discover -s benchmarks/assembly -p 'test_*.py'
 The script builds a Go test executable before timing anything. `--faqt-bin` can
 select an already compiled benchmark test executable. Input FASTA files and raw
 benchmark outputs are not bundled with faqt. The directory must contain the
-original Seqhiker pair and/or `shigella.CP026802.1.fa` and
-`shigella.CP151312.1.fa`; select pairs with repeated `--dataset` arguments.
+original Seqhiker pair and/or `repeats.CP026802.1.fa` and
+`repeats.CP151312.1.fa`; select pairs with repeated `--dataset` arguments.
 
 Each sample runs in a fresh process. Measurements are sequential, with a warm OS
 file cache, and include file reading, indexing/preparation, comparison and PAF
@@ -38,6 +38,8 @@ samples contribute to the median, range and maximum observed RSS.
 |---|---|---|
 | `faqt-default` | Both directions internally | `align.DefaultOptions()` |
 | `faqt-raised` | Both directions internally | Defaults with anchor budget raised to 20 million |
+| `faqt-full` | Both directions internally | Full end DP, anchor budget 20M on both pairs |
+| `faqt-adaptive` | Both directions internally | Adaptive end DP, matching 20M anchor budget |
 | `mm-asm5-t3` | B target, A query | `-x asm5 -c --eqx -P -t 3` |
 | `mm-asm5-t1` | B target, A query | Same, one compute worker |
 | `mm-asm5-both` | Both orders, sequentially | Same, one compute worker per order |
@@ -104,8 +106,8 @@ To profile the first 20 seconds without mixing profiling into timed samples:
 ```sh
 CGO_ENABLED=0 go test -c -o /tmp/assembly-profile.test ./benchmarks/assembly
 GOMAXPROCS=1 \
-FAQT_BENCH_A="$HOME/Work/Seqhiker_debug/shigella.CP026802.1.fa" \
-FAQT_BENCH_B="$HOME/Work/Seqhiker_debug/shigella.CP151312.1.fa" \
+FAQT_BENCH_A="$HOME/Work/Seqhiker_debug/repeats.CP026802.1.fa" \
+FAQT_BENCH_B="$HOME/Work/Seqhiker_debug/repeats.CP151312.1.fa" \
 FAQT_BENCH_OUTPUT=/tmp/shigella-profile \
 FAQT_MAX_ANCHORS=20000000 FAQT_BENCH_TIMEOUT=20s \
 FAQT_CPU_PROFILE=/tmp/shigella.cpu \
@@ -118,3 +120,22 @@ is incomplete and is not a timing or placement-comparison sample. The timeout
 and profiling environment variables are optional; the timing runner uses the
 default ten-minute internal deadline and its own process timeout. Diagnostic
 profiles represent the sampled phase, not necessarily the whole run.
+
+## DP kernel study
+
+See [the scalar/NEON/WFA results](KERNELS.md) and the separate
+[kernel harness](../kernels/README.md) for reproducible implementation-level
+experiments. These keep full end extension enabled.
+
+The [indexed-containment and sixteen-lane results](OPTIMIZATION.md) isolate
+the later index and DP improvements. The kernel harness supports `wide` and
+`--scan-containment` for reproducing those component comparisons.
+
+## Adaptive end comparison
+
+See [the adaptive selection study](ADAPTIVE-STUDY.md). Select `faqt-full` and
+`faqt-adaptive` together for matching anchor budgets on both pairs; minimap2 is
+not required when only faqt profiles are selected. The runner explicitly sets
+end policy for every faqt profile, overriding an inherited benchmark policy.
+Adaptive mode changes output; `analyze.py` measures paired-coordinate agreement
+and `verify.py` independently replays each profile's PAFs against the DNA.

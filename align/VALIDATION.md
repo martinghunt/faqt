@@ -65,3 +65,44 @@ See [the full benchmark report](../benchmarks/assembly/RESULTS.md) for repeated
 measurements against minimap2 on both this pair and Shigella. The Shigella pair
 exceeds the default raw-anchor budget; the report records that failure separately
 from successful runs with a larger budget and compares repeat placements.
+
+## SIMD and wavefront follow-up
+
+See [the kernel study](../benchmarks/assembly/KERNELS.md) for optional ARM64 NEON
+DP, scalar unrolling and wavefront experiments. NEON preserves byte-identical
+whole-input alignments on both fixture pairs while retaining full end extension.
+
+The [indexed-containment and sixteen-lane follow-up](../benchmarks/assembly/OPTIMIZATION.md)
+compares each optimization independently and together, retaining the exact same
+whole-input paths with full extension enabled.
+
+## amd64 native validation
+
+Native Linux/amd64 tests passed on a Ryzen 5 7600X on 2026-10-23 using
+`GOAMD64=v1`, Go 1.27.2 and `GOEXPERIMENT=simd`. Scalar and AVX2 unit tests,
+the original missing-region/input-swap regression, scalar fallback with AVX2
+masked off, and AVX2 tests with core AVX-512 features masked off all passed.
+All twelve full-input benchmark outputs matched the validated PAF hashes.
+Median wall times improved by 3.50× on the original pair and 3.70× on repeats.
+See [native results](../benchmarks/remote/RESULTS-2026-10-23.md) for measurements
+and the [remote bundle](../benchmarks/remote/README.md) to reproduce the checks.
+
+### Windows amd64
+
+Native scalar and AVX2 unit suites passed on Windows 11 on the Ryzen 5 7600X.
+The corrected Windows run also passed the original FASTA regression in both
+backends, including missing-region recovery, operation replay and input-swap
+symmetry (7,116 matches). The initial wrapper's CPU-mask check
+failed because this Go toolchain does not apply GODEBUG CPU masks on Windows;
+the corrected wrapper marks those checks unsupported. See the
+[Windows validation record](../benchmarks/remote/WINDOWS-2026-10-23.md).
+
+## Adaptive end-extension follow-up
+
+The opt-in adaptive policy passes portable/SIMD suites, boundary-score equivalence,
+race checks and the original FASTA replay/input-swap regression on Apple ARM64.
+Three timed runs per mode/pair preserve repeatability; default full PAF hashes
+are unchanged. Adaptive retains 99.97109% / 99.98452% of reference paired positions
+on the original/repeat-rich fixtures. New-mode native Ryzen and Windows runs
+remain pending; cross-compilation and translated scalar checks are not native
+AVX2 execution. See [selection study](../benchmarks/assembly/ADAPTIVE-STUDY.md).
