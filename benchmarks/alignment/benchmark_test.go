@@ -1,4 +1,4 @@
-package assembly_test
+package alignment_test
 
 import (
 	"bufio"

@@ -163,7 +163,7 @@ func run(ctx context.Context, args []string, bundle string, log io.Writer) (retu
 	if data, err := os.ReadFile("/proc/cpuinfo"); err == nil {
 		_ = os.WriteFile(filepath.Join(o.out, "cpuinfo.txt"), data, 0644)
 	}
-	for _, name := range []string{"align-scalar.test", "align-simd.test", "assembly-scalar.test", "assembly-simd.test", "runner"} {
+	for _, name := range []string{"align-scalar.test", "align-simd.test", "alignment-scalar.test", "alignment-simd.test", "runner"} {
 		hash, err := fileHash(filepath.Join(bundle, name))
 		if err != nil {
 			return err
@@ -258,7 +258,7 @@ func run(ctx context.Context, args []string, bundle string, log io.Writer) (retu
 				fmt.Fprintln(log, "BENCH", name)
 				stem := filepath.Join(o.out, name)
 				extra := benchmarkEnv(o, d, stem)
-				cmd := []string{filepath.Join(bundle, "assembly-"+backend+".test"), "-test.run=^TestComparison$", "-test.v", "-test.timeout=" + o.timeout.String()}
+				cmd := []string{filepath.Join(bundle, "alignment-"+backend+".test"), "-test.run=^TestComparison$", "-test.v", "-test.timeout=" + o.timeout.String()}
 				p := execute(ctx, o.timeout, name, cmd, environment(extra), o.out, "")
 				s := sample{Dataset: d.Name, Backend: backend, Run: repeat, Processes: []processResult{p}}
 				if p.ExitCode != 0 || p.Error != "" {
@@ -347,7 +347,7 @@ func run(ctx context.Context, args []string, bundle string, log io.Writer) (retu
 			name := d.Name + ".simd-profile"
 			extra := benchmarkEnv(o, d, filepath.Join(o.out, name))
 			extra["FAQT_CPU_PROFILE"] = filepath.Join(o.out, name+".cpu")
-			if err := check(name, "assembly-simd.test", []string{"-test.run=^TestComparison$", "-test.v"}, extra); err != nil {
+			if err := check(name, "alignment-simd.test", []string{"-test.run=^TestComparison$", "-test.v"}, extra); err != nil {
 				return err
 			}
 		}

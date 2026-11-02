@@ -40,7 +40,7 @@ class TestProcessAccounting(unittest.TestCase):
 
 class TestFaqtProfiles(unittest.TestCase):
     def test_explicit_policy_and_matching_budget(self):
-        for profile,budget,mode in [('faqt-default',2000000,'dp'),('faqt-raised',123456,'dp'),('faqt-full',123456,'dp'),('faqt-adaptive',123456,'adaptive')]:
+        for profile,budget,mode in [('faqt-full',123456,'dp'),('faqt-adaptive',123456,'adaptive')]:
             with self.subTest(profile=profile):
                 settings=faqt_settings(profile,123456)
                 self.assertEqual(settings['FAQT_MAX_ANCHORS'],str(budget))

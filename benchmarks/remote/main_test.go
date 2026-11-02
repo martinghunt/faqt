@@ -33,7 +33,7 @@ func fakeBundle(t *testing.T) (string, string) {
 	t.Helper()
 	dir := t.TempDir()
 	data := t.TempDir()
-	for _, name := range []string{"align-scalar.test", "align-simd.test", "assembly-scalar.test", "assembly-simd.test", "runner"} {
+	for _, name := range []string{"align-scalar.test", "align-simd.test", "alignment-scalar.test", "alignment-simd.test", "runner"} {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(fakeChild), 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -114,7 +114,7 @@ func TestRunnerReturnsFailedDiagnostics(t *testing.T) {
 func TestRunnerDetectsWrongAlignment(t *testing.T) {
 	bundle, data := fakeBundle(t)
 	broken := strings.Replace(fakeChild, "PAF fixture", "wrong PAF", 1)
-	if err := os.WriteFile(filepath.Join(bundle, "assembly-simd.test"), []byte(broken), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(bundle, "alignment-simd.test"), []byte(broken), 0755); err != nil {
 		t.Fatal(err)
 	}
 	out := filepath.Join(t.TempDir(), "mismatch")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serial, process-isolated assembly benchmarks. Python 3, macOS/Linux."""
+"""Serial, process-isolated alignment benchmarks. Python 3, macOS/Linux."""
 import argparse
 import hashlib
 import json
@@ -16,10 +16,10 @@ DATASETS={
  'debug':('31585_6#49.fasta','barcode10_ICESp23_spliced.fasta'),
  'shigella':('repeats.CP026802.1.fa','repeats.CP151312.1.fa'),
 }
-PROFILES=['mm-asm5-t3','mm-asm5-t1','mm-asm5-both','mm-similar-both','faqt-default','faqt-raised','faqt-full','faqt-adaptive']
+PROFILES=['faqt-full','faqt-adaptive','mm-similar-both']
 
 def faqt_settings(profile,raised_anchors):
-    return {'FAQT_MAX_ANCHORS':str(raised_anchors if profile in ('faqt-raised','faqt-full','faqt-adaptive') else 2000000),
+    return {'FAQT_MAX_ANCHORS':str(raised_anchors),
             'FAQT_BENCH_END_EXTENSION':'adaptive' if profile=='faqt-adaptive' else 'dp'}
 
 def file_sha256(path):
@@ -79,9 +79,9 @@ def main():
     if needs_minimap2 and not args.minimap2:p.error('minimap2 executable is required for minimap2 profiles')
     args.out.mkdir(parents=True,exist_ok=True)
     if args.faqt_bin is None:
-        args.faqt_bin=(args.out/'assembly.test').resolve()
+        args.faqt_bin=(args.out/'alignment.test').resolve()
         env=os.environ.copy();env['CGO_ENABLED']='0'
-        subprocess.run(['go','test','-c','-o',str(args.faqt_bin),'./benchmarks/assembly'],cwd=args.repo,env=env,check=True)
+        subprocess.run(['go','test','-c','-o',str(args.faqt_bin),'./benchmarks/alignment'],cwd=args.repo,env=env,check=True)
     args.faqt_bin=args.faqt_bin.resolve()
     metadata={'platform':platform.platform(),'processor':platform.processor(),
        'minimap2':subprocess.check_output([args.minimap2,'--version'],text=True).strip() if needs_minimap2 else None,
@@ -99,11 +99,9 @@ def main():
     for ds in args.dataset or DATASETS:
         a,b=[(args.debug_dir/name).resolve() for name in DATASETS[ds]]
         for profile in profiles:
-            # Raising the budget changes nothing on the non-limiting debug pair.
-            if ds=='debug' and profile=='faqt-raised':continue
             for repeat in range(args.runs):
                 case={'dataset':ds,'profile':profile,'repeat':repeat+1,'legs':[]}
-                directions=[0] if profile.startswith('faqt') or profile in ('mm-asm5-t3','mm-asm5-t1') else [0,1]
+                directions=[0] if profile.startswith('faqt') else [0,1]
                 for direction in directions:
                     name=f'{ds}.{profile}.{repeat+1}.{direction}'
                     stem=(args.out/name).resolve()
@@ -113,9 +111,8 @@ def main():
                         env.update(faqt_settings(profile,args.raised_anchors))
                         cmd=[str(args.faqt_bin),'-test.run=^TestComparison$','-test.v','-test.timeout=11m']
                     else:
-                        cmd=[args.minimap2,'-x','asm5','-c','--eqx','-P','-t','3' if profile=='mm-asm5-t3' else '1']
-                        if profile=='mm-similar-both':
-                            cmd+=['-k','15','-w','10','-A','2','-B','4','-O','4,24','-E','2,1',
+                        cmd=[args.minimap2,'-x','asm5','-c','--eqx','-P','-t','1']
+                        cmd+=['-k','15','-w','10','-A','2','-B','4','-O','4,24','-E','2,1',
                               '-g','2000','-r','2000,2000','-z','200,200','-m','40','-s','40','-n','1',
                               '-f','100000000','-U','100000000,100000000','--q-occ-frac','0','--no-long-join','--rmq=no']
                         cmd += [str(a if direction else b),str(b if direction else a)]

@@ -59,22 +59,13 @@ FAQT_SEQHIKER_DEBUG="/path/to/Seqhiker_debug" \
 The normal suite skips this test unless that environment variable is set. The
 engine and normal tests do not need minimap2 installed.
 
-## Repeat-rich benchmark
+## Alignment benchmarks
 
-See [the full benchmark report](../benchmarks/assembly/RESULTS.md) for repeated
-measurements against minimap2 on both this pair and Shigella. The Shigella pair
-exceeds the default raw-anchor budget; the report records that failure separately
-from successful runs with a larger budget and compares repeat placements.
-
-## SIMD and wavefront follow-up
-
-See [the kernel study](../benchmarks/assembly/KERNELS.md) for optional ARM64 NEON
-DP, scalar unrolling and wavefront experiments. NEON preserves byte-identical
-whole-input alignments on both fixture pairs while retaining full end extension.
-
-The [indexed-containment and sixteen-lane follow-up](../benchmarks/assembly/OPTIMIZATION.md)
-compares each optimization independently and together, retaining the exact same
-whole-input paths with full extension enabled.
+See [the benchmark results](../benchmarks/alignment/RESULTS.md) for full/adaptive
+measurements against minimap2 on the original and repeat-rich Shigella pairs.
+The latter exceeds the default raw-anchor budget, so both faqt profiles use a
+20M budget. SIMD preserves full-mode output hashes; adaptive mode can change
+paths. Neither benchmark configuration guarantees exhaustive discovery.
 
 ## amd64 native validation
 
@@ -108,6 +99,6 @@ also passed on the Ryzen 5 7600X on 2026-11-02: AVX2 and scalar unit tests,
 full/adaptive original-genome replay and input-swap regressions, scalar fallback
 with AVX2 disabled, and AVX2 with AVX-512 disabled. See the
 [Linux adaptive validation record](../benchmarks/remote/ADAPTIVE-2026-11-02.md)
-and [selection study](../benchmarks/assembly/ADAPTIVE-STUDY.md).
+and [benchmark results](../benchmarks/alignment/RESULTS.md).
 The adaptive changes have not been run natively on Windows; the earlier Windows
 validation covers full mode before those changes.

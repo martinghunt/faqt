@@ -114,8 +114,8 @@ possible containing paths. Every selected candidate still passes the original
 CIGAR-level `pathContains` check. No repeat placement is removed merely because
 its intervals overlap another match.
 
-See [the kernel study](../benchmarks/assembly/KERNELS.md) for measurements and
-wavefront alignment experiments.
+See [alignment benchmark results](../benchmarks/alignment/RESULTS.md) for
+full/adaptive timings and comparisons with minimap2.
 
 ## Optional adaptive end extension
 
@@ -136,7 +136,7 @@ Adaptive mode can miss later score recovery after a poor stretch; it does not
 promise the same output as `EndExtensionDP`. On the two current fixtures it
 retains 99.971% / 99.985% of full-mode coordinate pairs at about 1.8× / 2.3× the
 speed. These are data-specific observations, not sensitivity guarantees. See
-[selection experiments and validation](../benchmarks/assembly/ADAPTIVE-STUDY.md).
+[benchmark results and limitations](../benchmarks/alignment/RESULTS.md).
 The mode works with scalar, NEON and AVX2 dispatch; SIMD still requires the
 SIMD-enabled build. Reuse the same prepared genomes when changing this mode.
 
@@ -183,9 +183,6 @@ also checked against an independent exhaustive small-matrix scoring oracle.
 
 See [validation observations](VALIDATION.md) for the original Seqhiker debug pair
 and reproducible checks.
-
-See the [indexed-containment and sixteen-lane follow-up](../benchmarks/assembly/OPTIMIZATION.md)
-for component benchmarks, unchanged output hashes and current comparisons with minimap2.
 
 The amd64 backend passed native Ryzen 5 7600X validation, including exact
 whole-input output hashes and feature-mask fallback tests. See the

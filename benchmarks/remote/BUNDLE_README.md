@@ -22,7 +22,7 @@ particularly for the scalar repeat-rich comparison. Avoid other CPU-heavy jobs
 while timing. All alignment jobs run serially with `GOMAXPROCS=1`; minimap2 uses
 `-t 1` and executes the two input orders sequentially. Minimap2 may also create
 I/O pipeline threads. The closer seed/scoring/repeat settings from the previous
-assembly benchmark are used.
+alignment benchmark are used.
 
 For CPU/kernel checks before copying genome files:
 
