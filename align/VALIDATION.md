@@ -103,6 +103,11 @@ The opt-in adaptive policy passes portable/SIMD suites, boundary-score equivalen
 race checks and the original FASTA replay/input-swap regression on Apple ARM64.
 Three timed runs per mode/pair preserve repeatability; default full PAF hashes
 are unchanged. Adaptive retains 99.97109% / 99.98452% of reference paired positions
-on the original/repeat-rich fixtures. New-mode native Ryzen and Windows runs
-remain pending; cross-compilation and translated scalar checks are not native
-AVX2 execution. See [selection study](../benchmarks/assembly/ADAPTIVE-STUDY.md).
+on the original/repeat-rich fixtures. Native Linux/amd64 adaptive validation
+also passed on the Ryzen 5 7600X on 2026-11-02: AVX2 and scalar unit tests,
+full/adaptive original-genome replay and input-swap regressions, scalar fallback
+with AVX2 disabled, and AVX2 with AVX-512 disabled. See the
+[Linux adaptive validation record](../benchmarks/remote/ADAPTIVE-2026-11-02.md)
+and [selection study](../benchmarks/assembly/ADAPTIVE-STUDY.md).
+The adaptive changes have not been run natively on Windows; the earlier Windows
+validation covers full mode before those changes.

@@ -124,8 +124,10 @@ The [kernel harness](../kernels/README.md#index-and-dp-ablation) now supports
 copies, then run `wide` and `simd` on each to reproduce the four combinations.
 The scan templates are benchmark-only and never enter the normal library.
 Normal builds remain portable; enable SIMD with `GOEXPERIMENT=simd` on a
-supporting ARM64 Go toolchain. Unsupported configurations retain scalar behavior.
+supporting Go toolchain on ARM64 or amd64. Unsupported configurations retain
+scalar behavior. Native amd64 validation is recorded in the
+[Linux results](../remote/RESULTS-2026-10-23.md).
 
-Private FASTAs and PAFs are not committed. Raw runs, overlays and binaries remain
-under `/private/tmp/faqt-opt2/`. The changes remain uncommitted and Seqhiker still
-needs to be connected to faqt separately.
+Private FASTAs and PAFs are not committed. Raw runs, overlays and binaries were
+kept locally during the study; the linked results JSON preserves the measurements.
+Seqhiker integration is separate from this library change.

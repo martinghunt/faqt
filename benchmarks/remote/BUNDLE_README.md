@@ -42,8 +42,9 @@ On success or failure it prints `RESULT ARCHIVE: ...tar.gz`. Bring that compact
 archive back for analysis. It contains CPU information, test logs, result JSON,
 binary/input hashes, timings and optional profiles. Input FASTAs and PAFs are
 excluded from the return archive; PAFs remain in the local results directory.
-No results are uploaded automatically. Native AVX2 correctness and speed remain
-unverified until these tests have run on an AVX2-capable machine.
+No results are uploaded automatically. Native correctness and speed on a new
+target CPU remain unverified until its checks have run. Recorded Ryzen results
+are linked from the repository's benchmarks/remote/README.md.
 
 Useful options:
 

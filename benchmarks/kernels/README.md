@@ -115,5 +115,6 @@ optimized combination should retain identical paths. The `.scan.txt` templates
 are benchmark-only historical implementations and do not enter the library.
 
 For Linux/amd64 native checks without installing Go, use the
-[precompiled remote bundle](../remote/README.md). Native AVX2 validation is
-pending until its results have been collected from an AVX2 machine.
+[precompiled remote bundle](../remote/README.md). Native Ryzen 5 7600X checks
+passed for [full mode](../remote/RESULTS-2026-10-23.md) and the subsequent
+[adaptive changes](../remote/ADAPTIVE-2026-11-02.md).

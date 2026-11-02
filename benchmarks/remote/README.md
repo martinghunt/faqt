@@ -26,3 +26,14 @@ Cross-compilation and local fallback tests do not establish native AVX2
 correctness or speed: the generated package runs those checks on the target CPU
 before measuring performance. Keep native-validation status explicit when
 reporting results.
+
+For correctness checks including both full and adaptive original-genome
+regressions, without the timing benchmark:
+
+```sh
+./run.sh --self-test-only --data /path/to/Seqhiker_debug
+```
+
+Native Ryzen results: [full-mode measurements](RESULTS-2026-10-23.md) and
+[adaptive correctness checks](ADAPTIVE-2026-11-02.md). Earlier native
+[Windows validation](WINDOWS-2026-10-23.md) covers full mode.

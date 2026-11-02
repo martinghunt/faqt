@@ -106,8 +106,11 @@ Updated test binaries cross-compile for Linux/Windows amd64, Linux/Windows ARM64
 Darwin amd64 and portable Linux/386. Translated amd64 tests and an explicitly
 AVX2-disabled scalar fallback pass on the development Mac. Translation backend
 expectations varied during checking, so this is not counted as native AVX2
-validation. The new adaptive mode still needs native Ryzen/Linux and Windows
-execution; earlier native full-mode results predate this change.
+validation. A subsequent native Ryzen/Linux run on 2026-11-02 passed the
+adaptive tests, full/adaptive original-genome regressions, and CPU-mask fallback
+checks; see the [validation record](../remote/ADAPTIVE-2026-11-02.md).
+Native Windows execution of the adaptive changes remains untested; the earlier
+Windows full-mode results predate this change.
 
 ## Reproduction
 

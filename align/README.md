@@ -191,3 +191,7 @@ The amd64 backend passed native Ryzen 5 7600X validation, including exact
 whole-input output hashes and feature-mask fallback tests. See the
 [native AVX2 results](../benchmarks/remote/RESULTS-2026-10-23.md) and
 [Linux validation bundle](../benchmarks/remote/README.md).
+
+The subsequent adaptive boundary changes also passed native Ryzen/Linux tests,
+including the original-genome regression in both modes and CPU-mask fallbacks;
+see [adaptive validation](../benchmarks/remote/ADAPTIVE-2026-11-02.md).

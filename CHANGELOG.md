@@ -8,17 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Share the sixteen-lane SIMD DP between ARM64 NEON and runtime-guarded amd64 AVX2, with scalar fallback on unsupported x86 CPUs. Add a static Linux/amd64 native-validation bundle; Ryzen 5 7600X validation preserves exact outputs and measures 3.50–3.70× faster full comparisons than scalar DP.
-- Accelerate assembly comparison with indexed subpath containment and pooled sixteen-lane score-difference NEON DP, preserving repeat placements, full extension, exact scalar traceback and row-order Z-drop. Keep wide/scalar fallbacks for unsupported kernel inputs.
-- Add reproducible scalar/SIMD/wavefront kernel benchmarks, including independent index and DP ablation builds.
-- Replace `align`, `mapper`, and `mapping` with a pure Go assembly-comparison API
-  in `align` (breaking library change): symmetric input exchange, repeat
-  placements, scored chaining, two-piece affine alignment, cancellation, and
-  explicit resource errors. Keep standalone `minimizer` APIs.
+- Replace `align`, `mapper`, and `mapping` with a pure Go assembly-comparison API in `align` (breaking library change), supporting repeat placements, symmetric input exchange, two-piece affine alignment, cancellation, and resource limits. Keep standalone `minimizer` APIs.
+- Speed up assembly comparison with indexed containment and ARM64 NEON/amd64 AVX2 DP, preserving full-mode results. SIMD builds require `GOEXPERIMENT=simd`; unsupported CPUs use scalar fallback.
 
 ### Added
-- Add opt-in `align.EndExtensionAdaptive`: boundary-score-guided 64-base end searches grow to the configured maximum, with full internal-gap alignment and the full-DP default preserved. Add cross-kernel boundary tests and matched full/adaptive benchmark profiles.
-- Add reproducible assembly-comparison benchmarks against minimap2, including repeat-rich Shigella cases, process memory/timing measurements, aligned-placement agreement, and DNA replay verification.
+- Add opt-in `align.EndExtensionAdaptive` for faster outward extension with a small sensitivity tradeoff. Internal gaps remain fully aligned; full extension remains the default.
+- Add reproducible minimap2 and scalar/SIMD/wavefront benchmarks, alignment replay checks, and native validation bundles.
 - Add optional `faqt check --alphabet dna|rna|protein` validation of normalized sequence characters, accepting upper- and lowercase IUPAC symbols. `--allow-gaps` additionally accepts `-` and `.`. Invalid runs report record names and 1-based inclusive sequence positions, and `--all-errors` continues across runs and records. Alphabet validation is off by default.
 - Add `faqt check [files...]` to stream through sequence inputs and report parser or decompression errors, including corrupt compression trailers. It accepts stdin and stops at the first error by default. `--all-errors` continues across files and reports recoverable FASTA NUL errors and FASTQ length mismatches within each file, including embedded FASTA in GFF3. NUL diagnostics identify each run with the contig name, 1-based inclusive sequence positions, byte count, and line/column range. Validation failures exit nonzero without printing usage.
 
