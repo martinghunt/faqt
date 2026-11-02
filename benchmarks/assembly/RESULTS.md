@@ -115,6 +115,5 @@ single-processor, bidirectional search.
 
 Use the commands in [README.md](README.md). The compact, machine-readable
 [result snapshot](results-2026-10-23.json) records the measurements, placement
-agreement, input hashes and verification. Raw logs, per-process timing records,
-PAFs and the diagnostic profile for this run remain under
-`/private/tmp/faqt-benchmark/`; input sequences and large raw PAFs are not committed.
+agreement, input hashes and verification. Raw logs, PAFs and diagnostic profiles
+were kept locally; input sequences and large raw PAFs are not committed.

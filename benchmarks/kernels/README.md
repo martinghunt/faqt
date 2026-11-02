@@ -15,10 +15,10 @@ From the faqt repository:
 ```sh
 python3 benchmarks/kernels/build.py --out /tmp/faqt-kernels
 python3 benchmarks/kernels/run.py --study /tmp/faqt-kernels \
-  --debug-dir "$HOME/Work/Seqhiker_debug" --dataset debug \
+  --debug-dir "/path/to/Seqhiker_debug" --dataset debug \
   --kernel scalar --kernel fast --kernel simd --runs 3 --capture
 python3 benchmarks/kernels/run.py --study /tmp/faqt-kernels \
-  --debug-dir "$HOME/Work/Seqhiker_debug" --dataset repeats \
+  --debug-dir "/path/to/Seqhiker_debug" --dataset repeats \
   --kernel scalar --kernel fast --kernel simd --runs 3 --capture
 ```
 
@@ -52,7 +52,7 @@ To include the optimized native reference, build
 python3 benchmarks/kernels/build.py --out /tmp/faqt-kernels-native \
   --wfa2 /path/to/WFA2-lib
 python3 benchmarks/kernels/run.py --study /tmp/faqt-kernels-native \
-  --debug-dir "$HOME/Work/Seqhiker_debug" --dataset debug \
+  --debug-dir "/path/to/Seqhiker_debug" --dataset debug \
   --kernel wfa --kernel hybrid --kernel wfa2
 ```
 

@@ -4,7 +4,7 @@
     "extension": 0,
     "wall": 1.3757412080303766,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/debug.e0",
+    "stem": "/path/to/studies/faqt-extension-size/results/debug.e0",
     "detail": {
       "PrepareSeconds": 0.164582583,
       "AlignSeconds": 0.6729125,
@@ -44,7 +44,7 @@
     "extension": 16,
     "wall": 1.106005666020792,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/debug.e16",
+    "stem": "/path/to/studies/faqt-extension-size/results/debug.e16",
     "detail": {
       "PrepareSeconds": 0.141364958,
       "AlignSeconds": 0.880961083,
@@ -84,7 +84,7 @@
     "extension": 32,
     "wall": 1.3344807910034433,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/debug.e32",
+    "stem": "/path/to/studies/faqt-extension-size/results/debug.e32",
     "detail": {
       "PrepareSeconds": 0.132948917,
       "AlignSeconds": 1.113734666,
@@ -124,7 +124,7 @@
     "extension": 64,
     "wall": 1.851870084006805,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/debug.e64",
+    "stem": "/path/to/studies/faqt-extension-size/results/debug.e64",
     "detail": {
       "PrepareSeconds": 0.143824125,
       "AlignSeconds": 1.641064125,
@@ -164,7 +164,7 @@
     "extension": 128,
     "wall": 3.1400315000209957,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/debug.e128",
+    "stem": "/path/to/studies/faqt-extension-size/results/debug.e128",
     "detail": {
       "PrepareSeconds": 0.132917167,
       "AlignSeconds": 2.920579666,
@@ -204,7 +204,7 @@
     "extension": 256,
     "wall": 5.739186665974557,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/debug.e256",
+    "stem": "/path/to/studies/faqt-extension-size/results/debug.e256",
     "detail": {
       "PrepareSeconds": 0.136242167,
       "AlignSeconds": 5.5044435,
@@ -244,7 +244,7 @@
     "extension": 0,
     "wall": 4.459754790994339,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/repeats.e0",
+    "stem": "/path/to/studies/faqt-extension-size/results/repeats.e0",
     "detail": {
       "PrepareSeconds": 0.390476625,
       "AlignSeconds": 3.94703525,
@@ -284,7 +284,7 @@
     "extension": 16,
     "wall": 5.401826499961317,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/repeats.e16",
+    "stem": "/path/to/studies/faqt-extension-size/results/repeats.e16",
     "detail": {
       "PrepareSeconds": 0.402334167,
       "AlignSeconds": 4.85704475,
@@ -324,7 +324,7 @@
     "extension": 32,
     "wall": 6.352576999983285,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/repeats.e32",
+    "stem": "/path/to/studies/faqt-extension-size/results/repeats.e32",
     "detail": {
       "PrepareSeconds": 0.3747295,
       "AlignSeconds": 5.841314833,
@@ -364,7 +364,7 @@
     "extension": 64,
     "wall": 8.636664332996588,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/repeats.e64",
+    "stem": "/path/to/studies/faqt-extension-size/results/repeats.e64",
     "detail": {
       "PrepareSeconds": 0.386110125,
       "AlignSeconds": 8.0750635,
@@ -404,7 +404,7 @@
     "extension": 128,
     "wall": 14.034602875006385,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/repeats.e128",
+    "stem": "/path/to/studies/faqt-extension-size/results/repeats.e128",
     "detail": {
       "PrepareSeconds": 0.394305541,
       "AlignSeconds": 13.511803417,
@@ -444,7 +444,7 @@
     "extension": 256,
     "wall": 25.070461750030518,
     "exit": 0,
-    "stem": "/private/tmp/faqt-extension-size/results/repeats.e256",
+    "stem": "/path/to/studies/faqt-extension-size/results/repeats.e256",
     "detail": {
       "PrepareSeconds": 0.401422083,
       "AlignSeconds": 24.536116041,

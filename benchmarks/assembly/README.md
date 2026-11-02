@@ -2,13 +2,14 @@
 
 These opt-in tools compare faqt with an installed minimap2. They are development
 benchmarks, not application dependencies. The Go engine remains pure Go and does
-not require minimap2 or Python.
+not require minimap2 or Python. Saved result snapshots use generic path
+placeholders; measurements and content hashes are unchanged.
 
 Run from the faqt repository, using Python 3 on macOS or Linux:
 
 ```sh
 python3 benchmarks/assembly/run.py \
-  --debug-dir "$HOME/Work/Seqhiker_debug" \
+  --debug-dir "/path/to/Seqhiker_debug" \
   --minimap2 /path/to/minimap2 \
   --out /tmp/faqt-assembly-benchmark --runs 3
 python3 benchmarks/assembly/analyze.py /tmp/faqt-assembly-benchmark
@@ -106,8 +107,8 @@ To profile the first 20 seconds without mixing profiling into timed samples:
 ```sh
 CGO_ENABLED=0 go test -c -o /tmp/assembly-profile.test ./benchmarks/assembly
 GOMAXPROCS=1 \
-FAQT_BENCH_A="$HOME/Work/Seqhiker_debug/repeats.CP026802.1.fa" \
-FAQT_BENCH_B="$HOME/Work/Seqhiker_debug/repeats.CP151312.1.fa" \
+FAQT_BENCH_A="/path/to/Seqhiker_debug/repeats.CP026802.1.fa" \
+FAQT_BENCH_B="/path/to/Seqhiker_debug/repeats.CP151312.1.fa" \
 FAQT_BENCH_OUTPUT=/tmp/shigella-profile \
 FAQT_MAX_ANCHORS=20000000 FAQT_BENCH_TIMEOUT=20s \
 FAQT_CPU_PROFILE=/tmp/shigella.cpu \

@@ -9,7 +9,7 @@
         "cpu": 2.302694,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "/path/to/studies/seqhiker-vs-faqt/old.test",
           "-test.run=^TestOriginalEngineTiming$",
           "-test.v",
           "-test.timeout=5m"
@@ -31,7 +31,7 @@
         "cpu": 5.734513000000001,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "/path/to/studies/seqhiker-vs-faqt/new.test",
           "-test.run=^TestComparison$",
           "-test.v",
           "-test.timeout=5m"
@@ -55,7 +55,7 @@
         "cpu": 2.2724669999999993,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "/path/to/studies/seqhiker-vs-faqt/old.test",
           "-test.run=^TestOriginalEngineTiming$",
           "-test.v",
           "-test.timeout=5m"
@@ -77,7 +77,7 @@
         "cpu": 5.686159999999999,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "/path/to/studies/seqhiker-vs-faqt/new.test",
           "-test.run=^TestComparison$",
           "-test.v",
           "-test.timeout=5m"
@@ -101,7 +101,7 @@
         "cpu": 2.2804290000000025,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "/path/to/studies/seqhiker-vs-faqt/old.test",
           "-test.run=^TestOriginalEngineTiming$",
           "-test.v",
           "-test.timeout=5m"
@@ -123,7 +123,7 @@
         "cpu": 5.688137999999999,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "/path/to/studies/seqhiker-vs-faqt/new.test",
           "-test.run=^TestComparison$",
           "-test.v",
           "-test.timeout=5m"
@@ -147,7 +147,7 @@
         "cpu": 3.0630129999999967,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "/path/to/studies/seqhiker-vs-faqt/old.test",
           "-test.run=^TestOriginalEngineTiming$",
           "-test.v",
           "-test.timeout=5m"
@@ -169,7 +169,7 @@
         "cpu": 25.062564,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "/path/to/studies/seqhiker-vs-faqt/new.test",
           "-test.run=^TestComparison$",
           "-test.v",
           "-test.timeout=5m"
@@ -193,7 +193,7 @@
         "cpu": 3.022162999999998,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "/path/to/studies/seqhiker-vs-faqt/old.test",
           "-test.run=^TestOriginalEngineTiming$",
           "-test.v",
           "-test.timeout=5m"
@@ -215,7 +215,7 @@
         "cpu": 25.092170000000007,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "/path/to/studies/seqhiker-vs-faqt/new.test",
           "-test.run=^TestComparison$",
           "-test.v",
           "-test.timeout=5m"
@@ -239,7 +239,7 @@
         "cpu": 3.047368999999989,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/old.test",
+          "/path/to/studies/seqhiker-vs-faqt/old.test",
           "-test.run=^TestOriginalEngineTiming$",
           "-test.v",
           "-test.timeout=5m"
@@ -261,7 +261,7 @@
         "cpu": 25.181019000000003,
         "exit": 0,
         "command": [
-          "/private/tmp/seqhiker-vs-faqt/new.test",
+          "/path/to/studies/seqhiker-vs-faqt/new.test",
           "-test.run=^TestComparison$",
           "-test.v",
           "-test.timeout=5m"

@@ -459,7 +459,7 @@
         "test",
         "-c",
         "-o",
-        "/private/tmp/faqt-kernel-study/production-align-linux-amd64.test",
+        "/path/to/studies/faqt-kernel-study/production-align-linux-amd64.test",
         "./align"
       ],
       "environment": {
@@ -476,7 +476,7 @@
         "test",
         "-c",
         "-o",
-        "/private/tmp/faqt-kernel-study/production-align-linux-arm64.test",
+        "/path/to/studies/faqt-kernel-study/production-align-linux-arm64.test",
         "./align"
       ],
       "environment": {
@@ -494,7 +494,7 @@
         "test",
         "-c",
         "-o",
-        "/private/tmp/faqt-kernel-study/production-align-windows-arm64.test",
+        "/path/to/studies/faqt-kernel-study/production-align-windows-arm64.test",
         "./align"
       ],
       "environment": {
@@ -512,7 +512,7 @@
         "test",
         "-c",
         "-o",
-        "/private/tmp/faqt-kernel-study/production-align.test",
+        "/path/to/studies/faqt-kernel-study/production-align.test",
         "./align"
       ],
       "environment": {
@@ -542,9 +542,9 @@
         "python3",
         "benchmarks/kernels/build.py",
         "--out",
-        "/private/tmp/faqt-kernel-study/repro",
+        "/path/to/studies/faqt-kernel-study/repro",
         "--wfa2",
-        "/private/tmp/faqt-kernel-study/WFA2-lib-main"
+        "/path/to/studies/faqt-kernel-study/WFA2-lib-main"
       ],
       "environment": {},
       "seconds": 3.160819208016619,
@@ -874,7 +874,7 @@
             "legs": [
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -914,8 +914,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
-                  "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta"
+                  "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
+                  "/path/to/Seqhiker_debug/31585_6#49.fasta"
                 ],
                 "wall_seconds": 1.3659111249726266,
                 "user_seconds": 1.340077,
@@ -928,7 +928,7 @@
               },
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -968,8 +968,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta",
-                  "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
+                  "/path/to/Seqhiker_debug/31585_6#49.fasta",
+                  "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
                 ],
                 "wall_seconds": 1.3954358749906532,
                 "user_seconds": 1.352843,
@@ -989,7 +989,7 @@
             "legs": [
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1029,8 +1029,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
-                  "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta"
+                  "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
+                  "/path/to/Seqhiker_debug/31585_6#49.fasta"
                 ],
                 "wall_seconds": 1.377472874999512,
                 "user_seconds": 1.343779,
@@ -1043,7 +1043,7 @@
               },
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1083,8 +1083,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta",
-                  "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
+                  "/path/to/Seqhiker_debug/31585_6#49.fasta",
+                  "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
                 ],
                 "wall_seconds": 1.3863365839933977,
                 "user_seconds": 1.353106,
@@ -1104,7 +1104,7 @@
             "legs": [
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1144,8 +1144,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
-                  "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta"
+                  "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
+                  "/path/to/Seqhiker_debug/31585_6#49.fasta"
                 ],
                 "wall_seconds": 1.3762093750410713,
                 "user_seconds": 1.341061,
@@ -1158,7 +1158,7 @@
               },
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1198,8 +1198,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta",
-                  "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
+                  "/path/to/Seqhiker_debug/31585_6#49.fasta",
+                  "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
                 ],
                 "wall_seconds": 1.3895585419959389,
                 "user_seconds": 1.34272,
@@ -1252,7 +1252,7 @@
             "legs": [
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1292,8 +1292,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa"
+                  "/path/to/Seqhiker_debug/repeats.CP151312.1.fa",
+                  "/path/to/Seqhiker_debug/repeats.CP026802.1.fa"
                 ],
                 "wall_seconds": 15.348228125018068,
                 "user_seconds": 15.203767,
@@ -1306,7 +1306,7 @@
               },
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1346,8 +1346,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa"
+                  "/path/to/Seqhiker_debug/repeats.CP026802.1.fa",
+                  "/path/to/Seqhiker_debug/repeats.CP151312.1.fa"
                 ],
                 "wall_seconds": 15.918238500016741,
                 "user_seconds": 15.738798,
@@ -1367,7 +1367,7 @@
             "legs": [
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1407,8 +1407,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa"
+                  "/path/to/Seqhiker_debug/repeats.CP151312.1.fa",
+                  "/path/to/Seqhiker_debug/repeats.CP026802.1.fa"
                 ],
                 "wall_seconds": 15.333900291996542,
                 "user_seconds": 15.196613,
@@ -1421,7 +1421,7 @@
               },
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1461,8 +1461,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa"
+                  "/path/to/Seqhiker_debug/repeats.CP026802.1.fa",
+                  "/path/to/Seqhiker_debug/repeats.CP151312.1.fa"
                 ],
                 "wall_seconds": 15.848846791952383,
                 "user_seconds": 15.690777,
@@ -1482,7 +1482,7 @@
             "legs": [
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1522,8 +1522,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa"
+                  "/path/to/Seqhiker_debug/repeats.CP151312.1.fa",
+                  "/path/to/Seqhiker_debug/repeats.CP026802.1.fa"
                 ],
                 "wall_seconds": 15.377601042040624,
                 "user_seconds": 15.218096,
@@ -1536,7 +1536,7 @@
               },
               {
                 "command": [
-                  "/Users/mh46/.homebrew/bin/minimap2",
+                  "/path/to/minimap2",
                   "-x",
                   "asm5",
                   "-c",
@@ -1576,8 +1576,8 @@
                   "0",
                   "--no-long-join",
                   "--rmq=no",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa",
-                  "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa"
+                  "/path/to/Seqhiker_debug/repeats.CP026802.1.fa",
+                  "/path/to/Seqhiker_debug/repeats.CP151312.1.fa"
                 ],
                 "wall_seconds": 15.810388082987629,
                 "user_seconds": 15.654266,

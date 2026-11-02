@@ -30,4 +30,4 @@ A 64-base cap runs 3.35× faster on the original pair and 3.04× faster on repea
 
 All six original-pair settings recover the motivating missing-region match under the original regression interval/identity condition. Every PAF passed independent DNA replay; full-limit output hashes match prior validated results. No production setting or library source was changed.
 
-Raw measurements and coverage/replay metrics: [extension-size-results-2026-10-23.json](extension-size-results-2026-10-23.json). The isolated benchmark, driver and raw PAFs remain under /private/tmp/faqt-extension-size/. The benchmark accepts FAQT_BENCH_EXTENSION in the temporary copy; it is not a production environment option. The normal library option is align.Options.Extension.
+Raw measurements and coverage/replay metrics: [extension-size-results-2026-10-23.json](extension-size-results-2026-10-23.json). The benchmark accepts FAQT_BENCH_EXTENSION in the temporary copy; it is not a production environment option. The normal library option is align.Options.Extension.

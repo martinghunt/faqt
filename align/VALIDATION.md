@@ -52,7 +52,7 @@ is needed before claiming minimap2-equivalent alignment quality.
 To rerun the whole-input gap regression, operation replay and symmetry check:
 
 ```sh
-FAQT_SEQHIKER_DEBUG="$HOME/Work/Seqhiker_debug" \
+FAQT_SEQHIKER_DEBUG="/path/to/Seqhiker_debug" \
   go test ./align -run TestSeqhikerDebugPair -v -count=1
 ```
 

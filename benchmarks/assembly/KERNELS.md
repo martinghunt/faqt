@@ -76,8 +76,7 @@ runtime ratio as a comparison of identical alignment results.
 
 Reproduce with `benchmarks/assembly/run.py --profile mm-similar-both --runs 3`,
 using the current debug directory. Exact commands, per-process resources and
-input/output hashes are stored in the result JSON. Raw outputs remain under
-`/private/tmp/faqt-kernel-study/minimap2-single-thread-20261023/`.
+input/output hashes are stored in the result JSON. Raw outputs were kept locally.
 
 ## Original pair
 
@@ -208,6 +207,5 @@ The SIMD kernel changes no scoring or sensitivity options. Seqhiker still uses
 its existing comparison implementation; connecting it to faqt is a separate
 step. No commits were created by this study.
 
-Large PAFs, captured sequence calls, binaries and raw logs remain under
-`/private/tmp/faqt-kernel-study/`; private DNA is not committed. Use the kernel
-harness for reproduction rather than depending on the lifetime of those files.
+Large PAFs, captured sequence calls, binaries and raw logs were kept locally;
+private DNA is not committed. Use the kernel harness for reproduction.

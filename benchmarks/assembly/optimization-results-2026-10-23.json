@@ -156,7 +156,7 @@
       "peak_rss_bytes": 253476864,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-kernel-study/assembly.test",
+        "/path/to/studies/faqt-kernel-study/assembly.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -179,7 +179,7 @@
       "peak_rss_bytes": 1383170048,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-kernel-study/assembly.test",
+        "/path/to/studies/faqt-kernel-study/assembly.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -202,7 +202,7 @@
       "peak_rss_bytes": 257064960,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/index.test",
+        "/path/to/studies/faqt-opt2/index.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -225,7 +225,7 @@
       "peak_rss_bytes": 1314750464,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/index.test",
+        "/path/to/studies/faqt-opt2/index.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -248,7 +248,7 @@
       "peak_rss_bytes": 203128832,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/dp.test",
+        "/path/to/studies/faqt-opt2/dp.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -271,7 +271,7 @@
       "peak_rss_bytes": 977666048,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/dp.test",
+        "/path/to/studies/faqt-opt2/dp.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -294,7 +294,7 @@
       "peak_rss_bytes": 203915264,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/both.test",
+        "/path/to/studies/faqt-opt2/both.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -317,7 +317,7 @@
       "peak_rss_bytes": 211206144,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/both.test",
+        "/path/to/studies/faqt-opt2/both.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -340,7 +340,7 @@
       "peak_rss_bytes": 213286912,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/both.test",
+        "/path/to/studies/faqt-opt2/both.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -363,7 +363,7 @@
       "peak_rss_bytes": 1244577792,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/both.test",
+        "/path/to/studies/faqt-opt2/both.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -386,7 +386,7 @@
       "peak_rss_bytes": 1011138560,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/both.test",
+        "/path/to/studies/faqt-opt2/both.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -409,7 +409,7 @@
       "peak_rss_bytes": 1005797376,
       "exit_code": 0,
       "command": [
-        "/private/tmp/faqt-opt2/both.test",
+        "/path/to/studies/faqt-opt2/both.test",
         "-test.run=^TestComparison$",
         "-test.v"
       ],
@@ -452,7 +452,7 @@
           "legs": [
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -492,8 +492,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
-                "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta"
+                "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
+                "/path/to/Seqhiker_debug/31585_6#49.fasta"
               ],
               "wall_seconds": 1.412713541998528,
               "user_seconds": 1.347197,
@@ -506,7 +506,7 @@
             },
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -546,8 +546,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta",
-                "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
+                "/path/to/Seqhiker_debug/31585_6#49.fasta",
+                "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
               ],
               "wall_seconds": 1.42658287496306,
               "user_seconds": 1.353001,
@@ -567,7 +567,7 @@
           "legs": [
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -607,8 +607,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
-                "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta"
+                "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
+                "/path/to/Seqhiker_debug/31585_6#49.fasta"
               ],
               "wall_seconds": 1.4328666250221431,
               "user_seconds": 1.343015,
@@ -621,7 +621,7 @@
             },
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -661,8 +661,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta",
-                "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
+                "/path/to/Seqhiker_debug/31585_6#49.fasta",
+                "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
               ],
               "wall_seconds": 1.4585382500081323,
               "user_seconds": 1.337311,
@@ -682,7 +682,7 @@
           "legs": [
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -722,8 +722,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
-                "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta"
+                "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta",
+                "/path/to/Seqhiker_debug/31585_6#49.fasta"
               ],
               "wall_seconds": 1.4349526669830084,
               "user_seconds": 1.331172,
@@ -736,7 +736,7 @@
             },
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -776,8 +776,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/31585_6#49.fasta",
-                "/Users/mh46/Work/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
+                "/path/to/Seqhiker_debug/31585_6#49.fasta",
+                "/path/to/Seqhiker_debug/barcode10_ICESp23_spliced.fasta"
               ],
               "wall_seconds": 1.4374007499427535,
               "user_seconds": 1.347302,
@@ -819,7 +819,7 @@
           "legs": [
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -859,8 +859,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa"
+                "/path/to/Seqhiker_debug/repeats.CP151312.1.fa",
+                "/path/to/Seqhiker_debug/repeats.CP026802.1.fa"
               ],
               "wall_seconds": 15.44772166700568,
               "user_seconds": 15.105932,
@@ -873,7 +873,7 @@
             },
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -913,8 +913,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa"
+                "/path/to/Seqhiker_debug/repeats.CP026802.1.fa",
+                "/path/to/Seqhiker_debug/repeats.CP151312.1.fa"
               ],
               "wall_seconds": 15.823936458968092,
               "user_seconds": 15.535533,
@@ -934,7 +934,7 @@
           "legs": [
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -974,8 +974,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa"
+                "/path/to/Seqhiker_debug/repeats.CP151312.1.fa",
+                "/path/to/Seqhiker_debug/repeats.CP026802.1.fa"
               ],
               "wall_seconds": 15.308219459024258,
               "user_seconds": 15.029238,
@@ -988,7 +988,7 @@
             },
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -1028,8 +1028,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa"
+                "/path/to/Seqhiker_debug/repeats.CP026802.1.fa",
+                "/path/to/Seqhiker_debug/repeats.CP151312.1.fa"
               ],
               "wall_seconds": 15.894027250004001,
               "user_seconds": 15.586207,
@@ -1049,7 +1049,7 @@
           "legs": [
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -1089,8 +1089,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa"
+                "/path/to/Seqhiker_debug/repeats.CP151312.1.fa",
+                "/path/to/Seqhiker_debug/repeats.CP026802.1.fa"
               ],
               "wall_seconds": 15.443404416029807,
               "user_seconds": 15.161211,
@@ -1103,7 +1103,7 @@
             },
             {
               "command": [
-                "/Users/mh46/.homebrew/bin/minimap2",
+                "/path/to/minimap2",
                 "-x",
                 "asm5",
                 "-c",
@@ -1143,8 +1143,8 @@
                 "0",
                 "--no-long-join",
                 "--rmq=no",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP026802.1.fa",
-                "/Users/mh46/Work/Seqhiker_debug/repeats.CP151312.1.fa"
+                "/path/to/Seqhiker_debug/repeats.CP026802.1.fa",
+                "/path/to/Seqhiker_debug/repeats.CP151312.1.fa"
               ],
               "wall_seconds": 16.02357033296721,
               "user_seconds": 15.715559,
@@ -1233,7 +1233,7 @@
         "test",
         "-c",
         "-o",
-        "/private/tmp/faqt-opt2/linux-amd64.test",
+        "/path/to/studies/faqt-opt2/linux-amd64.test",
         "./align"
       ],
       "environment": {
@@ -1250,7 +1250,7 @@
         "test",
         "-c",
         "-o",
-        "/private/tmp/faqt-opt2/linux-arm64.test",
+        "/path/to/studies/faqt-opt2/linux-arm64.test",
         "./align"
       ],
       "environment": {
@@ -1268,7 +1268,7 @@
         "test",
         "-c",
         "-o",
-        "/private/tmp/faqt-opt2/windows-arm64.test",
+        "/path/to/studies/faqt-opt2/windows-arm64.test",
         "./align"
       ],
       "environment": {
@@ -1292,7 +1292,7 @@
       ],
       "environment": {
         "GOEXPERIMENT": "simd",
-        "FAQT_SEQHIKER_DEBUG": "/Users/mh46/Work/Seqhiker_debug",
+        "FAQT_SEQHIKER_DEBUG": "/path/to/Seqhiker_debug",
         "GOMAXPROCS": "1"
       },
       "passed": true,
@@ -1320,7 +1320,7 @@
         "-B",
         "benchmarks/kernels/build.py",
         "--out",
-        "/private/tmp/faqt-opt2/repro-indexed"
+        "/path/to/studies/faqt-opt2/repro-indexed"
       ],
       "environment": {},
       "passed": true,
@@ -1332,7 +1332,7 @@
         "-B",
         "benchmarks/kernels/build.py",
         "--out",
-        "/private/tmp/faqt-opt2/repro-scans",
+        "/path/to/studies/faqt-opt2/repro-scans",
         "--scan-containment"
       ],
       "environment": {},
@@ -1341,7 +1341,7 @@
     },
     {
       "command": [
-        "/private/tmp/faqt-opt2/repro-indexed/align.test",
+        "/path/to/studies/faqt-opt2/repro-indexed/align.test",
         "-test.run=^Test(KernelStudy|WFAStudy)$",
         "-test.v"
       ],
@@ -1353,7 +1353,7 @@
     },
     {
       "command": [
-        "/private/tmp/faqt-opt2/repro-scans/align.test",
+        "/path/to/studies/faqt-opt2/repro-scans/align.test",
         "-test.run=^Test(KernelStudy|WFAStudy)$",
         "-test.v"
       ],

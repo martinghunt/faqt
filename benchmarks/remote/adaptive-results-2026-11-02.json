@@ -21,7 +21,7 @@
     {
       "Name": "backend-avx2",
       "Command": [
-        "/home/martin/tmp/faqt-linux-adaptive-validation/align-simd.test",
+        "/path/to/bundle/align-simd.test",
         "-test.run=^TestSIMDBackend$",
         "-test.v",
         "-test.timeout=15m0s"
@@ -34,7 +34,7 @@
     {
       "Name": "unit-scalar",
       "Command": [
-        "/home/martin/tmp/faqt-linux-adaptive-validation/align-scalar.test",
+        "/path/to/bundle/align-scalar.test",
         "-test.v",
         "-test.timeout=15m0s"
       ],
@@ -46,7 +46,7 @@
     {
       "Name": "unit-avx2",
       "Command": [
-        "/home/martin/tmp/faqt-linux-adaptive-validation/align-simd.test",
+        "/path/to/bundle/align-simd.test",
         "-test.v",
         "-test.timeout=15m0s"
       ],
@@ -58,7 +58,7 @@
     {
       "Name": "fallback-no-avx2",
       "Command": [
-        "/home/martin/tmp/faqt-linux-adaptive-validation/align-simd.test",
+        "/path/to/bundle/align-simd.test",
         "-test.run=^Test(SIMDBackend|DPPlatform.*|DPBoundary.*|Adaptive.*)$",
         "-test.v"
       ],
@@ -70,7 +70,7 @@
     {
       "Name": "avx2-without-avx512",
       "Command": [
-        "/home/martin/tmp/faqt-linux-adaptive-validation/align-simd.test",
+        "/path/to/bundle/align-simd.test",
         "-test.run=^Test(SIMDBackend|Difference.*|DPPlatform.*|DPBoundary.*|Adaptive.*)$",
         "-test.v"
       ],

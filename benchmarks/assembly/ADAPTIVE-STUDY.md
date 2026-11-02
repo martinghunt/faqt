@@ -120,7 +120,7 @@ budgets and one process each. They can run without minimap2:
 
 ```sh
 GOEXPERIMENT=simd python3 benchmarks/assembly/run.py \
-  --debug-dir "$HOME/Work/Seqhiker_debug" --out /tmp/faqt-adaptive-check \
+  --debug-dir "/path/to/Seqhiker_debug" --out /tmp/faqt-adaptive-check \
   --profile faqt-full --profile faqt-adaptive --runs 3
 python3 benchmarks/assembly/analyze.py /tmp/faqt-adaptive-check
 python3 benchmarks/assembly/verify.py /tmp/faqt-adaptive-check
@@ -128,5 +128,5 @@ python3 benchmarks/assembly/verify.py /tmp/faqt-adaptive-check
 
 Raw screening, validation and check metadata:
 [adaptive-study-results-2026-10-23.json](adaptive-study-results-2026-10-23.json).
-The isolated sources, drivers, PAFs and logs remain under
-/private/tmp/faqt-adaptive-study/. No private sequences or PAFs are committed.
+Isolated sources, drivers, PAFs and logs were kept locally during the study.
+No private sequences or PAFs are committed.

@@ -5,7 +5,7 @@
     "w": 10,
     "wall": 8.077858499949798,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/debug.k15.w10",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/debug.k15.w10",
     "detail": {
       "PrepareSeconds": 0.1641835,
       "AlignSeconds": 5.4675055,
@@ -46,7 +46,7 @@
     "w": 20,
     "wall": 4.14435808401322,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/debug.k15.w20",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/debug.k15.w20",
     "detail": {
       "PrepareSeconds": 0.123006917,
       "AlignSeconds": 3.9543405,
@@ -87,7 +87,7 @@
     "w": 30,
     "wall": 3.1373344999738038,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/debug.k15.w30",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/debug.k15.w30",
     "detail": {
       "PrepareSeconds": 0.117191375,
       "AlignSeconds": 2.963789459,
@@ -128,7 +128,7 @@
     "w": 50,
     "wall": 2.3266597079928033,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/debug.k15.w50",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/debug.k15.w50",
     "detail": {
       "PrepareSeconds": 0.114876,
       "AlignSeconds": 2.148637333,
@@ -169,7 +169,7 @@
     "w": 10,
     "wall": 4.426362416998018,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/debug.k19.w10",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/debug.k19.w10",
     "detail": {
       "PrepareSeconds": 0.150269,
       "AlignSeconds": 4.189626042,
@@ -210,7 +210,7 @@
     "w": 20,
     "wall": 2.9695727500366047,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/debug.k19.w20",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/debug.k19.w20",
     "detail": {
       "PrepareSeconds": 0.1218895,
       "AlignSeconds": 2.766129958,
@@ -251,7 +251,7 @@
     "w": 20,
     "wall": 2.6822285000234842,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/debug.k21.w20",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/debug.k21.w20",
     "detail": {
       "PrepareSeconds": 0.122794333,
       "AlignSeconds": 2.4860780829999998,
@@ -292,7 +292,7 @@
     "w": 10,
     "wall": 25.160163125023246,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/repeats.k15.w10",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/repeats.k15.w10",
     "detail": {
       "PrepareSeconds": 0.455720583,
       "AlignSeconds": 24.599177917,
@@ -333,7 +333,7 @@
     "w": 20,
     "wall": 23.207093207980506,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/repeats.k15.w20",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/repeats.k15.w20",
     "detail": {
       "PrepareSeconds": 0.288922875,
       "AlignSeconds": 22.84023275,
@@ -374,7 +374,7 @@
     "w": 30,
     "wall": 23.090341457980685,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/repeats.k15.w30",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/repeats.k15.w30",
     "detail": {
       "PrepareSeconds": 0.259026083,
       "AlignSeconds": 22.739184167,
@@ -415,7 +415,7 @@
     "w": 50,
     "wall": 22.045618167030625,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/repeats.k15.w50",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/repeats.k15.w50",
     "detail": {
       "PrepareSeconds": 0.212087417,
       "AlignSeconds": 21.767477333,
@@ -456,7 +456,7 @@
     "w": 10,
     "wall": 26.66836270899512,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/repeats.k19.w10",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/repeats.k19.w10",
     "detail": {
       "PrepareSeconds": 0.405565542,
       "AlignSeconds": 26.167517041,
@@ -497,7 +497,7 @@
     "w": 20,
     "wall": 25.084798209019937,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/repeats.k19.w20",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/repeats.k19.w20",
     "detail": {
       "PrepareSeconds": 0.328901875,
       "AlignSeconds": 24.655007917,
@@ -538,7 +538,7 @@
     "w": 20,
     "wall": 24.529900667024776,
     "exit": 0,
-    "stem": "/private/tmp/faqt-seed-tuning/results/repeats.k21.w20",
+    "stem": "/path/to/studies/faqt-seed-tuning/results/repeats.k21.w20",
     "detail": {
       "PrepareSeconds": 0.320814041,
       "AlignSeconds": 24.147797916,

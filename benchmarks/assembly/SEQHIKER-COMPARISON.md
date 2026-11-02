@@ -30,4 +30,4 @@ Whole-process seconds include loading, preparation, comparison, test-runner star
 | debug | 2.337 s | 5.757 s |
 | repeats | 3.195 s | 25.213 s |
 
-Raw samples and input/output hashes: [seqhiker-comparison-results-2026-10-23.json](seqhiker-comparison-results-2026-10-23.json). Build metadata and source hashes are embedded in the same results JSON. The isolated driver and original-engine adapter remain under /private/tmp/seqhiker-vs-faqt/. All private PAFs/block outputs stay local under results/.
+Raw samples and input/output hashes: [seqhiker-comparison-results-2026-10-23.json](seqhiker-comparison-results-2026-10-23.json). Build metadata and source hashes are embedded in the same results JSON. The isolated driver, original-engine adapter and private PAF/block outputs were kept locally.

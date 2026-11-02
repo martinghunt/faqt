@@ -37,3 +37,6 @@ regressions, without the timing benchmark:
 Native Ryzen results: [full-mode measurements](RESULTS-2026-10-23.md) and
 [adaptive correctness checks](ADAPTIVE-2026-11-02.md). Earlier native
 [Windows validation](WINDOWS-2026-10-23.md) covers full mode.
+
+Saved result snapshots replace machine-specific paths with generic placeholders;
+timings, input/output hashes and source fingerprints are unchanged.

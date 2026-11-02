@@ -28,4 +28,4 @@ Wider windows reduce the original-pair runtime substantially, but recover fewer 
 
 ## Reproduction
 
-Both genomes must use the same public align.SketchOptions{K: k, W: w}; preparation/sketching must be redone when changing either value. Compare with the same align.Options, EndExtensionDP and MaxAnchors=20000000. The isolated benchmark, driver, PAFs, profiles and source hashes remain under /private/tmp/faqt-seed-tuning/. The benchmark source differs only by exposing K/W environment inputs and recording the missing-region condition. It does not change the alignment engine. No private FASTAs or PAFs are added to the repository.
+Both genomes must use the same public align.SketchOptions{K: k, W: w}; preparation/sketching must be redone when changing either value. Compare with the same align.Options, EndExtensionDP and MaxAnchors=20000000. The benchmark source differs only by exposing K/W environment inputs and recording the missing-region condition. It does not change the alignment engine. No private FASTAs or PAFs are added to the repository.

@@ -63,6 +63,6 @@ costs and path choices and are not equivalent to continued DP.
 
 Raw samples, output/coverage metrics and attempt counts:
 [adaptive-extension-results-2026-10-23.json](adaptive-extension-results-2026-10-23.json).
-Prototype source, driver, test and PAFs remain under
-/private/tmp/faqt-adaptive-extension/. The experiment flag and global diagnostic
-counters exist only in this temporary copy and must not be copied into production.
+Prototype sources, tests and PAFs were kept locally. The experiment flag and
+global diagnostic counters exist only in the prototype and are not part of the
+production implementation.

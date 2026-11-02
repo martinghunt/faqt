@@ -9,7 +9,7 @@
       "deficit": -1,
       "wall": 6.345596957951784,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.full.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.full.1",
       "detail": {
         "PrepareSeconds": 0.142603209,
         "AlignSeconds": 5.584157458,
@@ -61,7 +61,7 @@
       "deficit": -1,
       "wall": 1.4802862499491312,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s32m0.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s32m0.1",
       "detail": {
         "PrepareSeconds": 0.133159375,
         "AlignSeconds": 1.27245275,
@@ -113,7 +113,7 @@
       "deficit": -1,
       "wall": 1.6974314579856582,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s32m8.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s32m8.1",
       "detail": {
         "PrepareSeconds": 0.133564209,
         "AlignSeconds": 1.4687333329999999,
@@ -165,7 +165,7 @@
       "deficit": -1,
       "wall": 1.7927102920366451,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s32m16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s32m16.1",
       "detail": {
         "PrepareSeconds": 0.132276334,
         "AlignSeconds": 1.604745458,
@@ -217,7 +217,7 @@
       "deficit": -1,
       "wall": 1.969487875001505,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64m0.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64m0.1",
       "detail": {
         "PrepareSeconds": 0.12930675,
         "AlignSeconds": 1.772854167,
@@ -269,7 +269,7 @@
       "deficit": -1,
       "wall": 2.056782458035741,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64m8.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64m8.1",
       "detail": {
         "PrepareSeconds": 0.142908083,
         "AlignSeconds": 1.812252667,
@@ -321,7 +321,7 @@
       "deficit": -1,
       "wall": 2.1239911669981666,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64m16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64m16.1",
       "detail": {
         "PrepareSeconds": 0.143039792,
         "AlignSeconds": 1.86049025,
@@ -373,7 +373,7 @@
       "deficit": -1,
       "wall": 2.3467615420231596,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64m32.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64m32.1",
       "detail": {
         "PrepareSeconds": 0.137774541,
         "AlignSeconds": 2.115764584,
@@ -425,7 +425,7 @@
       "deficit": -1,
       "wall": 2.6654298749635927,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s96m16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s96m16.1",
       "detail": {
         "PrepareSeconds": 0.146703167,
         "AlignSeconds": 2.479534292,
@@ -477,7 +477,7 @@
       "deficit": 16,
       "wall": 2.191216541978065,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f16.1",
       "detail": {
         "PrepareSeconds": 0.141560625,
         "AlignSeconds": 1.9853201660000002,
@@ -529,7 +529,7 @@
       "deficit": 32,
       "wall": 2.496266458008904,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f32.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f32.1",
       "detail": {
         "PrepareSeconds": 0.143799042,
         "AlignSeconds": 2.3063665,
@@ -581,7 +581,7 @@
       "deficit": 64,
       "wall": 4.564980541996192,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f64.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f64.1",
       "detail": {
         "PrepareSeconds": 0.129694917,
         "AlignSeconds": 4.365968708,
@@ -633,7 +633,7 @@
       "deficit": 16,
       "wall": 1.909423916018568,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s32f16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s32f16.1",
       "detail": {
         "PrepareSeconds": 0.127624458,
         "AlignSeconds": 1.6876075,
@@ -685,7 +685,7 @@
       "deficit": 40,
       "wall": 3.2531058749882504,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f40.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f40.1",
       "detail": {
         "PrepareSeconds": 0.172766958,
         "AlignSeconds": 2.727056875,
@@ -737,7 +737,7 @@
       "deficit": 48,
       "wall": 3.4607828340376727,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f48.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f48.1",
       "detail": {
         "PrepareSeconds": 0.14568,
         "AlignSeconds": 3.211235166,
@@ -789,7 +789,7 @@
       "deficit": 56,
       "wall": 4.065459917008411,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f56.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f56.1",
       "detail": {
         "PrepareSeconds": 0.162875334,
         "AlignSeconds": 3.834412875,
@@ -841,7 +841,7 @@
       "deficit": 32,
       "wall": 2.832417041005101,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s32f32.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s32f32.1",
       "detail": {
         "PrepareSeconds": 0.163386167,
         "AlignSeconds": 2.537959583,
@@ -893,7 +893,7 @@
       "deficit": 48,
       "wall": 3.8449512089719065,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s32f48.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s32f48.1",
       "detail": {
         "PrepareSeconds": 0.158721042,
         "AlignSeconds": 3.591504833,
@@ -945,7 +945,7 @@
       "deficit": 32,
       "wall": 2.5237889169948176,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s48f32.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s48f32.1",
       "detail": {
         "PrepareSeconds": 0.151470166,
         "AlignSeconds": 2.329932542,
@@ -997,7 +997,7 @@
       "deficit": 48,
       "wall": 3.729134499968495,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s48f48.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s48f48.1",
       "detail": {
         "PrepareSeconds": 0.152137417,
         "AlignSeconds": 3.459024334,
@@ -1049,7 +1049,7 @@
       "deficit": -1,
       "wall": 26.05778149998514,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.full.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.full.1",
       "detail": {
         "PrepareSeconds": 0.450359125,
         "AlignSeconds": 24.954752834,
@@ -1101,7 +1101,7 @@
       "deficit": -1,
       "wall": 7.739435457973741,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.s32m16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.s32m16.1",
       "detail": {
         "PrepareSeconds": 0.448341959,
         "AlignSeconds": 7.149627333,
@@ -1153,7 +1153,7 @@
       "deficit": -1,
       "wall": 9.67090912500862,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.s64m0.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.s64m0.1",
       "detail": {
         "PrepareSeconds": 0.386961625,
         "AlignSeconds": 9.142360334,
@@ -1205,7 +1205,7 @@
       "deficit": 16,
       "wall": 9.877296791004483,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.s64f16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.s64f16.1",
       "detail": {
         "PrepareSeconds": 0.385771292,
         "AlignSeconds": 9.349662042,
@@ -1257,7 +1257,7 @@
       "deficit": 32,
       "wall": 10.159639958990738,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.s64f32.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.s64f32.1",
       "detail": {
         "PrepareSeconds": 0.383630542,
         "AlignSeconds": 9.662030833,
@@ -1309,7 +1309,7 @@
       "deficit": 64,
       "wall": 16.876149000017904,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.s64f64.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.s64f64.1",
       "detail": {
         "PrepareSeconds": 0.386217334,
         "AlignSeconds": 16.338998666,
@@ -1361,7 +1361,7 @@
       "deficit": 48,
       "wall": 11.53088979201857,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.s64f48.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.s64f48.1",
       "detail": {
         "PrepareSeconds": 0.403964583,
         "AlignSeconds": 10.991025417,
@@ -1413,7 +1413,7 @@
       "deficit": 32,
       "wall": 9.83834083302645,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/repeats.s48f32.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/repeats.s48f32.1",
       "detail": {
         "PrepareSeconds": 0.393051625,
         "AlignSeconds": 9.276556458,
@@ -1465,7 +1465,7 @@
       "deficit": 32,
       "wall": 3.6664482500054874,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f32scaled.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f32scaled.1",
       "detail": {
         "PrepareSeconds": 0.156287209,
         "AlignSeconds": 2.601115917,
@@ -1517,7 +1517,7 @@
       "deficit": 40,
       "wall": 3.5870716249919496,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f40scaled.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f40scaled.1",
       "detail": {
         "PrepareSeconds": 0.143768042,
         "AlignSeconds": 3.379572541,
@@ -1569,7 +1569,7 @@
       "deficit": 32,
       "wall": 2.507403291994706,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f32m16.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f32m16.1",
       "detail": {
         "PrepareSeconds": 0.139942167,
         "AlignSeconds": 2.309244875,
@@ -1621,7 +1621,7 @@
       "deficit": 32,
       "wall": 2.575365792028606,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/results/debug.s64f32m32.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/results/debug.s64f32m32.1",
       "detail": {
         "PrepareSeconds": 0.147731875,
         "AlignSeconds": 2.370452709,
@@ -1672,7 +1672,7 @@
       "run": 1,
       "wall": 6.355198917037342,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/debug.dp.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/debug.dp.1",
       "detail": {
         "PrepareSeconds": 0.141325583,
         "AlignSeconds": 5.600356291,
@@ -1707,7 +1707,7 @@
       "run": 1,
       "wall": 3.3637407500064,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/debug.adaptive.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/debug.adaptive.1",
       "detail": {
         "PrepareSeconds": 0.14550575,
         "AlignSeconds": 3.134476459,
@@ -1742,7 +1742,7 @@
       "run": 2,
       "wall": 5.833189791999757,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/debug.dp.2",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/debug.dp.2",
       "detail": {
         "PrepareSeconds": 0.140599417,
         "AlignSeconds": 5.605287167,
@@ -1776,7 +1776,7 @@
       "run": 2,
       "wall": 3.352636708994396,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/debug.adaptive.2",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/debug.adaptive.2",
       "detail": {
         "PrepareSeconds": 0.150092416,
         "AlignSeconds": 3.147487792,
@@ -1810,7 +1810,7 @@
       "run": 3,
       "wall": 5.8185099579859525,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/debug.dp.3",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/debug.dp.3",
       "detail": {
         "PrepareSeconds": 0.150023709,
         "AlignSeconds": 5.606694084,
@@ -1844,7 +1844,7 @@
       "run": 3,
       "wall": 3.3385352499899454,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/debug.adaptive.3",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/debug.adaptive.3",
       "detail": {
         "PrepareSeconds": 0.149704042,
         "AlignSeconds": 3.148263,
@@ -1878,7 +1878,7 @@
       "run": 1,
       "wall": 25.484402250032872,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/repeats.dp.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/repeats.dp.1",
       "detail": {
         "PrepareSeconds": 0.37702525,
         "AlignSeconds": 24.962756416,
@@ -1913,7 +1913,7 @@
       "run": 1,
       "wall": 11.401033749978524,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/repeats.adaptive.1",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/repeats.adaptive.1",
       "detail": {
         "PrepareSeconds": 0.401704084,
         "AlignSeconds": 10.897828167,
@@ -1948,7 +1948,7 @@
       "run": 2,
       "wall": 25.51712287502596,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/repeats.dp.2",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/repeats.dp.2",
       "detail": {
         "PrepareSeconds": 0.38562975,
         "AlignSeconds": 25.013463375,
@@ -1982,7 +1982,7 @@
       "run": 2,
       "wall": 11.40091929200571,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/repeats.adaptive.2",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/repeats.adaptive.2",
       "detail": {
         "PrepareSeconds": 0.39080075,
         "AlignSeconds": 10.928168375,
@@ -2016,7 +2016,7 @@
       "run": 3,
       "wall": 25.43662824999774,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/repeats.dp.3",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/repeats.dp.3",
       "detail": {
         "PrepareSeconds": 0.36962675,
         "AlignSeconds": 24.971498792,
@@ -2050,7 +2050,7 @@
       "run": 3,
       "wall": 11.240126457996666,
       "exit": 0,
-      "stem": "/private/tmp/faqt-adaptive-study/validation/repeats.adaptive.3",
+      "stem": "/path/to/studies/faqt-adaptive-study/validation/repeats.adaptive.3",
       "detail": {
         "PrepareSeconds": 0.385576875,
         "AlignSeconds": 10.785501291,
@@ -2201,7 +2201,7 @@
       "environment": {
         "GOEXPERIMENT": "simd",
         "GOMAXPROCS": "1",
-        "FAQT_SEQHIKER_DEBUG": "/Users/mh46/Work/Seqhiker_debug"
+        "FAQT_SEQHIKER_DEBUG": "/path/to/Seqhiker_debug"
       },
       "seconds": 17.91105316701578,
       "exit": 0
@@ -2215,7 +2215,7 @@
         "-ldflags=-s -w",
         "-c",
         "-o",
-        "/private/tmp/faqt-adaptive-study/linux-amd64-simd.test",
+        "/path/to/studies/faqt-adaptive-study/linux-amd64-simd.test",
         "./align"
       ],
       "environment": {
@@ -2237,7 +2237,7 @@
         "-ldflags=-s -w",
         "-c",
         "-o",
-        "/private/tmp/faqt-adaptive-study/windows-amd64-simd.test.exe",
+        "/path/to/studies/faqt-adaptive-study/windows-amd64-simd.test.exe",
         "./align"
       ],
       "environment": {
@@ -2259,7 +2259,7 @@
         "-ldflags=-s -w",
         "-c",
         "-o",
-        "/private/tmp/faqt-adaptive-study/linux-arm64-simd.test",
+        "/path/to/studies/faqt-adaptive-study/linux-arm64-simd.test",
         "./align"
       ],
       "environment": {
@@ -2281,7 +2281,7 @@
         "-ldflags=-s -w",
         "-c",
         "-o",
-        "/private/tmp/faqt-adaptive-study/windows-arm64-simd.test.exe",
+        "/path/to/studies/faqt-adaptive-study/windows-arm64-simd.test.exe",
         "./align"
       ],
       "environment": {
@@ -2303,7 +2303,7 @@
         "-ldflags=-s -w",
         "-c",
         "-o",
-        "/private/tmp/faqt-adaptive-study/darwin-amd64-simd.test",
+        "/path/to/studies/faqt-adaptive-study/darwin-amd64-simd.test",
         "./align"
       ],
       "environment": {
@@ -2325,7 +2325,7 @@
         "-ldflags=-s -w",
         "-c",
         "-o",
-        "/private/tmp/faqt-adaptive-study/linux-386-scalar.test",
+        "/path/to/studies/faqt-adaptive-study/linux-386-scalar.test",
         "./align"
       ],
       "environment": {
@@ -2347,7 +2347,7 @@
         "-ldflags=-s -w",
         "-c",
         "-o",
-        "/private/tmp/faqt-adaptive-study/windows-amd64-scalar.test.exe",
+        "/path/to/studies/faqt-adaptive-study/windows-amd64-scalar.test.exe",
         "./align"
       ],
       "environment": {
@@ -2365,7 +2365,7 @@
       "command": [
         "/usr/bin/arch",
         "-x86_64",
-        "/private/tmp/faqt-adaptive-study/darwin-amd64-simd.test",
+        "/path/to/studies/faqt-adaptive-study/darwin-amd64-simd.test",
         "-test.run=^Test(SIMDBackend|DPBoundary.*|Adaptive.*)$",
         "-test.timeout=2m",
         "-test.v"
@@ -2382,7 +2382,7 @@
       "command": [
         "/usr/bin/arch",
         "-x86_64",
-        "/private/tmp/faqt-adaptive-study/darwin-amd64-simd.test",
+        "/path/to/studies/faqt-adaptive-study/darwin-amd64-simd.test",
         "-test.run=^Test(SIMDBackend|DPBoundary.*|Adaptive.*)$",
         "-test.timeout=2m",
         "-test.v"
@@ -2405,7 +2405,7 @@
       "command": [
         "/usr/bin/arch",
         "-x86_64",
-        "/private/tmp/faqt-adaptive-study/darwin-amd64-simd.test",
+        "/path/to/studies/faqt-adaptive-study/darwin-amd64-simd.test",
         "-test.run=^Test(SIMDBackend|DPBoundary.*|Adaptive.*)$",
         "-test.timeout=2m",
         "-test.v"
@@ -2423,7 +2423,7 @@
       "command": [
         "/usr/bin/arch",
         "-x86_64",
-        "/private/tmp/faqt-adaptive-study/darwin-amd64-simd.test",
+        "/path/to/studies/faqt-adaptive-study/darwin-amd64-simd.test",
         "-test.run=^Test(SIMDBackend|DPBoundary.*|Adaptive.*)$",
         "-test.timeout=2m",
         "-test.v"

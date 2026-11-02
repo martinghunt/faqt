@@ -43,5 +43,5 @@ how short or zero-length retained extensions can coexist with expensive DP.
 
 See [extension-cap ablation](EXTENSION-SIZE.md) for final-output sensitivity and
 runtime effects. Raw aggregate data: [extension-length-results-2026-10-23.json](extension-length-results-2026-10-23.json).
-The diagnostic source, per-end measurements, driver and analysis remain under
-/private/tmp/faqt-extension-lengths/.
+Diagnostic sources and per-end measurements were kept locally; the linked
+aggregate data preserves the reported findings.
