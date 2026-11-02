@@ -36,8 +36,8 @@ exact input-swap symmetry. [results.json](results.json) retains the selected-mod
 samples, medians, input hashes and reference output hashes; exploratory sweeps
 and prototype kernels are omitted.
 
-Native [Ryzen/Linux full-mode measurements](../remote/RESULTS-2026-10-23.md)
+Native [Ryzen/Linux full-mode measurements](remote/RESULTS-2026-10-23.md)
 show 3.50–3.70× speedup over scalar. Subsequent
-[adaptive Linux checks](../remote/ADAPTIVE-2026-11-02.md) passed, including AVX2
-and scalar fallback. Earlier [Windows checks](../remote/WINDOWS-2026-10-23.md)
+[adaptive Linux checks](remote/ADAPTIVE-2026-11-02.md) passed, including AVX2
+and scalar fallback. Earlier [Windows checks](remote/WINDOWS-2026-10-23.md)
 cover full mode; the later adaptive changes have not been run natively there.

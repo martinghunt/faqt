@@ -75,8 +75,8 @@ the original missing-region/input-swap regression, scalar fallback with AVX2
 masked off, and AVX2 tests with core AVX-512 features masked off all passed.
 All twelve full-input benchmark outputs matched the validated PAF hashes.
 Median wall times improved by 3.50× on the original pair and 3.70× on repeats.
-See [native results](../benchmarks/remote/RESULTS-2026-10-23.md) for measurements
-and the [remote bundle](../benchmarks/remote/README.md) to reproduce the checks.
+See [native results](../benchmarks/alignment/remote/RESULTS-2026-10-23.md) for measurements
+and the [remote bundle](../benchmarks/alignment/remote/README.md) to reproduce the checks.
 
 ### Windows amd64
 
@@ -86,7 +86,7 @@ backends, including missing-region recovery, operation replay and input-swap
 symmetry (7,116 matches). The initial wrapper's CPU-mask check
 failed because this Go toolchain does not apply GODEBUG CPU masks on Windows;
 the corrected wrapper marks those checks unsupported. See the
-[Windows validation record](../benchmarks/remote/WINDOWS-2026-10-23.md).
+[Windows validation record](../benchmarks/alignment/remote/WINDOWS-2026-10-23.md).
 
 ## Adaptive end-extension follow-up
 
@@ -98,7 +98,7 @@ on the original/repeat-rich fixtures. Native Linux/amd64 adaptive validation
 also passed on the Ryzen 5 7600X on 2026-11-02: AVX2 and scalar unit tests,
 full/adaptive original-genome replay and input-swap regressions, scalar fallback
 with AVX2 disabled, and AVX2 with AVX-512 disabled. See the
-[Linux adaptive validation record](../benchmarks/remote/ADAPTIVE-2026-11-02.md)
+[Linux adaptive validation record](../benchmarks/alignment/remote/ADAPTIVE-2026-11-02.md)
 and [benchmark results](../benchmarks/alignment/RESULTS.md).
 The adaptive changes have not been run natively on Windows; the earlier Windows
 validation covers full mode before those changes.

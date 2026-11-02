@@ -3,7 +3,7 @@
 Build the AVX2 port and its native validation package on the development machine:
 
 ```sh
-python3 benchmarks/remote/build_bundle.py --out /tmp/faqt-linux-amd64
+python3 benchmarks/alignment/remote/build_bundle.py --out /tmp/faqt-linux-amd64
 ```
 
 This uses the installed Go toolchain (tested with Go 1.27.2), cross-compiles

@@ -55,7 +55,7 @@ The output directory contains metadata, process logs, PAFs, timings, analysis
 and verification JSON. A timeout defaults to 300 seconds per process and can be
 changed with `--timeout`. Saved repository snapshots use generic paths.
 
-See [results and limitations](RESULTS.md) and [native validation](../remote/README.md).
+See [results and limitations](RESULTS.md) and [native validation](remote/README.md).
 Run the harness tests with:
 
 ```sh

@@ -12,7 +12,7 @@ import tarfile
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out',type=Path,required=True,help='fresh bundle directory outside the repository')
-    args=parser.parse_args();here=Path(__file__).resolve().parent;repo=here.parents[1];out=args.out.resolve()
+    args=parser.parse_args();here=Path(__file__).resolve().parent;repo=here.parents[2];out=args.out.resolve()
     archive=Path(str(out)+'.tar.gz')
     if out.is_relative_to(repo):parser.error('--out must be outside the repository')
     if out.exists() or archive.exists():parser.error('choose a fresh directory and archive name')
@@ -26,7 +26,7 @@ def main():
             command=['go','test','-trimpath','-ldflags=-s -w','-c','-o',str(out/f'{prefix}-{label}.test'),package]
             subprocess.run(command,cwd=repo,env=env,check=True);commands.append({'command':command,'GOEXPERIMENT':experiment})
     env['GOEXPERIMENT']=''
-    command=['go','build','-trimpath','-ldflags=-s -w','-o',str(out/'runner'),'./benchmarks/remote']
+    command=['go','build','-trimpath','-ldflags=-s -w','-o',str(out/'runner'),'./benchmarks/alignment/remote']
     subprocess.run(command,cwd=repo,env=env,check=True);commands.append({'command':command,'GOEXPERIMENT':''})
     records=json.loads((repo/'benchmarks/alignment/results.json').read_text())
     source_files=[repo/'go.mod',repo/'go.sum',*sorted(repo.rglob('*.go'))]
