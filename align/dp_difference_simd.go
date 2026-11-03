@@ -56,9 +56,6 @@ func differenceResize[T any](s []T, n int) []T {
 	return s[:n]
 }
 
-func alignDPDifference(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
-	return alignDPDifferenceBoundary(ctx, q, t, band, extend, o, nil)
-}
 func alignDPDifferenceBoundary(ctx context.Context, q, t []byte, band int, extend bool, o Options, boundary *dpBoundary) (dpResult, error) {
 	boundary.reset()
 	m, n := len(q), len(t)

@@ -12,9 +12,6 @@ import (
 // anti-diagonal have no dependencies on each other. Full row maxima are retained so that a subsequent
 // row-order pass reproduces the reference Z-drop and endpoint tie-breaking.
 // This computes extra cells beyond a Z-drop; the benchmark includes that cost.
-func alignDPWide(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
-	return alignDPWideBoundary(ctx, q, t, band, extend, o, nil)
-}
 func alignDPWideBoundary(ctx context.Context, q, t []byte, band int, extend bool, o Options, boundary *dpBoundary) (dpResult, error) {
 	boundary.reset()
 	m, n := len(q), len(t)
