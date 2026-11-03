@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-03
+
 ### Changed
 - Replace `align`, `mapper`, and `mapping` with a pure Go assembly-comparison API in `align` (breaking library change), supporting repeat placements, symmetric input exchange, two-piece affine alignment, cancellation, and resource limits. Keep standalone `minimizer` APIs.
 - Speed up assembly comparison with indexed containment and ARM64 NEON/amd64 AVX2 DP, preserving full-mode results. SIMD builds require `GOEXPERIMENT=simd`; unsupported CPUs use scalar fallback.
@@ -205,7 +207,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/martinghunt/faqt/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/martinghunt/faqt/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/martinghunt/faqt/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/martinghunt/faqt/compare/v0.8.0...v0.9.0
