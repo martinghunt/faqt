@@ -543,51 +543,19 @@ The `seqdl` package exposes `seqdl.DownloadAccession(accession, outPath, options
 
 The `readdl` package exposes `readdl.DownloadReads(ctx, runAccession, options)` for downloading gzipped run FASTQ files. It uses `ichsm` for ENA read metadata lookup and supports direct ENA downloads with MD5 validation or [`sracha`](https://rnabioco.github.io/sracha-rs/) downloads with gzip validation. Set `DownloadOptions.WriteMetadata` to write ENA metadata as a JSON list, or additionally set `DownloadOptions.MetadataSingleObject` for the legacy single-object shape. `MergeResults` combines metadata lists when its input results include metadata. Set `DownloadOptions.DownloadStallTimeout` to tune the direct ENA idle timeout. Set `DownloadOptions.DownloadProgressInterval` to tune verbose direct ENA progress cadence.
 
-### Minimizers, Mapping, and Alignment
+### Assembly comparison and minimizers
 
-The `minimizer` package builds minimizer indexes and sketches query sequences:
+The `align` package compares assembled genomes in pure Go, preserving repeat
+placements and producing symmetric results when the two inputs are exchanged.
+Prepare reusable genomes with `align.Prepare` or `align.ReadGenome`, then call
+`align.Compare(ctx, a, b, align.DefaultOptions())`. Results include contig-local
+coordinates, strand, identity, and run-length encoded alignment operations.
 
-```go
-index, err := minimizer.BuildFromPath("ref.fa", minimizer.Options{
-	K: 15,
-	W: 10,
-})
-if err != nil {
-	log.Fatal(err)
-}
-
-anchors := index.Query([]byte("ACGTTGCA"))
-_ = anchors
-```
-
-For the common mapping workflow, use the higher-level `mapping` package. It builds a minimizer index, finds candidate hits, and runs the default aligner unless you set `Mapper.Aligner` to `nil`.
-
-```go
-m, err := mapping.BuildFromPath("ref.fa", minimizer.Options{
-	K:         15,
-	W:         10,
-	MidOcc:    100,
-	MaxMaxOcc: 500,
-	OccDist:   500,
-	QOccFrac:  0.01,
-})
-if err != nil {
-	log.Fatal(err)
-}
-
-result, err := m.Map("query1", []byte("ACGTTGCA"))
-if err != nil {
-	log.Fatal(err)
-}
-for _, hit := range result.Hits {
-	fmt.Println(hit.RefName, hit.Alignment.Score, hit.Alignment.CIGAR)
-}
-```
-
-The lower-level `mapper` and `align` packages are available when you need to customize the pipeline:
-
-- `mapper.DefaultPipeline`, `mapper.Map`, and `mapper.ExtractCandidates` expose anchor clustering, chaining, and candidate extraction.
-- `align.DefaultAligner` and `align.AlignCandidates` expose candidate alignment and ranking.
+See [the assembly comparison guide](align/README.md) for the API, symmetry
+contract, sensitivity limits, scoring, and resource handling. The previous
+`mapper` and `mapping` packages and old `align` API have been removed. This is a
+breaking library change. The independent `minimizer` package remains available
+for sketching and indexing sequences.
 
 ### Output Layers
 

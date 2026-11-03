@@ -1,0 +1,86 @@
+{
+  "Success": true,
+  "Started": "2026-11-02T10:37:50Z",
+  "GOOS": "linux",
+  "GOARCH": "amd64",
+  "GoVersion": "go1.27.2",
+  "Source": "worktree-sha256:fff6ae6d01e49345433e16b95d003e7988158fed3853b05ce85a03984b97bc75",
+  "Runs": 3,
+  "BinaryHashes": {
+    "align-scalar.test": "cc1fa8af56ad14f4a06092d14751af2c78b7b535460ad7e496f54bd443a0706a",
+    "align-simd.test": "249874973bb34f70de94a8136a3262874e131573b2959bf60848d4c0737804b2",
+    "assembly-scalar.test": "638cdf6c3a881d3942ebb5a2ccc9055c856e4eba2248b285f469c15af9397244",
+    "assembly-simd.test": "6c3723104b690e9b4e678d3a40e99f38cb412baccd0b87966721ab3a14ec0147",
+    "runner": "fbdad7f3ba02111586f16e2dd910b713b498e771914d259b3c5128aedb31771b"
+  },
+  "Inputs": {
+    "31585_6#49.fasta": "13825cc1dd3278cf4779618772457d97d716d5310fb0d904ff7e4f37c8b35077",
+    "barcode10_ICESp23_spliced.fasta": "a40111a72cc312d930a32eca3a362155baa33db5e3061d2e4e48ea81c3ae55d3"
+  },
+  "Checks": [
+    {
+      "Name": "backend-avx2",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.run=^TestSIMDBackend$",
+        "-test.v",
+        "-test.timeout=15m0s"
+      ],
+      "WallSeconds": 0.001156163,
+      "CPUSeconds": 0.00111,
+      "PeakRSSBytes": 7462912,
+      "ExitCode": 0
+    },
+    {
+      "Name": "unit-scalar",
+      "Command": [
+        "/path/to/bundle/align-scalar.test",
+        "-test.v",
+        "-test.timeout=15m0s"
+      ],
+      "WallSeconds": 0.636750051,
+      "CPUSeconds": 0.634997,
+      "PeakRSSBytes": 18178048,
+      "ExitCode": 0
+    },
+    {
+      "Name": "unit-avx2",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.v",
+        "-test.timeout=15m0s"
+      ],
+      "WallSeconds": 23.427916516,
+      "CPUSeconds": 23.402483,
+      "PeakRSSBytes": 240205824,
+      "ExitCode": 0
+    },
+    {
+      "Name": "fallback-no-avx2",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.run=^Test(SIMDBackend|DPPlatform.*|DPBoundary.*|Adaptive.*)$",
+        "-test.v"
+      ],
+      "WallSeconds": 0.44955734,
+      "CPUSeconds": 0.448886,
+      "PeakRSSBytes": 16302080,
+      "ExitCode": 0
+    },
+    {
+      "Name": "avx2-without-avx512",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.run=^Test(SIMDBackend|Difference.*|DPPlatform.*|DPBoundary.*|Adaptive.*)$",
+        "-test.v"
+      ],
+      "WallSeconds": 1.435567493,
+      "CPUSeconds": 1.4337010000000001,
+      "PeakRSSBytes": 16601088,
+      "ExitCode": 0
+    }
+  ],
+  "Samples": null,
+  "Minimap2": "",
+  "Summary": null
+}

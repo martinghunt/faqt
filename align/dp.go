@@ -1,380 +1,314 @@
 package align
 
 import (
-	"fmt"
+	"context"
 	"slices"
 )
 
-type globalAlignment struct {
-	ops     []byte
-	score   int
-	matches int
-	aligned int
+const minusInfinity = -1 << 28
+
+// Five states: paired bases, short insertion/deletion, long insertion/deletion.
+// Scores use rolling band rows. Traceback uses 15 packed bits per visited cell.
+type dpRow struct {
+	lo, hi    int
+	score     [5][]int
+	bestScore []int
+	bestState []uint8
 }
 
-type endAlignment struct {
-	ops       []byte
-	score     int
-	matches   int
-	aligned   int
-	queryClip int
-	refClip   int
-}
-
-const negInf = -1 << 29
-
-type alignmentDP struct {
-	cols   int
-	mm     []int
-	ix     []int
-	iy     []int
-	traceM []byte
-	traceX []byte
-	traceY []byte
-}
-
-type alignmentTraceback struct {
-	ops        []byte
-	matches    int
-	aligned    int
-	queryStart int
-	refStart   int
-}
-
-type localDPResult struct {
-	dp        alignmentDP
-	score     int
-	queryEnd  int
-	refEnd    int
-	bestState byte
-}
-
-func newAlignmentDP(rows, cols, matchInit, gapInit int) alignmentDP {
-	size := rows * cols
-	dp := alignmentDP{
-		cols:   cols,
-		mm:     make([]int, size),
-		ix:     make([]int, size),
-		iy:     make([]int, size),
-		traceM: make([]byte, size),
-		traceX: make([]byte, size),
-		traceY: make([]byte, size),
+func reuseRow(r dpRow, lo, hi int) dpRow {
+	r.lo, r.hi = lo, hi
+	width := max(0, hi-lo+1)
+	if cap(r.bestScore) < width {
+		capacity := max(width, cap(r.bestScore)*2)
+		r.bestScore = make([]int, width, capacity)
+		r.bestState = make([]uint8, width, capacity)
+	} else {
+		r.bestScore = r.bestScore[:width]
+		r.bestState = r.bestState[:width]
 	}
-	for idx := range dp.mm {
-		dp.mm[idx], dp.ix[idx], dp.iy[idx] = matchInit, gapInit, gapInit
+
+	for s := range r.score {
+		if cap(r.score[s]) < width {
+			r.score[s] = make([]int, width, max(width, cap(r.score[s])*2))
+		} else {
+			r.score[s] = r.score[s][:width]
+		}
+		for i := range r.score[s] {
+			r.score[s][i] = minusInfinity
+		}
 	}
-	return dp
+	return r
+}
+func (r *dpRow) get(s, j int) int {
+	if j < r.lo || j > r.hi {
+		return minusInfinity
+	}
+	return r.score[s][j-r.lo]
+}
+func (r *dpRow) best(j int) (int, int) {
+	if j < r.lo || j > r.hi {
+		return minusInfinity, 0
+	}
+	return r.bestScore[j-r.lo], int(r.bestState[j-r.lo])
+}
+func (r *dpRow) finish(j int) (int, int) {
+	idx := j - r.lo
+	best, state := r.score[0][idx], 0
+	for s := 1; s < 5; s++ {
+		if v := r.score[s][idx]; v > best {
+			best, state = v, s
+		}
+	}
+	r.bestScore[idx] = best
+	r.bestState[idx] = uint8(state)
+	return best, state
 }
 
-func (dp alignmentDP) index(i, j int) int {
-	return i*dp.cols + j
+type dpResult struct {
+	ops         []Op
+	score, q, t int
+	edge        bool
 }
 
-func (dp alignmentDP) bestState(idx int) (int, byte) {
-	score := dp.mm[idx]
-	state := byte('M')
-	if dp.ix[idx] > score {
-		score = dp.ix[idx]
-		state = 'X'
+func alignGap(ctx context.Context, q, t []byte, o Options) (dpResult, error) {
+	if len(q) == 0 {
+		return dpResult{ops: addOp(nil, 'D', len(t)), score: -gapCost(len(t), o), t: len(t)}, nil
 	}
-	if dp.iy[idx] > score {
-		score = dp.iy[idx]
-		state = 'Y'
+	if len(t) == 0 {
+		return dpResult{ops: addOp(nil, 'I', len(q)), score: -gapCost(len(q), o), q: len(q)}, nil
 	}
-	return score, state
-}
-
-func (dp alignmentDP) stateScore(idx int, state byte) (int, bool) {
-	switch state {
-	case 'M':
-		return dp.mm[idx], true
-	case 'X':
-		return dp.ix[idx], true
-	case 'Y':
-		return dp.iy[idx], true
-	default:
-		return 0, false
+	band := abs(len(q)-len(t)) + o.BandWidth
+	for {
+		r, err := alignDP(ctx, q, t, band, false, o)
+		if err != nil {
+			return dpResult{}, err
+		}
+		// Traceback alone is insufficient: a better path can leave and
+		// re-enter the band while the chosen path never touches its edge.
+		if r.score < -o.ZDrop || band >= max(len(q), len(t)) || r.score >= outsideBandBound(len(q), len(t), band, o) {
+			return r, nil
+		}
+		band = min(max(len(q), len(t)), band*2)
 	}
 }
 
-func (dp alignmentDP) trace(query, ref []byte, i, j int, state byte, local bool, context string) (alignmentTraceback, error) {
-	ops := make([]byte, 0, i+j)
-	matches := 0
-	aligned := 0
-	for traceContinues(local, i, j) {
-		idx := dp.index(i, j)
-		if local {
-			if state == 0 {
-				break
-			}
-			if score, ok := dp.stateScore(idx, state); ok && score == 0 {
-				break
+// An excursion outside |i-j|<=band needs at least these insertion/deletion
+// totals. Even perfect remaining matches cannot exceed this score. Positive
+// gap opens make one run the cheapest way to consume each total.
+func outsideBandBound(m, n, band int, o Options) int {
+	d, delta := band+1, m-n
+	upper := minusInfinity
+	for _, gaps := range [][2]int{{d, max(0, d-delta)}, {max(0, d+delta), d}} {
+		ins, del := gaps[0], gaps[1]
+		paired := min(m-ins, n-del)
+		if paired >= 0 {
+			upper = max(upper, paired*o.Match-gapCost(ins, o)-gapCost(del, o))
+		}
+	}
+	return upper
+}
+
+func gapCost(n int, o Options) int {
+	if n == 0 {
+		return 0
+	}
+	return min(o.GapOpen+n*o.GapExtend, o.LongGapOpen+n*o.LongGapExtend)
+}
+
+// dpBoundary reports best scores on the finite input edges, through the last
+// row accepted by scalar-order Z-drop. It is optional and never affects DP.
+type dpBoundary struct {
+	q, t    int
+	dropped bool
+}
+
+func (b *dpBoundary) reset() {
+	if b != nil {
+		*b = dpBoundary{q: minusInfinity, t: minusInfinity}
+	}
+}
+func alignDPScalar(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
+	return alignDPScalarBoundary(ctx, q, t, band, extend, o, nil)
+}
+func alignDPScalarBoundary(ctx context.Context, q, t []byte, band int, extend bool, o Options, boundary *dpBoundary) (dpResult, error) {
+	boundary.reset()
+	m, n := len(q), len(t)
+	if extend && (m == 0 || n == 0) {
+		return dpResult{}, nil
+	}
+	offset := make([]int, m+1)
+	starts := make([]int, m+1)
+	var cells int64
+	// Allocate traceback as rows are visited. Z-drop may stop a large gap
+	// early, without reserving memory for a matrix we will never compute.
+	var trace []uint16
+	if extend {
+		capacity := min(int64(m+1)*int64(min(n+1, 2*band+1)), 65536)
+		if o.MaxCells > 0 {
+			capacity = min(capacity, o.MaxCells)
+		}
+		trace = make([]uint16, 0, int(capacity))
+	}
+	var prev, scratch dpRow
+	best, bestI, bestJ, bestState := 0, 0, 0, 0
+	endScore, endState := minusInfinity, 0
+	for i := 0; i <= m; i++ {
+		if i%64 == 0 {
+			if err := ctx.Err(); err != nil {
+				return dpResult{}, err
 			}
 		}
+		lo, hi := max(0, i-band), min(n, i+band)
+		starts[i] = lo
+		offset[i] = int(cells)
+		width := max(0, hi-lo+1)
+		cells += int64(width)
+		if o.MaxCells > 0 && cells > o.MaxCells {
+			return dpResult{}, &LimitError{"DP cells", cells, o.MaxCells}
+		}
+		trace = append(trace, make([]uint16, width)...)
+		row := reuseRow(scratch, lo, hi)
+		rowBest := minusInfinity
+		rowBestJ := 0
+		for j := lo; j <= hi; j++ {
+			idx := j - lo
+			var packed uint16
+			if i == 0 && j == 0 {
+				row.score[0][idx] = 0
+			} else {
+				if i > 0 && j > 0 {
+					v, s := prev.best(j - 1)
+					pair := -o.Mismatch
+					if exact(q[i-1], t[j-1]) {
+						pair = o.Match
+					}
+					row.score[0][idx] = v + pair
+					packed |= uint16(s)
+				}
+				{
+					v, from := prev.best(j)
+					v -= o.GapOpen + o.GapExtend
+					cont := prev.get(1, j) - o.GapExtend
+					if cont >= v {
+						v, from = cont, 1
+					}
+					row.score[1][idx] = v
+					packed |= uint16(from) << 3
+				}
+				{
+					v, from := row.best(j - 1)
+					v -= o.GapOpen + o.GapExtend
+					cont := row.get(2, j-1) - o.GapExtend
+					if cont >= v {
+						v, from = cont, 2
+					}
+					row.score[2][idx] = v
+					packed |= uint16(from) << 6
+				}
+				{
+					v, from := prev.best(j)
+					v -= o.LongGapOpen + o.LongGapExtend
+					cont := prev.get(3, j) - o.LongGapExtend
+					if cont >= v {
+						v, from = cont, 3
+					}
+					row.score[3][idx] = v
+					packed |= uint16(from) << 9
+				}
+				{
+					v, from := row.best(j - 1)
+					v -= o.LongGapOpen + o.LongGapExtend
+					cont := row.get(4, j-1) - o.LongGapExtend
+					if cont >= v {
+						v, from = cont, 4
+					}
+					row.score[4][idx] = v
+					packed |= uint16(from) << 12
+				}
+			}
+			trace[offset[i]+idx] = packed
+			v, s := row.finish(j)
+			if boundary != nil {
+				if i == m {
+					boundary.q = max(boundary.q, v)
+				}
+				if j == n {
+					boundary.t = max(boundary.t, v)
+				}
+			}
+
+			if v > rowBest {
+				rowBest = v
+				rowBestJ = j
+			}
+			if v > best {
+				best, bestI, bestJ, bestState = v, i, j, s
+			}
+		}
+		if i == m {
+			endScore, endState = row.best(n)
+		}
+		scratch, prev = prev, row
+		// Z-drop discounts the unavoidable extension cost of an indel.
+		// Global gaps that lose support split the chain, rather than forcing
+		// a huge alignment through unrelated sequence.
+		drift := abs((i - bestI) - (rowBestJ - bestJ))
+		if !extend {
+			drift = min(drift, abs(m-n))
+		}
+		if best-rowBest > o.ZDrop+drift*min(o.GapExtend, o.LongGapExtend) {
+			if boundary != nil {
+				boundary.dropped = true
+			}
+			if extend {
+				break
+			}
+			return dpResult{score: -o.ZDrop - 1}, nil
+		}
+	}
+	i, j, state := m, n, endState
+	score := endScore
+	if extend {
+		i, j, state, score = bestI, bestJ, bestState, best
+	}
+	endI, endJ := i, j
+	var reverseOps []Op
+	edge := false
+	for i > 0 || j > 0 {
+		lo := starts[i]
+		if j < lo || j > min(n, i+band) {
+			return dpResult{}, &LimitError{"DP band", int64(band + 1), int64(band)}
+		}
+		if (j == i-band && j > 0) || (j == i+band && j < n) {
+			edge = true
+		}
+		packed := trace[offset[i]+j-lo]
+		from := int(packed >> uint(3*state) & 7)
 		switch state {
-		case 'M':
-			ops = append(ops, 'M')
-			if i > 0 && j > 0 && query[i-1] == ref[j-1] {
-				matches++
+		case 0:
+			code := byte('X')
+			if exact(q[i-1], t[j-1]) {
+				code = '='
 			}
-			aligned++
-			state = dp.traceM[idx]
+			reverseOps = addOp(reverseOps, code, 1)
 			i--
 			j--
-		case 'X':
-			ops = append(ops, 'D')
-			aligned++
-			state = dp.traceX[idx]
+		case 1, 3:
+			reverseOps = addOp(reverseOps, 'I', 1)
 			i--
-		case 'Y':
-			ops = append(ops, 'I')
-			aligned++
-			state = dp.traceY[idx]
+		case 2, 4:
+			reverseOps = addOp(reverseOps, 'D', 1)
 			j--
-		default:
-			if context == "" {
-				return alignmentTraceback{}, fmt.Errorf("unexpected traceback state %q", state)
-			}
-			return alignmentTraceback{}, fmt.Errorf("unexpected %s traceback state %q", context, state)
 		}
+		state = from
 	}
-	slices.Reverse(ops)
-	return alignmentTraceback{
-		ops:        ops,
-		matches:    matches,
-		aligned:    aligned,
-		queryStart: i,
-		refStart:   j,
-	}, nil
+	slices.Reverse(reverseOps)
+	return dpResult{reverseOps, score, endI, endJ, edge}, nil
 }
 
-func traceContinues(local bool, i, j int) bool {
-	if local {
-		return i > 0 && j > 0
-	}
-	return i > 0 || j > 0
-}
-
-func fillLocalDP(query, ref []byte, scoring Scoring, xdrop, bandWidth int) localDPResult {
-	rows := len(query) + 1
-	cols := len(ref) + 1
-	dp := newAlignmentDP(rows, cols, 0, negInf)
-
-	result := localDPResult{dp: dp}
-	for i := 1; i < rows; i++ {
-		rowBest := negInf
-		for j := 1; j < cols; j++ {
-			if !inBand(i, j, len(query), len(ref), bandWidth) {
-				continue
-			}
-			idx := dp.index(i, j)
-			diagIdx := dp.index(i-1, j-1)
-			upIdx := dp.index(i-1, j)
-			leftIdx := dp.index(i, j-1)
-
-			bestPrev := 0
-			dp.traceM[idx] = 0
-			if dp.mm[diagIdx] > bestPrev {
-				bestPrev = dp.mm[diagIdx]
-				dp.traceM[idx] = 'M'
-			}
-			if dp.ix[diagIdx] > bestPrev {
-				bestPrev = dp.ix[diagIdx]
-				dp.traceM[idx] = 'X'
-			}
-			if dp.iy[diagIdx] > bestPrev {
-				bestPrev = dp.iy[diagIdx]
-				dp.traceM[idx] = 'Y'
-			}
-			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
-
-			bestX := 0
-			dp.traceX[idx] = 0
-			openX := dp.mm[upIdx] + scoring.GapOpen
-			if openX > bestX {
-				bestX = openX
-				dp.traceX[idx] = 'M'
-			}
-			extendX := dp.ix[upIdx] + scoring.GapExtend
-			if extendX > bestX {
-				bestX = extendX
-				dp.traceX[idx] = 'X'
-			}
-			dp.ix[idx] = bestX
-
-			bestY := 0
-			dp.traceY[idx] = 0
-			openY := dp.mm[leftIdx] + scoring.GapOpen
-			if openY > bestY {
-				bestY = openY
-				dp.traceY[idx] = 'M'
-			}
-			extendY := dp.iy[leftIdx] + scoring.GapExtend
-			if extendY > bestY {
-				bestY = extendY
-				dp.traceY[idx] = 'Y'
-			}
-			dp.iy[idx] = bestY
-
-			cellBest, cellState := dp.bestState(idx)
-			if cellBest > rowBest {
-				rowBest = cellBest
-			}
-			if cellBest > result.score {
-				result.score = cellBest
-				result.queryEnd = i
-				result.refEnd = j
-				result.bestState = cellState
-			}
-		}
-		if xdrop > 0 && rowBest != negInf && result.score-rowBest > xdrop {
-			break
-		}
-	}
-	return result
-}
-
-func globalAlign(query, ref []byte, scoring Scoring, xdrop, bandWidth int) (globalAlignment, error) {
-	if len(query) == 0 && len(ref) == 0 {
-		return globalAlignment{}, nil
-	}
-
-	rows := len(query) + 1
-	cols := len(ref) + 1
-	dp := newAlignmentDP(rows, cols, negInf, negInf)
-	dp.mm[0] = 0
-	for i := 1; i < rows; i++ {
-		idx := dp.index(i, 0)
-		if inBand(i, 0, len(query), len(ref), bandWidth) {
-			dp.ix[idx] = scoring.GapOpen + (i-1)*scoring.GapExtend
-			dp.traceX[idx] = 'X'
-		}
-	}
-	for j := 1; j < cols; j++ {
-		if inBand(0, j, len(query), len(ref), bandWidth) {
-			dp.iy[j] = scoring.GapOpen + (j-1)*scoring.GapExtend
-			dp.traceY[j] = 'Y'
-		}
-	}
-
-	bestScore := 0
-	for i := 1; i < rows; i++ {
-		rowBest := negInf
-		for j := 1; j < cols; j++ {
-			if !inBand(i, j, len(query), len(ref), bandWidth) {
-				continue
-			}
-			idx := dp.index(i, j)
-			diagIdx := dp.index(i-1, j-1)
-			upIdx := dp.index(i-1, j)
-			leftIdx := dp.index(i, j-1)
-
-			bestPrev := dp.mm[diagIdx]
-			dp.traceM[idx] = 'M'
-			if dp.ix[diagIdx] > bestPrev {
-				bestPrev = dp.ix[diagIdx]
-				dp.traceM[idx] = 'X'
-			}
-			if dp.iy[diagIdx] > bestPrev {
-				bestPrev = dp.iy[diagIdx]
-				dp.traceM[idx] = 'Y'
-			}
-			dp.mm[idx] = bestPrev + scorePair(query[i-1], ref[j-1], scoring)
-
-			openX := dp.mm[upIdx] + scoring.GapOpen
-			extendX := dp.ix[upIdx] + scoring.GapExtend
-			if openX >= extendX {
-				dp.ix[idx] = openX
-				dp.traceX[idx] = 'M'
-			} else {
-				dp.ix[idx] = extendX
-				dp.traceX[idx] = 'X'
-			}
-
-			openY := dp.mm[leftIdx] + scoring.GapOpen
-			extendY := dp.iy[leftIdx] + scoring.GapExtend
-			if openY >= extendY {
-				dp.iy[idx] = openY
-				dp.traceY[idx] = 'M'
-			} else {
-				dp.iy[idx] = extendY
-				dp.traceY[idx] = 'Y'
-			}
-
-			cellBest, _ := dp.bestState(idx)
-			if cellBest > rowBest {
-				rowBest = cellBest
-			}
-			if cellBest > bestScore {
-				bestScore = cellBest
-			}
-		}
-		if xdrop > 0 && rowBest != negInf && bestScore-rowBest > xdrop {
-			break
-		}
-	}
-
-	i, j := len(query), len(ref)
-	best, state := dp.bestState(dp.index(i, j))
-	if best == negInf {
-		return globalAlignment{}, nil
-	}
-	traceback, err := dp.trace(query, ref, i, j, state, false, "global")
-	if err != nil {
-		return globalAlignment{}, err
-	}
-
-	return globalAlignment{
-		ops:     traceback.ops,
-		score:   best,
-		matches: traceback.matches,
-		aligned: traceback.aligned,
-	}, nil
-}
-
-func suffixAlign(query, ref []byte, scoring Scoring, xdrop int) (endAlignment, error) {
-	if len(query) == 0 && len(ref) == 0 {
-		return endAlignment{}, nil
-	}
-	local := fillLocalDP(query, ref, scoring, xdrop, 0)
-	if local.score == 0 {
-		local.queryEnd = len(query)
-		local.refEnd = len(ref)
-	}
-	traceback, err := local.dp.trace(query, ref, local.queryEnd, local.refEnd, local.bestState, true, "suffix")
-	if err != nil {
-		return endAlignment{}, err
-	}
-	return endAlignment{
-		ops:       traceback.ops,
-		score:     local.score,
-		matches:   traceback.matches,
-		aligned:   traceback.aligned,
-		queryClip: traceback.queryStart,
-		refClip:   traceback.refStart + (len(ref) - local.refEnd),
-	}, nil
-}
-
-func prefixAlign(query, ref []byte, scoring Scoring, xdrop int) (endAlignment, error) {
-	rq := append([]byte(nil), query...)
-	rr := append([]byte(nil), ref...)
-	slices.Reverse(rq)
-	slices.Reverse(rr)
-	res, err := suffixAlign(rq, rr, scoring, xdrop)
-	if err != nil {
-		return endAlignment{}, err
-	}
-	slices.Reverse(res.ops)
-	return res, nil
-}
-
-func inBand(i, j, qlen, rlen, bandWidth int) bool {
-	if bandWidth <= 0 || qlen == 0 || rlen == 0 {
-		return true
-	}
-	center := int(float64(i) * float64(rlen) / float64(qlen))
-	if center-bandWidth > j || center+bandWidth < j {
-		return false
-	}
-	return true
+// alignDP selects the architecture kernel at build time. The scalar kernel
+// remains the reference and the fallback for unsupported sizes and score ranges.
+func alignDP(ctx context.Context, q, t []byte, band int, extend bool, o Options) (dpResult, error) {
+	return alignDPPlatform(ctx, q, t, band, extend, o)
 }

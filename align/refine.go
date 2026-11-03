@@ -1,0 +1,222 @@
+package align
+
+import (
+	"context"
+	"fmt"
+	"slices"
+
+	"github.com/martinghunt/faqt/seq"
+)
+
+type refinementCache struct {
+	gaps        map[[4]int]dpResult
+	left, right map[[2]int]dpResult
+}
+
+func newRefinementCache() *refinementCache {
+	return &refinementCache{make(map[[4]int]dpResult), make(map[[2]int]dpResult), make(map[[2]int]dpResult)}
+}
+func refineChain(ctx context.Context, q, t []byte, anchors []anchor, path []int, o Options) ([]Match, error) {
+	return refineChainCached(ctx, q, t, anchors, path, o, newRefinementCache())
+}
+func refineChainCached(ctx context.Context, q, t []byte, anchors []anchor, path []int, o Options, cache *refinementCache) ([]Match, error) {
+	if len(path) == 0 {
+		return nil, nil
+	}
+	var out []Match
+	first := anchors[path[0]]
+	startQ, startT := first.q, first.t
+	endQ, endT := first.q+first.n, first.t+first.n
+	ops := addOp(nil, '=', first.n)
+	finish := func() error {
+		m, err := extendMatch(ctx, q, t, startQ, startT, endQ, endT, ops, o, cache)
+		if err != nil {
+			return err
+		}
+		if min(m.A.End-m.A.Start, m.B.End-m.B.Start) >= o.MinLength && m.Identity() >= o.MinIdentity && m.Score >= o.MinScore {
+			out = append(out, m)
+		}
+		return nil
+	}
+	for _, idx := range path[1:] {
+		a := anchors[idx]
+		// If even a perfect pairing cannot pay for the length difference,
+		// this transition must split; no DP allocation is necessary.
+		qgap, tgap := a.q-endQ, a.t-endT
+		gap := dpResult{score: -o.ZDrop - 1}
+		var err error
+		if min(qgap, tgap)*o.Match-gapCost(abs(qgap-tgap), o) >= -o.ZDrop {
+			key := [4]int{endQ, endT, a.q, a.t}
+			var ok bool
+			gap, ok = cache.gaps[key]
+			if !ok {
+				gap, err = alignGap(ctx, q[endQ:a.q], t[endT:a.t], o)
+				if err == nil {
+					cache.gaps[key] = gap
+				}
+			}
+		}
+		if err != nil {
+			return nil, fmt.Errorf("gap %d/%d after %d/%d: %w", qgap, tgap, endQ, endT, err)
+		}
+		if gap.score < -o.ZDrop {
+			if err := finish(); err != nil {
+				return nil, err
+			}
+			startQ, startT = a.q, a.t
+			ops = nil
+		} else {
+			for _, op := range gap.ops {
+				ops = addOp(ops, op.Code, op.Length)
+			}
+		}
+		ops = addOp(ops, '=', a.n)
+		endQ, endT = a.q+a.n, a.t+a.n
+	}
+	if err := finish(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+func extendMatch(ctx context.Context, q, t []byte, qs, ts, qe, te int, ops []Op, o Options, cache *refinementCache) (Match, error) {
+	// Extension is anchored at the exact chain endpoints. It cannot restart at
+	// an unrelated local optimum in the flanks.
+	left, ok := cache.left[[2]int{qs, ts}]
+	if !ok {
+		lq := slices.Clone(q[max(0, qs-o.Extension):qs])
+		lt := slices.Clone(t[max(0, ts-o.Extension):ts])
+		slices.Reverse(lq)
+		slices.Reverse(lt)
+		var err error
+		left, err = alignEnd(ctx, lq, lt, o)
+		if err != nil {
+			return Match{}, err
+		}
+		cache.left[[2]int{qs, ts}] = left
+	}
+	right, ok := cache.right[[2]int{qe, te}]
+	if !ok {
+		var err error
+		right, err = alignEnd(ctx, q[qe:min(len(q), qe+o.Extension)], t[te:min(len(t), te+o.Extension)], o)
+		if err != nil {
+			return Match{}, err
+		}
+		cache.right[[2]int{qe, te}] = right
+	}
+	left.ops = slices.Clone(left.ops)
+	slices.Reverse(left.ops)
+	combined := make([]Op, 0, len(left.ops)+len(ops)+len(right.ops))
+	for _, piece := range [][]Op{left.ops, ops, right.ops} {
+		for _, op := range piece {
+			combined = addOp(combined, op.Code, op.Length)
+		}
+	}
+	m := Match{A: seq.Interval{Start: qs - left.q, End: qe + right.q}, B: seq.Interval{Start: ts - left.t, End: te + right.t}, Ops: combined}
+	for _, op := range m.Ops {
+		m.Columns += op.Length
+		switch op.Code {
+		case '=':
+			m.Matches += op.Length
+			m.Score += op.Length * o.Match
+		case 'X':
+			m.Score -= op.Length * o.Mismatch
+		case 'I', 'D':
+			m.Score -= gapCost(op.Length, o)
+		}
+	}
+	return m, nil
+}
+
+func deduplicate(matches []Match) []Match {
+	out, _ := deduplicateContext(context.Background(), matches)
+	return out
+}
+func deduplicateContext(ctx context.Context, matches []Match) ([]Match, error) {
+	slices.SortFunc(matches, func(a, b Match) int {
+		if a.Columns != b.Columns {
+			return b.Columns - a.Columns
+		}
+		if a.Score != b.Score {
+			return b.Score - a.Score
+		}
+		return compareMatch(a, b)
+	})
+	out := make([]Match, 0, len(matches))
+	var index containmentIndex
+	for i, m := range matches {
+		if i%64 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		if !index.contains(m) {
+			out = append(out, m)
+			index.add(m)
+		}
+	}
+	SortMatches(out)
+	return out, nil
+}
+
+// Only identical alignment subpaths are redundant. Shared sequence coordinates,
+// proximity, or percentage overlap alone never discard a repeat placement.
+func pathContains(big, small Match) bool {
+	if big.AContig != small.AContig || big.BContig != small.BContig || big.Reverse != small.Reverse || big.A.Start > small.A.Start || big.A.End < small.A.End || big.B.Start > small.B.Start || big.B.End < small.B.End {
+		return false
+	}
+	q, t := big.A.Start, big.B.Start
+	sq, st := small.A.Start, small.B.Start
+	if big.Reverse {
+		t, st = -big.B.End, -small.B.End
+	}
+	for bi, op := range big.Ops {
+		dq, dt := sq-q, st-t
+		skip := -1
+		switch op.Code {
+		case '=', 'X':
+			if dq == dt && dq >= 0 && dq <= op.Length {
+				skip = dq
+			}
+		case 'I':
+			if dt == 0 && dq >= 0 && dq <= op.Length {
+				skip = dq
+			}
+		case 'D':
+			if dq == 0 && dt >= 0 && dt <= op.Length {
+				skip = dt
+			}
+		}
+		if skip >= 0 {
+			i, j, left := bi, 0, op.Length-skip
+			for j < len(small.Ops) {
+				if left == 0 {
+					i++
+					if i >= len(big.Ops) {
+						return false
+					}
+					left = big.Ops[i].Length
+				}
+				s := small.Ops[j]
+				if big.Ops[i].Code != s.Code || left < s.Length {
+					return false
+				}
+				left -= s.Length
+				j++
+			}
+			return true
+		}
+		switch op.Code {
+		case '=', 'X':
+			q += op.Length
+			t += op.Length
+		case 'I':
+			q += op.Length
+		case 'D':
+			t += op.Length
+		}
+		if q > sq || t > st {
+			return false
+		}
+	}
+	return false
+}

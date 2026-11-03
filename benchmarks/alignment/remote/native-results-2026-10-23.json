@@ -1,0 +1,506 @@
+{
+  "Success": true,
+  "Started": "2026-10-23T13:06:44Z",
+  "GOOS": "linux",
+  "GOARCH": "amd64",
+  "GoVersion": "go1.27.2",
+  "Source": "worktree-sha256:03aee8ac5991f123a626e8f83b9153cc29d760449fe186625ae8e3d3dd4a9025",
+  "Runs": 3,
+  "BinaryHashes": {
+    "align-scalar.test": "b2effc833307a601d148fcdeb89d82363cc34ce41efef36511b31f64ef115e40",
+    "align-simd.test": "7c3cc4ebc496b666f9d2045a111364fad82aa97ae4f128b9fb2aebe4ce5d4a58",
+    "assembly-scalar.test": "7916ec3cd7d1f3c0aed637aea1d1217ea8593d07f491d76e0c0b21b750c75337",
+    "assembly-simd.test": "9fca5f3cead6fbd05912f0b073612408a3bdb5bb7dd107c7e5381f40911f6e2c",
+    "runner": "2d7eb38ac8a2760ca63b582a6cda7a4f6939ed6ad7ac9b4ec9ae2c955f606535"
+  },
+  "Inputs": {
+    "31585_6#49.fasta": "13825cc1dd3278cf4779618772457d97d716d5310fb0d904ff7e4f37c8b35077",
+    "barcode10_ICESp23_spliced.fasta": "a40111a72cc312d930a32eca3a362155baa33db5e3061d2e4e48ea81c3ae55d3",
+    "repeats.CP026802.1.fa": "154cb600134eca83c70f34dd53af821434499539574e9b5fe50ec61abe0c1515",
+    "repeats.CP151312.1.fa": "1c76545066c3503febd6a3a53c61afc5efcb4e95ed023009789f898f3ab990d5"
+  },
+  "Checks": [
+    {
+      "Name": "backend-avx2",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.run=^TestSIMDBackend$",
+        "-test.v",
+        "-test.timeout=15m0s"
+      ],
+      "WallSeconds": 0.001456056,
+      "CPUSeconds": 0.001404,
+      "PeakRSSBytes": 9699328,
+      "ExitCode": 0
+    },
+    {
+      "Name": "unit-scalar",
+      "Command": [
+        "/path/to/bundle/align-scalar.test",
+        "-test.v",
+        "-test.timeout=15m0s"
+      ],
+      "WallSeconds": 0.316473686,
+      "CPUSeconds": 0.315589,
+      "PeakRSSBytes": 15855616,
+      "ExitCode": 0
+    },
+    {
+      "Name": "unit-avx2",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.v",
+        "-test.timeout=15m0s"
+      ],
+      "WallSeconds": 15.278392335,
+      "CPUSeconds": 15.254661,
+      "PeakRSSBytes": 233295872,
+      "ExitCode": 0
+    },
+    {
+      "Name": "fallback-no-avx2",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.run=^Test(SIMDBackend|DPPlatform.*)$",
+        "-test.v"
+      ],
+      "WallSeconds": 0.149111005,
+      "CPUSeconds": 0.14879099999999998,
+      "PeakRSSBytes": 16146432,
+      "ExitCode": 0
+    },
+    {
+      "Name": "avx2-without-avx512",
+      "Command": [
+        "/path/to/bundle/align-simd.test",
+        "-test.run=^Test(SIMDBackend|Difference.*|DPPlatform.*)$",
+        "-test.v"
+      ],
+      "WallSeconds": 1.28102508,
+      "CPUSeconds": 1.2792670000000002,
+      "PeakRSSBytes": 13897728,
+      "ExitCode": 0
+    }
+  ],
+  "Samples": [
+    {
+      "Dataset": "debug",
+      "Backend": "scalar",
+      "Run": 1,
+      "Processes": [
+        {
+          "Name": "debug.scalar.1",
+          "Command": [
+            "/path/to/bundle/assembly-scalar.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 24.756011989,
+          "CPUSeconds": 24.710975,
+          "PeakRSSBytes": 273805312,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270",
+      "Count": 7116,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.13681241,
+        "AlignSeconds": 24.603503316,
+        "WriteSeconds": 0.010377608,
+        "Count": 7116,
+        "AllocatedBytes": 7132649048,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "debug",
+      "Backend": "scalar",
+      "Run": 2,
+      "Processes": [
+        {
+          "Name": "debug.scalar.2",
+          "Command": [
+            "/path/to/bundle/assembly-scalar.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 24.788994289,
+          "CPUSeconds": 24.728044999999998,
+          "PeakRSSBytes": 275406848,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270",
+      "Count": 7116,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.137146544,
+        "AlignSeconds": 24.604686813,
+        "WriteSeconds": 0.039939065,
+        "Count": 7116,
+        "AllocatedBytes": 7132452248,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "debug",
+      "Backend": "scalar",
+      "Run": 3,
+      "Processes": [
+        {
+          "Name": "debug.scalar.3",
+          "Command": [
+            "/path/to/bundle/assembly-scalar.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 24.859597255,
+          "CPUSeconds": 24.818099999999998,
+          "PeakRSSBytes": 281284608,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270",
+      "Count": 7116,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.136629261,
+        "AlignSeconds": 24.70890289,
+        "WriteSeconds": 0.010375656,
+        "Count": 7116,
+        "AllocatedBytes": 7132506792,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "debug",
+      "Backend": "simd",
+      "Run": 1,
+      "Processes": [
+        {
+          "Name": "debug.simd.1",
+          "Command": [
+            "/path/to/bundle/assembly-simd.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 7.136616842,
+          "CPUSeconds": 7.127402,
+          "PeakRSSBytes": 194301952,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270",
+      "Count": 7116,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.137283865,
+        "AlignSeconds": 6.986825627,
+        "WriteSeconds": 0.010286147,
+        "Count": 7116,
+        "AllocatedBytes": 384443400,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "debug",
+      "Backend": "simd",
+      "Run": 2,
+      "Processes": [
+        {
+          "Name": "debug.simd.2",
+          "Command": [
+            "/path/to/bundle/assembly-simd.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 7.089254967,
+          "CPUSeconds": 7.076064000000001,
+          "PeakRSSBytes": 198471680,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270",
+      "Count": 7116,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.137137322,
+        "AlignSeconds": 6.939698976,
+        "WriteSeconds": 0.010225747,
+        "Count": 7116,
+        "AllocatedBytes": 383853208,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "debug",
+      "Backend": "simd",
+      "Run": 3,
+      "Processes": [
+        {
+          "Name": "debug.simd.3",
+          "Command": [
+            "/path/to/bundle/assembly-simd.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 7.076347905,
+          "CPUSeconds": 7.061278,
+          "PeakRSSBytes": 194326528,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "e3f43bc6cf4d0fad26d32e03ffe02a79d017d8a22020efdafb9a1e20773a1270",
+      "Count": 7116,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.137695386,
+        "AlignSeconds": 6.925657852,
+        "WriteSeconds": 0.010449556,
+        "Count": 7116,
+        "AllocatedBytes": 384049928,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "scalar",
+      "Run": 1,
+      "Processes": [
+        {
+          "Name": "repeats.scalar.1",
+          "Command": [
+            "/path/to/bundle/assembly-scalar.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 115.993970729,
+          "CPUSeconds": 115.793209,
+          "PeakRSSBytes": 1223102464,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4",
+      "Count": 42414,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.366958029,
+        "AlignSeconds": 115.579042697,
+        "WriteSeconds": 0.03224242,
+        "Count": 42414,
+        "AllocatedBytes": 37594134376,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "scalar",
+      "Run": 2,
+      "Processes": [
+        {
+          "Name": "repeats.scalar.2",
+          "Command": [
+            "/path/to/bundle/assembly-scalar.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 115.621672835,
+          "CPUSeconds": 115.40425599999999,
+          "PeakRSSBytes": 1124896768,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4",
+      "Count": 42414,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.378148272,
+        "AlignSeconds": 115.196338934,
+        "WriteSeconds": 0.031573213,
+        "Count": 42414,
+        "AllocatedBytes": 37593927192,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "scalar",
+      "Run": 3,
+      "Processes": [
+        {
+          "Name": "repeats.scalar.3",
+          "Command": [
+            "/path/to/bundle/assembly-scalar.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 115.682668691,
+          "CPUSeconds": 115.500671,
+          "PeakRSSBytes": 1178284032,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4",
+      "Count": 42414,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.374889406,
+        "AlignSeconds": 115.262379579,
+        "WriteSeconds": 0.032121522,
+        "Count": 42414,
+        "AllocatedBytes": 37592179008,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "simd",
+      "Run": 1,
+      "Processes": [
+        {
+          "Name": "repeats.simd.1",
+          "Command": [
+            "/path/to/bundle/assembly-simd.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 31.266776155,
+          "CPUSeconds": 31.206464,
+          "PeakRSSBytes": 966344704,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4",
+      "Count": 42414,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.362424665,
+        "AlignSeconds": 30.862758752,
+        "WriteSeconds": 0.032640728,
+        "Count": 42414,
+        "AllocatedBytes": 3502664320,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "simd",
+      "Run": 2,
+      "Processes": [
+        {
+          "Name": "repeats.simd.2",
+          "Command": [
+            "/path/to/bundle/assembly-simd.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 31.107662321,
+          "CPUSeconds": 31.058655,
+          "PeakRSSBytes": 1020747776,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4",
+      "Count": 42414,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.348505954,
+        "AlignSeconds": 30.721458993,
+        "WriteSeconds": 0.031918389,
+        "Count": 42414,
+        "AllocatedBytes": 3503549328,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "simd",
+      "Run": 3,
+      "Processes": [
+        {
+          "Name": "repeats.simd.3",
+          "Command": [
+            "/path/to/bundle/assembly-simd.test",
+            "-test.run=^TestComparison$",
+            "-test.v",
+            "-test.timeout=15m0s"
+          ],
+          "WallSeconds": 31.260478976,
+          "CPUSeconds": 31.208145,
+          "PeakRSSBytes": 980209664,
+          "ExitCode": 0
+        }
+      ],
+      "PAFHash": "c55b448e430ff594bb94b18a121f14e6a8cf82ccb7af0cb2c0744f65a16a65e4",
+      "Count": 42414,
+      "ReferenceMatch": true,
+      "Detail": {
+        "PrepareSeconds": 0.361776887,
+        "AlignSeconds": 30.856417839,
+        "WriteSeconds": 0.034544616,
+        "Count": 42414,
+        "AllocatedBytes": 3502380312,
+        "Error": "",
+        "Options": "{MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:0 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:\u003cnil\u003e}"
+      }
+    }
+  ],
+  "Minimap2": "not available or explicitly skipped",
+  "Summary": [
+    {
+      "Dataset": "debug",
+      "Backend": "scalar",
+      "Runs": 3,
+      "WallMedian": 24.788994289,
+      "CPUMedian": 24.728044999999998,
+      "PeakRSSBytes": 281284608
+    },
+    {
+      "Dataset": "debug",
+      "Backend": "simd",
+      "Runs": 3,
+      "WallMedian": 7.089254967,
+      "CPUMedian": 7.076064000000001,
+      "PeakRSSBytes": 198471680
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "scalar",
+      "Runs": 3,
+      "WallMedian": 115.682668691,
+      "CPUMedian": 115.500671,
+      "PeakRSSBytes": 1223102464
+    },
+    {
+      "Dataset": "repeats",
+      "Backend": "simd",
+      "Runs": 3,
+      "WallMedian": 31.260478976,
+      "CPUMedian": 31.206464,
+      "PeakRSSBytes": 1020747776
+    }
+  ]
+}

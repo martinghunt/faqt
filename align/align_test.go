@@ -1,320 +1,480 @@
-package align_test
+package align
 
 import (
-	"io"
+	"bufio"
+	"context"
+	"errors"
+	"fmt"
+	"math"
+	"math/rand/v2"
+	"reflect"
+	"strings"
 	"testing"
 
-	"github.com/martinghunt/faqt/align"
-	"github.com/martinghunt/faqt/mapper"
-	"github.com/martinghunt/faqt/minimizer"
-	"github.com/martinghunt/faqt/seq"
+	"github.com/martinghunt/faqt/fasta"
 	"github.com/martinghunt/faqt/seqio"
 )
 
-func TestSmithWatermanAlignerAlignsForwardCandidate(t *testing.T) {
-	candidate := mapper.Candidate{
-		RefName:        "ref1",
-		QueryRange:     seq.Interval{Start: 0, End: 8},
-		RefRange:       seq.Interval{Start: 2, End: 10},
-		QuerySeq:       []byte("CCGGTTAA"),
-		RefSeqForward:  []byte("CCGGTTAA"),
-		RefSeqOriented: []byte("CCGGTTAA"),
-		RelativeStrand: 0,
+func dna(n int, seed uint64) []byte {
+	r := rand.New(rand.NewPCG(seed, seed+91))
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = "ACGT"[r.IntN(4)]
 	}
-
-	result, err := align.DefaultAligner().Align(candidate)
-	if err != nil {
-		t.Fatalf("Align() error = %v", err)
-	}
-
-	if result.Score <= 0 {
-		t.Fatalf("Align() score = %d, want > 0", result.Score)
-	}
-	if result.CIGAR != "8M" {
-		t.Fatalf("Align() CIGAR = %q, want 8M", result.CIGAR)
-	}
-	if result.QueryRange != (seq.Interval{Start: 0, End: 8}) {
-		t.Fatalf("Align() query range = %#v", result.QueryRange)
-	}
-	if result.RefRangeForward != (seq.Interval{Start: 2, End: 10}) {
-		t.Fatalf("Align() ref range = %#v", result.RefRangeForward)
-	}
+	return b
 }
-
-func TestSmithWatermanAlignerProjectsReverseCoordinates(t *testing.T) {
-	candidate := mapper.Candidate{
-		RefName:        "ref1",
-		QueryRange:     seq.Interval{Start: 10, End: 14},
-		RefRange:       seq.Interval{Start: 100, End: 104},
-		QuerySeq:       []byte("ACGT"),
-		RefSeqForward:  []byte("ACGT"),
-		RefSeqOriented: []byte("ACGT"),
-		RelativeStrand: 1,
+func genome(t testing.TB, sequences ...[]byte) *Genome {
+	t.Helper()
+	rs := make([]seqio.SeqRecord, len(sequences))
+	for i, s := range sequences {
+		rs[i] = seqio.SeqRecord{Name: fmt.Sprintf("contig%d", i), Seq: s}
 	}
-
-	result, err := align.DefaultAligner().Align(candidate)
-	if err != nil {
-		t.Fatalf("Align() error = %v", err)
+	g, e := Prepare(rs, SketchOptions{})
+	if e != nil {
+		t.Fatal(e)
 	}
-
-	if result.RefRangeForward != (seq.Interval{Start: 100, End: 104}) {
-		t.Fatalf("Align() reverse ref range = %#v", result.RefRangeForward)
-	}
+	return g
 }
-
-func TestAlignCandidatesRanksResults(t *testing.T) {
-	aligned := mapper.Candidate{
-		RefName:        "ref1",
-		QueryRange:     seq.Interval{Start: 0, End: 4},
-		RefRange:       seq.Interval{Start: 0, End: 4},
-		QuerySeq:       []byte("ACGT"),
-		RefSeqForward:  []byte("ACGT"),
-		RefSeqOriented: []byte("ACGT"),
-		RelativeStrand: 0,
-		Chain:          mapper.Chain{Score: 4},
+func compare(t testing.TB, a, b *Genome, o Options) []Match {
+	t.Helper()
+	m, e := Compare(context.Background(), a, b, o)
+	if e != nil {
+		t.Fatal(e)
 	}
-	weaker := mapper.Candidate{
-		RefName:        "ref2",
-		QueryRange:     seq.Interval{Start: 0, End: 4},
-		RefRange:       seq.Interval{Start: 0, End: 4},
-		QuerySeq:       []byte("ACGT"),
-		RefSeqForward:  []byte("AGGT"),
-		RefSeqOriented: []byte("AGGT"),
-		RelativeStrand: 0,
-		Chain:          mapper.Chain{Score: 1},
+	for _, v := range m {
+		replay(t, a, b, v, o)
 	}
-
-	results, err := align.AlignCandidates(align.DefaultAligner(), []mapper.Candidate{weaker, aligned}, align.Options{
-		Scoring:       align.DefaultAligner().Options.Scoring,
-		MaxAlignments: 1,
-		XDrop:         align.DefaultAligner().Options.XDrop,
-	})
-	if err != nil {
-		t.Fatalf("AlignCandidates() error = %v", err)
+	swapped, e := Compare(context.Background(), b, a, o)
+	if e != nil {
+		t.Fatal(e)
 	}
-	if len(results) != 1 {
-		t.Fatalf("AlignCandidates() count = %d, want 1", len(results))
+	for i := range swapped {
+		swapped[i] = swapped[i].Swap()
 	}
-	if results[0].Candidate.RefName != "ref1" {
-		t.Fatalf("AlignCandidates() top result ref = %q, want ref1", results[0].Candidate.RefName)
+	SortMatches(swapped)
+	if !reflect.DeepEqual(m, swapped) {
+		t.Fatalf("input swap changed results:\n%+v\n%+v", m, swapped)
 	}
+	return m
 }
-
-func TestDefaultAlignerSoftClipsMismatchingEnds(t *testing.T) {
-	candidate := mapper.Candidate{
-		SeedLength:     3,
-		QueryRange:     seq.Interval{Start: 0, End: 13},
-		RefRange:       seq.Interval{Start: 0, End: 13},
-		QuerySeq:       []byte("TTAAACCCGGGTT"),
-		RefSeqForward:  []byte("CCAAACCCGGGAA"),
-		RefSeqOriented: []byte("CCAAACCCGGGAA"),
-		RelativeStrand: 0,
-		Chain: mapper.Chain{
-			Anchors: []minimizer.Anchor{
-				{QueryPos: 2, RefPos: 2, QueryStrand: 0, RefStrand: 0},
-				{QueryPos: 8, RefPos: 8, QueryStrand: 0, RefStrand: 0},
-			},
-		},
+func replay(t testing.TB, a, b *Genome, m Match, o Options) {
+	t.Helper()
+	q := a.contigs[m.AContig].bases[m.A.Start:m.A.End]
+	r := b.contigs[m.BContig].bases[m.B.Start:m.B.End]
+	if m.Reverse {
+		r = reverseComplement(r)
 	}
-
-	result, err := align.DefaultAligner().Align(candidate)
-	if err != nil {
-		t.Fatalf("Align() error = %v", err)
-	}
-
-	if result.QueryRange != (seq.Interval{Start: 2, End: 11}) {
-		t.Fatalf("Align() query range = %#v, want [2,11)", result.QueryRange)
-	}
-	if result.RefRangeForward != (seq.Interval{Start: 2, End: 11}) {
-		t.Fatalf("Align() ref range = %#v, want [2,11)", result.RefRangeForward)
-	}
-	if result.CIGAR != "2S9M2S" {
-		t.Fatalf("Align() CIGAR = %q, want 2S9M2S", result.CIGAR)
-	}
-}
-
-func TestEndToEndMapAndAlignCandidate(t *testing.T) {
-	reader := &sliceReader{
-		records: []seqio.SeqRecord{
-			{Name: "ref1", Seq: []byte("TTTTACGTTGCAGGGG")},
-		},
-	}
-	index, err := minimizer.Build(reader, minimizer.Options{K: 3, W: 2, MidOcc: 10, MaxMaxOcc: 20, OccDist: 500, QOccFrac: 0.01})
-	if err != nil {
-		t.Fatalf("Build() error = %v", err)
-	}
-
-	candidates, err := mapper.Map(index, []byte("ACGTTGCA"), mapper.DefaultPipeline(), mapper.CandidateOptions{
-		QueryPadding:  2,
-		RefPadding:    2,
-		MaxCandidates: 3,
-	})
-	if err != nil {
-		t.Fatalf("Map() error = %v", err)
-	}
-	if len(candidates) == 0 {
-		t.Fatal("Map() returned no candidates")
-	}
-
-	results, err := align.AlignCandidates(align.DefaultAligner(), candidates, align.DefaultAligner().Options)
-	if err != nil {
-		t.Fatalf("AlignCandidates() error = %v", err)
-	}
-	if len(results) == 0 {
-		t.Fatal("AlignCandidates() returned no results")
-	}
-	if results[0].Score <= 0 {
-		t.Fatalf("AlignCandidates() top score = %d, want > 0", results[0].Score)
-	}
-	if results[0].Candidate.RefName != "ref1" {
-		t.Fatalf("AlignCandidates() top ref = %q, want ref1", results[0].Candidate.RefName)
-	}
-}
-
-func TestScoringValidationRejectsNonAffineDefaults(t *testing.T) {
-	_, err := align.AlignCandidates(align.DefaultAligner(), nil, align.Options{
-		Scoring: align.Scoring{
-			Match:     2,
-			Mismatch:  -4,
-			GapOpen:   0,
-			GapExtend: -1,
-		},
-	})
-	if err == nil {
-		t.Fatal("AlignCandidates() expected error for invalid affine gap scoring")
-	}
-}
-
-func TestDefaultAlignerHandlesNonSquareInternalGapWithinBand(t *testing.T) {
-	a := align.DefaultAligner()
-	a.Options.BandWidth = 8
-	candidate := mapper.Candidate{
-		SeedLength:     3,
-		QueryRange:     seq.Interval{Start: 0, End: 18},
-		RefRange:       seq.Interval{Start: 0, End: 32},
-		QuerySeq:       []byte("AAAACCCGGGTTTAAAAC"),
-		RefSeqForward:  []byte("AAAACCCGGGTTTTTTTTTTTTTAAAACCCC"),
-		RefSeqOriented: []byte("AAAACCCGGGTTTTTTTTTTTTTAAAACCCC"),
-		RelativeStrand: 0,
-		Chain: mapper.Chain{
-			Anchors: []minimizer.Anchor{
-				{QueryPos: 1, RefPos: 1, QueryStrand: 0, RefStrand: 0},
-				{QueryPos: 12, RefPos: 25, QueryStrand: 0, RefStrand: 0},
-			},
-		},
-	}
-
-	result, err := a.Align(candidate)
-	if err != nil {
-		t.Fatalf("Align() error = %v", err)
-	}
-	if result.AlignedLength == 0 {
-		t.Fatal("Align() produced zero aligned length")
-	}
-	if result.CIGAR == "" {
-		t.Fatal("Align() produced empty CIGAR")
-	}
-}
-
-func TestDefaultAlignerTracesAnchoredInternalGaps(t *testing.T) {
-	tests := []struct {
-		name       string
-		query      string
-		ref        string
-		secondQPos int
-		secondRPos int
-		wantCIGAR  string
-	}{
-		{
-			name:       "query gap",
-			query:      "AAAGGG",
-			ref:        "AAACCCGGG",
-			secondQPos: 3,
-			secondRPos: 6,
-			wantCIGAR:  "3M3I3M",
-		},
-		{
-			name:       "reference gap",
-			query:      "AAACCCGGG",
-			ref:        "AAAGGG",
-			secondQPos: 6,
-			secondRPos: 3,
-			wantCIGAR:  "3M3D3M",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			candidate := mapper.Candidate{
-				SeedLength:     3,
-				QueryRange:     seq.Interval{Start: 0, End: len(tc.query)},
-				RefRange:       seq.Interval{Start: 0, End: len(tc.ref)},
-				QuerySeq:       []byte(tc.query),
-				RefSeqForward:  []byte(tc.ref),
-				RefSeqOriented: []byte(tc.ref),
-				RelativeStrand: 0,
-				Chain: mapper.Chain{
-					Anchors: []minimizer.Anchor{
-						{QueryPos: 0, RefPos: 0, QueryStrand: 0, RefStrand: 0},
-						{QueryPos: tc.secondQPos, RefPos: tc.secondRPos, QueryStrand: 0, RefStrand: 0},
-					},
-				},
+	i, j, matches, cols, score := 0, 0, 0, 0, 0
+	for _, op := range m.Ops {
+		if op.Length <= 0 {
+			t.Fatal("nonpositive operation")
+		}
+		cols += op.Length
+		switch op.Code {
+		case '=', 'X':
+			for z := 0; z < op.Length; z++ {
+				if i >= len(q) || j >= len(r) {
+					t.Fatal("paired op past interval")
+				}
+				eq := exact(q[i], r[j])
+				if eq != (op.Code == '=') {
+					t.Fatalf("incorrect %c operation at %d/%d", op.Code, i, j)
+				}
+				if eq {
+					matches++
+					score += o.Match
+				} else {
+					score -= o.Mismatch
+				}
+				i++
+				j++
 			}
+		case 'I':
+			i += op.Length
+			score -= gapCost(op.Length, o)
+		case 'D':
+			j += op.Length
+			score -= gapCost(op.Length, o)
+		default:
+			t.Fatalf("bad operation %q", op.Code)
+		}
+	}
+	if i != len(q) || j != len(r) || matches != m.Matches || cols != m.Columns || score != m.Score {
+		t.Fatalf("inconsistent alignment: %+v replay=%d/%d/%d/%d/%d", m, i, j, matches, cols, score)
+	}
+}
+func hasPlacement(ms []Match, ac, bc, as, ae, bs, be int, rev bool) bool {
+	for _, m := range ms {
+		if m.AContig == ac && m.BContig == bc && m.Reverse == rev && m.A.Start <= as && m.A.End >= ae && m.B.Start <= bs && m.B.End >= be {
+			return true
+		}
+	}
+	return false
+}
 
-			result, err := align.DefaultAligner().Align(candidate)
-			if err != nil {
-				t.Fatalf("Align() error = %v", err)
+func TestExactAndReverse(t *testing.T) {
+	s := dna(2000, 1)
+	for _, rev := range []bool{false, true} {
+		t.Run(fmt.Sprint(rev), func(t *testing.T) {
+			b := s
+			if rev {
+				b = reverseComplement(s)
 			}
-			if result.CIGAR != tc.wantCIGAR {
-				t.Fatalf("Align() CIGAR = %q, want %s", result.CIGAR, tc.wantCIGAR)
+			a, g := genome(t, s), genome(t, b)
+			ms := compare(t, a, g, DefaultOptions())
+			if !hasPlacement(ms, 0, 0, 0, len(s), 0, len(s), rev) {
+				t.Fatalf("missing whole exact placement: %+v", ms)
+			}
+			for _, m := range ms {
+				if m.Matches != 2000 || m.Identity() != 1 {
+					t.Fatalf("unexpected exact hit %+v", m)
+				}
 			}
 		})
 	}
 }
-
-func TestSmithWatermanFallbackUsesBandedXDrop(t *testing.T) {
-	a := align.SmithWatermanAligner{
-		Options: align.Options{
-			Scoring: align.Scoring{
-				Match:     2,
-				Mismatch:  -4,
-				GapOpen:   -4,
-				GapExtend: -2,
-			},
-			XDrop:     15,
-			BandWidth: 8,
-		},
+func TestAllRepeatPlacements(t *testing.T) {
+	s := dna(400, 2)
+	a := genome(t, s, s)
+	var target [][]byte
+	for i := 0; i < 7; i++ {
+		target = append(target, s)
 	}
-	candidate := mapper.Candidate{
-		QueryRange:     seq.Interval{Start: 0, End: 12},
-		RefRange:       seq.Interval{Start: 0, End: 24},
-		QuerySeq:       []byte("ACGTTGCAAAAA"),
-		RefSeqForward:  []byte("TTTTTTACGTTGCATTTTTTTTT"),
-		RefSeqOriented: []byte("TTTTTTACGTTGCATTTTTTTTT"),
+	target = append(target, reverseComplement(s))
+	b := genome(t, target...)
+	ms := compare(t, a, b, DefaultOptions())
+	if len(ms) != 16 {
+		t.Fatalf("expected all 2x8 placements, got %d", len(ms))
 	}
-
-	result, err := a.Align(candidate)
-	if err != nil {
-		t.Fatalf("Align() error = %v", err)
+	for ac := 0; ac < 2; ac++ {
+		for bc := 0; bc < 8; bc++ {
+			if !hasPlacement(ms, ac, bc, 0, 400, 0, 400, bc == 7) {
+				t.Fatalf("missing repeat %d/%d", ac, bc)
+			}
+		}
 	}
-	if result.Score <= 0 {
-		t.Fatalf("Align() score = %d, want > 0", result.Score)
+}
+func TestTandemRepeatLengthChange(t *testing.T) {
+	unit := dna(60, 3)
+	left, right := dna(1400, 4), dna(1400, 5)
+	a := append(slicesCopy(left), []byte(strings.Repeat(string(unit), 3))...)
+	a = append(a, right...)
+	b := append(slicesCopy(left), []byte(strings.Repeat(string(unit), 6))...)
+	b = append(b, right...)
+	ga, gb := genome(t, a), genome(t, b)
+	o := DefaultOptions()
+	o.MinLength = 50
+	o.MinChainScore = 25
+	ms := compare(t, ga, gb, o)
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 6; j++ {
+			found := false
+			for _, m := range ms {
+				if m.Reverse {
+					continue
+				}
+				if pathCoversPair(m, 1400+i*60, 1400+j*60, 60) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("missing tandem repeat copy %d/%d in %d matches", i, j, len(ms))
+			}
+		}
 	}
-	if result.CIGAR == "" {
-		t.Fatal("Align() produced empty CIGAR")
+}
+func slicesCopy(b []byte) []byte { return append([]byte(nil), b...) }
+func pathCoversPair(m Match, q, t, n int) bool {
+	p, r := m.A.Start, m.B.Start
+	for _, op := range m.Ops {
+		if op.Code == '=' && q >= p && q+n <= p+op.Length && t-r == q-p {
+			return true
+		}
+		if op.Code != 'D' {
+			p += op.Length
+		}
+		if op.Code != 'I' {
+			r += op.Length
+		}
+	}
+	return false
+}
+func TestIndelsSNPsAndInversion(t *testing.T) {
+	base := dna(2400, 6)
+	for _, test := range []struct {
+		name string
+		b    []byte
+	}{{"snp", func() []byte {
+		b := slicesCopy(base)
+		for i := 250; i < 2200; i += 137 {
+			b[i] = "ACGT"[(strings.IndexByte("ACGT", b[i])+1)%4]
+		}
+		return b
+	}()}, {"insertion", append(append(slicesCopy(base[:1200]), dna(180, 7)...), base[1200:]...)}, {"inversion", append(append(slicesCopy(base[:800]), reverseComplement(base[800:1600])...), base[1600:]...)}} {
+		t.Run(test.name, func(t *testing.T) {
+			ms := compare(t, genome(t, base), genome(t, test.b), DefaultOptions())
+			if len(ms) == 0 {
+				t.Fatal("no matches")
+			}
+			covered := make([]bool, len(base))
+			for _, m := range ms {
+				for i := m.A.Start; i < m.A.End; i++ {
+					covered[i] = true
+				}
+			}
+			missing := 0
+			for _, c := range covered {
+				if !c {
+					missing++
+				}
+			}
+			if missing > 40 {
+				t.Fatalf("lost %d bases", missing)
+			}
+		})
+	}
+}
+func TestSharedFlanksAndNestedDuplication(t *testing.T) {
+	p, r, s := dna(500, 8), dna(500, 9), dna(500, 10)
+	a := append(append(slicesCopy(p), r...), s...)
+	b := append(append(append(slicesCopy(p), r...), r...), s...)
+	ms := compare(t, genome(t, a), genome(t, b), DefaultOptions())
+	for _, bs := range []int{500, 1000} {
+		found := false
+		for _, m := range ms {
+			if pathCoversPair(m, 500, bs, 500) {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("missing nested copy at %d", bs)
+		}
+	}
+}
+func TestAmbiguityNormalizationAndUnrelated(t *testing.T) {
+	s := dna(500, 11)
+	for _, test := range []struct {
+		name string
+		a, b []byte
+		want bool
+	}{{"case", []byte(strings.ToLower(string(s))), s, true}, {"ambiguity", []byte(strings.Repeat("N", 500)), []byte(strings.Repeat("N", 500)), false}, {"unrelated", s, dna(500, 12), false}, {"empty", nil, s, false}} {
+		t.Run(test.name, func(t *testing.T) {
+			ms := compare(t, genome(t, test.a), genome(t, test.b), DefaultOptions())
+			if (len(ms) > 0) != test.want {
+				t.Fatalf("unexpected matches %d", len(ms))
+			}
+		})
+	}
+}
+func TestNoCrossContigAlignment(t *testing.T) {
+	s := dna(800, 13)
+	ms := compare(t, genome(t, s[:400], s[400:]), genome(t, s), DefaultOptions())
+	if !hasPlacement(ms, 0, 0, 0, 400, 0, 400, false) || !hasPlacement(ms, 1, 0, 0, 400, 400, 800, false) {
+		t.Fatal("missing contig-local matches")
+	}
+}
+func TestCancelledAndResourceLimits(t *testing.T) {
+	a := genome(t, dna(1000, 14))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if ms, e := Compare(ctx, a, a, DefaultOptions()); !errors.Is(e, context.Canceled) || ms != nil {
+		t.Fatalf("cancellation: %v", e)
+	}
+	o := DefaultOptions()
+	o.MaxAnchors = 1
+	if ms, e := Compare(context.Background(), a, a, o); e == nil || ms != nil {
+		t.Fatal("anchor exhaustion must fail atomically")
+	} else {
+		var limit *LimitError
+		if !errors.As(e, &limit) {
+			t.Fatal(e)
+		}
+	}
+	o = DefaultOptions()
+	o.MaxCells = 2
+	mutated := slicesCopy(a.contigs[0].bases)
+	mutated[500] = "ACGT"[(strings.IndexByte("ACGT", mutated[500])+1)%4]
+	b := genome(t, mutated)
+	if ms, e := Compare(context.Background(), a, b, o); e == nil || ms != nil {
+		t.Fatal("cell exhaustion must fail atomically")
+	}
+	o = DefaultOptions()
+	o.Progress = func(p Progress) { cancel() }
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	b = genome(t, a.contigs[0].bases, a.contigs[0].bases)
+	if ms, e := Compare(ctx, a, b, o); !errors.Is(e, context.Canceled) || ms != nil {
+		t.Fatalf("progress cancellation: %v", e)
+	}
+}
+func TestInvalidOptionsAndInput(t *testing.T) {
+	for _, s := range []SketchOptions{{K: 2}, {K: 32}, {W: 256}, {K: -1}} {
+		if _, e := Prepare(nil, s); e == nil {
+			t.Fatal("accepted invalid sketch")
+		}
+	}
+	if _, e := Prepare([]seqio.SeqRecord{{Seq: []byte("ACG-")}}, SketchOptions{}); e == nil {
+		t.Fatal("accepted gap")
+	}
+	a := genome(t, dna(100, 16))
+	for _, value := range []float64{-1, 1.1, math.NaN()} {
+		o := DefaultOptions()
+		o.MinIdentity = value
+		if _, e := Compare(context.Background(), a, a, o); e == nil {
+			t.Fatal("accepted identity")
+		}
+	}
+	b, e := Prepare(nil, SketchOptions{K: 17})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e := Compare(context.Background(), a, b, DefaultOptions()); e == nil {
+		t.Fatal("accepted incompatible sketches")
+	}
+}
+func TestReadGenomeOwnsSequenceAndProgress(t *testing.T) {
+	s := dna(200, 17)
+	reader := fasta.NewReader(bufio.NewReader(strings.NewReader(">one\n" + string(s) + "\n>two\n" + string(s) + "\n")))
+	g, e := ReadGenome(reader, SketchOptions{})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if g.ContigCount() != 2 || g.ContigName(1) != "two" || g.ContigLength(0) != 200 {
+		t.Fatal("bad genome metadata")
+	}
+	calls := 0
+	o := DefaultOptions()
+	o.Progress = func(p Progress) {
+		calls++
+		if p.Completed != calls || p.Total != 8 {
+			t.Fatalf("bad progress %+v", p)
+		}
+	}
+	ms, e := Compare(context.Background(), g, g, o)
+	if e != nil || len(ms) != 4 || calls != 8 {
+		t.Fatalf("matches=%d progress=%d err=%v", len(ms), calls, e)
+	}
+	rs := []seqio.SeqRecord{{Seq: s}}
+	g, e = Prepare(rs, SketchOptions{})
+	if e != nil {
+		t.Fatal(e)
+	}
+	s[0] = 'N'
+	if g.contigs[0].bases[0] == 'N' {
+		t.Fatal("Prepare retained caller memory")
+	}
+}
+func TestSwapWithReverseIndels(t *testing.T) {
+	s := dna(1500, 18)
+	b := append(append(slicesCopy(s[:700]), dna(31, 19)...), s[700:]...)
+	ms := compare(t, genome(t, s), genome(t, reverseComplement(b)), DefaultOptions())
+	found := false
+	for _, m := range ms {
+		if m.Reverse && strings.Contains(m.CIGAR(), "D") {
+			found = true
+		}
+		if !reflect.DeepEqual(m, m.Swap().Swap()) {
+			t.Fatal("Swap not involutive")
+		}
+	}
+	if !found {
+		t.Fatal("missing reverse indel")
+	}
+}
+func BenchmarkCompareBacterialLike(b *testing.B) {
+	s := dna(200000, 20)
+	target := slicesCopy(s)
+	for i := 1000; i < len(s); i += 1000 {
+		target[i] = "ACGT"[(strings.IndexByte("ACGT", target[i])+1)%4]
+	}
+	a, g := genome(b, s), genome(b, target)
+	o := DefaultOptions()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, e := Compare(context.Background(), a, g, o); e != nil {
+			b.Fatal(e)
+		}
 	}
 }
 
-type sliceReader struct {
-	records []seqio.SeqRecord
-	index   int
+func FuzzCompareInvariants(f *testing.F) {
+	f.Add([]byte("ACGTACGT"), byte(0))
+	f.Add([]byte("GATTACAGTCCGAT"), byte(1))
+	f.Add([]byte("AAAAAAAAAAAAAAAA"), byte(2))
+	f.Fuzz(func(t *testing.T, data []byte, mode byte) {
+		if len(data) > 120 {
+			data = data[:120]
+		}
+		a := make([]byte, len(data))
+		for i, v := range data {
+			a[i] = "ACGT"[v%4]
+		}
+		b := slicesCopy(a)
+		switch mode % 4 {
+		case 0:
+			if len(b) > 0 {
+				b[len(b)/2] = "ACGT"[(strings.IndexByte("ACGT", b[len(b)/2])+1)%4]
+			}
+		case 1:
+			b = reverseComplement(b)
+		case 2:
+			b = append(b, a...)
+		case 3:
+			if len(b) > 8 {
+				b = append(b[:len(b)/2], b[len(b)/2+3:]...)
+			}
+		}
+		prepare := func(s []byte) *Genome {
+			g, e := Prepare([]seqio.SeqRecord{{Name: "x", Seq: s}}, SketchOptions{K: 5, W: 3})
+			if e != nil {
+				t.Fatal(e)
+			}
+			return g
+		}
+		o := DefaultOptions()
+		o.MinLength = 10
+		o.MinChainScore = 5
+		o.MinScore = 5
+		o.MaxGap = 50
+		o.Extension = 16
+		o.BandWidth = 8
+		compare(t, prepare(a), prepare(b), o)
+	})
 }
 
-func (r *sliceReader) Read() (*seqio.SeqRecord, error) {
-	if r.index >= len(r.records) {
-		return nil, io.EOF
+func TestConcurrentPreparedGenomes(t *testing.T) {
+	a, b := genome(t, dna(700, 121)), genome(t, dna(700, 121))
+	want, e := Compare(context.Background(), a, b, DefaultOptions())
+	if e != nil {
+		t.Fatal(e)
 	}
-	rec := r.records[r.index]
-	r.index++
-	return &rec, nil
+	errs := make(chan error, 4)
+	for i := 0; i < 4; i++ {
+		go func() {
+			got, e := Compare(context.Background(), a, b, DefaultOptions())
+			if e == nil && !reflect.DeepEqual(got, want) {
+				e = fmt.Errorf("concurrent result changed")
+			}
+			errs <- e
+		}()
+	}
+	for i := 0; i < 4; i++ {
+		if e := <-errs; e != nil {
+			t.Fatal(e)
+		}
+	}
+}
+func TestNamesDoNotChangeSymmetry(t *testing.T) {
+	s := dna(600, 122)
+	a := genome(t, s, s)
+	b := genome(t, s, s)
+	for i := range a.contigs {
+		a.contigs[i].name = "same-name"
+		b.contigs[i].name = fmt.Sprintf("different-%d", i)
+	}
+	ms := compare(t, a, b, DefaultOptions())
+	if len(ms) != 4 {
+		t.Fatalf("equal-content genomes lost placements: %d", len(ms))
+	}
 }
