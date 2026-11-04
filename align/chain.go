@@ -159,8 +159,14 @@ func compactAnchors(ctx context.Context, q, t []byte, seeds []anchor) ([]anchor,
 
 // The transition reward follows minimap2 v2.30 lchain.c's assembly chaining
 // model: new anchor coverage minus linear + logarithmic diagonal penalties.
-// Unlike minimap2's mapping backtrack, branches do not consume shared anchors.
 // No fixed diagonal bins, max-skip shortcut, or top-N chain filter is used.
+//
+// Chains are extracted greedily from the highest-scoring leaf. Backtracking
+// stops at an anchor already claimed by an earlier chain, so alternative
+// branches do not repeat a shared backbone. The residual branch keeps that
+// boundary anchor as context for refinement, and it qualifies if its own
+// anchors plus the boundary anchor's exact-match length reach MinChainScore.
+// This retains short alternative placements next to a shared prefix.
 func chainAnchors(ctx context.Context, a []anchor, o Options) ([][]int, error) {
 	scores := make([]int, len(a))
 	parent := make([]int, len(a))
@@ -214,16 +220,46 @@ func chainAnchors(ctx context.Context, a []anchor, o Options) ([][]int, error) {
 			children[parent[i]]++
 		}
 	}
-	var paths [][]int
+	var leaves []int
 	for i := range a {
-		if children[i] != 0 || scores[i] < o.MinChainScore {
+		if children[i] == 0 && scores[i] >= o.MinChainScore {
+			leaves = append(leaves, i)
+		}
+	}
+	slices.SortFunc(leaves, func(i, j int) int {
+		if scores[i] != scores[j] {
+			return scores[j] - scores[i]
+		}
+		return i - j
+	})
+	used := make([]bool, len(a))
+	var paths [][]int
+	for _, i := range leaves {
+		if used[i] {
 			continue
 		}
 		var path []int
-		for j := i; j >= 0; j = parent[j] {
+		for j := i; j >= 0 && !used[j]; j = parent[j] {
 			path = append(path, j)
 		}
 		slices.Reverse(path)
+		score := a[path[0]].n
+		for k := 1; k < len(path); k++ {
+			score += scores[path[k]] - scores[parent[path[k]]]
+		}
+		boundary := parent[path[0]]
+		if boundary >= 0 {
+			score += a[boundary].n
+		}
+		if score < o.MinChainScore {
+			continue
+		}
+		for _, j := range path {
+			used[j] = true
+		}
+		if boundary >= 0 {
+			path = append([]int{boundary}, path...)
+		}
 		paths = append(paths, path)
 	}
 	return paths, nil

@@ -240,11 +240,11 @@ func run(ctx context.Context, args []string, bundle string, log io.Writer) (retu
 	if godebug != "" {
 		godebug += ","
 	}
-	if err := check("fallback-no-avx2", "align-simd.test", []string{"-test.run=^Test(SIMDBackend|DPPlatform.*|DPBoundary.*|Adaptive.*)$", "-test.v"}, map[string]string{"FAQT_EXPECT_BACKEND": "scalar", "GODEBUG": godebug + "cpu.avx2=off"}); err != nil {
+	if err := check("fallback-no-avx2", "align-simd.test", []string{"-test.run=^Test(SIMDBackend|DPPlatform.*|DPBoundary.*|Adaptive.*|Near.*|Normalize.*)$", "-test.v"}, map[string]string{"FAQT_EXPECT_BACKEND": "scalar", "GODEBUG": godebug + "cpu.avx2=off"}); err != nil {
 		return err
 	}
 	// Check the AVX2 path with all five core AVX-512 flags disabled as well.
-	if err := check("avx2-without-avx512", "align-simd.test", []string{"-test.run=^Test(SIMDBackend|Difference.*|DPPlatform.*|DPBoundary.*|Adaptive.*)$", "-test.v"}, map[string]string{"FAQT_EXPECT_BACKEND": "avx2-16", "GODEBUG": godebug + "cpu.avx512f=off,cpu.avx512cd=off,cpu.avx512bw=off,cpu.avx512dq=off,cpu.avx512vl=off"}); err != nil {
+	if err := check("avx2-without-avx512", "align-simd.test", []string{"-test.run=^Test(SIMDBackend|Difference.*|DPPlatform.*|DPBoundary.*|Adaptive.*|Near.*|Normalize.*)$", "-test.v"}, map[string]string{"FAQT_EXPECT_BACKEND": "avx2-16", "GODEBUG": godebug + "cpu.avx512f=off,cpu.avx512cd=off,cpu.avx512bw=off,cpu.avx512dq=off,cpu.avx512vl=off"}); err != nil {
 		return err
 	}
 	if o.selfTestOnly {

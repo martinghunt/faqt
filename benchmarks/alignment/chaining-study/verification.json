@@ -1,0 +1,72 @@
+[
+  {
+    "dataset": "debug",
+    "mode": "baseline",
+    "verified_paths": 6609
+  },
+  {
+    "dataset": "debug",
+    "mode": "leaves",
+    "verified_paths": 6147
+  },
+  {
+    "dataset": "debug",
+    "mode": "all",
+    "verified_paths": 6138
+  },
+  {
+    "dataset": "debug",
+    "mode": "validated",
+    "verified_paths": 6255
+  },
+  {
+    "dataset": "debug",
+    "mode": "boundary",
+    "verified_paths": 6160
+  },
+  {
+    "dataset": "debug",
+    "mode": "boundary-score",
+    "verified_paths": 6635
+  },
+  {
+    "dataset": "shigella",
+    "mode": "baseline",
+    "verified_paths": 39933
+  },
+  {
+    "dataset": "shigella",
+    "mode": "leaves",
+    "verified_paths": 39830
+  },
+  {
+    "dataset": "shigella",
+    "mode": "all",
+    "verified_paths": 39822
+  },
+  {
+    "dataset": "shigella",
+    "mode": "validated",
+    "verified_paths": 39837
+  },
+  {
+    "dataset": "shigella",
+    "mode": "boundary",
+    "verified_paths": 39930
+  },
+  {
+    "dataset": "shigella",
+    "mode": "boundary-score",
+    "verified_paths": 40107
+  },
+  {
+    "dataset": "debug",
+    "mode": "boundary-rescore",
+    "verified_paths": 6520
+  },
+  {
+    "dataset": "shigella",
+    "mode": "boundary-rescore",
+    "verified_paths": 40095
+  }
+]

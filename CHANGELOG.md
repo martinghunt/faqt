@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Extract alignment chains greedily from the strongest leaf, stopping at anchors claimed by earlier chains while keeping one boundary anchor for short alternative branches. Long duplicated chain backbones are no longer reported as nested alternative alignments; this changes output for both redundancy policies.
+
+### Added
+- Add opt-in `align.RedundancyNear` to collapse alignment paths that describe the same placement, while protecting distinct repeat placements and input-swap symmetry. It left-aligns short indels, joins paths split at a placement's end, suppresses near-contained paths at 95% paired agreement (allowing internal detours between shared ends), and trims nested paths to the pairings no other reported path covers. The default `RedundancyExact` policy still reports every distinct path. Study notes and measurements are under `benchmarks/alignment/chaining-study`.
+
 ## [0.11.0] - 2026-11-03
 
 ### Changed

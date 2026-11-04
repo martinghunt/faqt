@@ -16,11 +16,12 @@ DATASETS={
  'debug':('31585_6#49.fasta','barcode10_ICESp23_spliced.fasta'),
  'shigella':('repeats.CP026802.1.fa','repeats.CP151312.1.fa'),
 }
-PROFILES=['faqt-full','faqt-adaptive','mm-similar-both']
+PROFILES=['faqt-full','faqt-adaptive','faqt-adaptive-near','mm-similar-both']
 
 def faqt_settings(profile,raised_anchors):
     return {'FAQT_MAX_ANCHORS':str(raised_anchors),
-            'FAQT_BENCH_END_EXTENSION':'adaptive' if profile=='faqt-adaptive' else 'dp'}
+            'FAQT_BENCH_END_EXTENSION':'adaptive' if profile in ('faqt-adaptive','faqt-adaptive-near') else 'dp',
+            'FAQT_BENCH_REDUNDANCY':'near' if profile=='faqt-adaptive-near' else 'exact'}
 
 def file_sha256(path):
     digest=hashlib.sha256()
@@ -74,7 +75,7 @@ def main():
     args=p.parse_args()
     if args.runs<1 or args.timeout<=0:p.error('runs and timeout must be positive')
     if not hasattr(os,'wait4'):p.error('process resource accounting requires macOS or Linux')
-    profiles=args.profile or PROFILES
+    profiles=args.profile or ['faqt-full','faqt-adaptive','mm-similar-both']
     needs_minimap2=any(profile.startswith('mm-') for profile in profiles)
     if needs_minimap2 and not args.minimap2:p.error('minimap2 executable is required for minimap2 profiles')
     args.out.mkdir(parents=True,exist_ok=True)

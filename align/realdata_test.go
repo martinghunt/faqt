@@ -72,3 +72,10 @@ func testSeqhikerDebugPair(t *testing.T, o Options) {
 		t.Fatal("real-data input swapping changed match paths")
 	}
 }
+
+func TestSeqhikerDebugPairNear(t *testing.T) {
+	o := DefaultOptions()
+	o.EndExtension = EndExtensionAdaptive
+	o.Redundancy = RedundancyNear
+	testSeqhikerDebugPair(t, o)
+}

@@ -50,6 +50,13 @@ func TestComparison(t *testing.T) {
 		gs = append(gs, g)
 	}
 	o := align.DefaultOptions()
+	switch os.Getenv("FAQT_BENCH_REDUNDANCY") {
+	case "", "exact":
+	case "near":
+		o.Redundancy = align.RedundancyNear
+	default:
+		t.Fatal("FAQT_BENCH_REDUNDANCY must be exact or near")
+	}
 	if v := os.Getenv("FAQT_MAX_ANCHORS"); v != "" {
 		n, e := strconv.Atoi(v)
 		if e != nil {
@@ -158,6 +165,7 @@ func TestHarnessOutput(t *testing.T) {
 	t.Setenv("FAQT_CPU_PROFILE", "")
 	t.Setenv("FAQT_BENCH_TIMEOUT", "")
 	t.Setenv("FAQT_BENCH_END_EXTENSION", "")
+	t.Setenv("FAQT_BENCH_REDUNDANCY", "")
 	if !t.Run("run", TestComparison) {
 		return
 	}

@@ -11,6 +11,12 @@ non-homopolymer-compressed sketching approach in minimap2 `sketch.c`:
 
 https://github.com/lh3/minimap2/blob/v2.30/sketch.c
 
+Short-indel normalization in `align/normalize.go` adapts the left-alignment idea
+from minimap2 v2.31 `mm_fix_cigar`, restricted to verified exact runs and shifts
+shorter than the seed length to protect repeat placements:
+
+https://github.com/lh3/minimap2/blob/v2.31/align.c
+
 The upstream MIT copyright and permission notice is included here. Retain this
 notice when distributing the derived code. Faqt's assembly engine is not an
 output-compatible port of minimap2: exact-run compaction, repeat-preserving

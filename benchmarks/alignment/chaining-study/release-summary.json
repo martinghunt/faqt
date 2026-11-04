@@ -1,0 +1,62 @@
+[
+  {
+    "dataset": "debug",
+    "variant": "near-old",
+    "paths": 6609,
+    "exact_paths": 7121,
+    "large": 31,
+    "large_exact": 33,
+    "retained_vs_new_exact": 0.998005,
+    "paired_sum": 3823063,
+    "paired_sum_exact": 3832344,
+    "cov_lost": [
+      0,
+      0
+    ]
+  },
+  {
+    "dataset": "debug",
+    "variant": "near-new",
+    "paths": 6024,
+    "exact_paths": 7121,
+    "large": 15,
+    "large_exact": 33,
+    "retained_vs_new_exact": 0.995106,
+    "paired_sum": 3235325,
+    "paired_sum_exact": 3832344,
+    "cov_lost": [
+      0,
+      0
+    ]
+  },
+  {
+    "dataset": "repeats",
+    "variant": "near-old",
+    "paths": 39933,
+    "exact_paths": 42339,
+    "large": 137,
+    "large_exact": 129,
+    "retained_vs_new_exact": 0.999547,
+    "paired_sum": 38603033,
+    "paired_sum_exact": 40846351,
+    "cov_lost": [
+      0,
+      0
+    ]
+  },
+  {
+    "dataset": "repeats",
+    "variant": "near-new",
+    "paths": 39501,
+    "exact_paths": 42339,
+    "large": 83,
+    "large_exact": 129,
+    "retained_vs_new_exact": 0.999355,
+    "paired_sum": 36491324,
+    "paired_sum_exact": 40846351,
+    "cov_lost": [
+      0,
+      0
+    ]
+  }
+]

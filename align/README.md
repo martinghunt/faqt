@@ -62,7 +62,7 @@ operation from exchanging the two genomes.
 
 Multiple placements are first-class results. No primary/secondary distinction,
 exclusive anchor consumption, top-N filter, percentage-overlap suppression or
-maximum block count is used. Deduplication removes only identical alignment
+maximum block count is used. By default, deduplication removes only identical alignment
 subpaths on the same pair of contigs and the same strand. Two paths sharing one
 axis, or using different copies of a repeat, remain distinct.
 
@@ -80,8 +80,12 @@ can have a genuinely quadratic number of distinct placements.
    maximal exact runs. Hash collisions cannot create an assumed exact match.
 3. Dynamic-programming chaining on exact runs, without fixed diagonal bins.
    Transitions reward covered sequence and penalize diagonal displacement.
-   Backtracking retains all best-predecessor leaves and allows shared ancestors;
-   significant standalone exact runs are candidates as well.
+   Chains are extracted greedily from the highest-scoring leaf; backtracking
+   stops at an anchor already claimed by an earlier chain, so alternative
+   branches do not repeat a shared backbone. A residual branch keeps that
+   boundary anchor as refinement context, and qualifies when its own anchors
+   plus the boundary anchor's exact length reach `MinChainScore`. Significant
+   standalone exact runs are candidates as well.
 4. Align chain gaps with banded, two-piece affine-gap DP. Traceback uses
    two bytes per visited cell; scores retain two rolling rows. The initial band
    includes the endpoint length difference plus padding and widens until an outside-band score bound proves that no better
@@ -139,6 +143,50 @@ speed. These are data-specific observations, not sensitivity guarantees. See
 [benchmark results and limitations](../benchmarks/alignment/RESULTS.md).
 The mode works with scalar, NEON and AVX2 dispatch; SIMD still requires the
 SIMD-enabled build. Reuse the same prepared genomes when changing this mode.
+
+## Optional near-duplicate suppression
+
+```go
+opts := align.DefaultOptions()
+opts.EndExtension = align.EndExtensionAdaptive // independent of redundancy policy
+opts.Redundancy = align.RedundancyNear
+```
+
+The default `RedundancyExact` policy preserves every distinct path after exact
+subpath deduplication. `RedundancyNear` is intended for comparisons where many
+chains describe essentially the same placement. It first left-aligns short
+indels across verified exact bases. Both the indel and its full possible shift
+must be shorter than K; longer tandem-repeat alternatives retain their paths.
+It then applies three steps, in score order:
+
+1. **End joining.** When a lower-scoring path follows the same diagonal at
+   either end of a higher-scoring path and continues beyond it, the two are
+   joined at a shared point. The join is kept only if it scores higher, drops
+   fewer than `Options.MinLength` paired bases of the longer path, and leaves
+   the shorter path near-contained (below) in the result. This repairs one
+   placement split into a long path plus a short path carrying its true end,
+   and joins collinear fragments that overlap on a diagonal.
+2. **Near containment.** A hit is suppressed when one equal-or-higher-scoring
+   retained hit uses the same contigs and strand, contains both intervals, and
+   shares at least 95% of its paired coordinates. A new contiguous paired
+   stretch as long as `Options.MinLength` protects the hit, unless both ends of
+   the hit lie on the containing path (an internal detour, such as an
+   alternative tandem-copy pairing).
+3. **Union trimming.** A hit nested inside a higher-scoring, at least as
+   identical retained hit is reduced to the pairings no other retained hit
+   reports: covered paired stretches of at least `Options.MinLength` are cut
+   out, and each remaining piece is kept only if it pairs `Options.MinLength`
+   new bases. A placement routed onto a neighbouring repeat copy therefore
+   becomes its own short copy-to-copy hit, or disappears if that pairing is
+   already reported. The identity condition keeps locally better alignments.
+   This step is skipped for self-comparisons.
+
+Sharing just one genome interval never suffices. Processing uses canonical
+content-based axes and deterministic score ordering, including symmetric
+self-comparisons. Retained paths still replay against DNA. Gap normalisation
+changes some paired coordinates, and suppression is heuristic; use the default
+policy when every distinct alignment path matters. Neither policy guarantees
+exhaustive discovery. See [measured results](../benchmarks/alignment/RESULTS.md#near-duplicate-cleanup).
 
 ## Coordinates and operations
 

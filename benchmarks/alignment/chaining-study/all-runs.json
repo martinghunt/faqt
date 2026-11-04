@@ -1,0 +1,156 @@
+[
+  {
+    "dataset": "debug",
+    "mode": "baseline",
+    "PrepareSeconds": 0.148709042,
+    "AlignSeconds": 2.820424708,
+    "WriteSeconds": 0.008277833,
+    "Count": 6609,
+    "AllocatedBytes": 399354928,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "debug",
+    "mode": "leaves",
+    "PrepareSeconds": 0.120156709,
+    "AlignSeconds": 2.572192708,
+    "WriteSeconds": 0.007619583,
+    "Count": 6147,
+    "AllocatedBytes": 353554696,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "debug",
+    "mode": "all",
+    "PrepareSeconds": 0.11733725,
+    "AlignSeconds": 2.557787167,
+    "WriteSeconds": 0.014832291,
+    "Count": 6138,
+    "AllocatedBytes": 337934792,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "debug",
+    "mode": "validated",
+    "PrepareSeconds": 0.147982584,
+    "AlignSeconds": 2.625787167,
+    "WriteSeconds": 0.007710084,
+    "Count": 6255,
+    "AllocatedBytes": 358040240,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "debug",
+    "mode": "boundary",
+    "PrepareSeconds": 0.150005125,
+    "AlignSeconds": 2.5277473329999998,
+    "WriteSeconds": 0.00744625,
+    "Count": 6160,
+    "AllocatedBytes": 364763912,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "debug",
+    "mode": "boundary-score",
+    "PrepareSeconds": 0.148732834,
+    "AlignSeconds": 2.945195875,
+    "WriteSeconds": 0.008137208,
+    "Count": 6635,
+    "AllocatedBytes": 396365952,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "debug",
+    "mode": "boundary-rescore",
+    "PrepareSeconds": 0.136665916,
+    "AlignSeconds": 3.058921791,
+    "WriteSeconds": 0.009440167,
+    "Count": 6520,
+    "AllocatedBytes": 381080592,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "shigella",
+    "mode": "baseline",
+    "PrepareSeconds": 0.3389285,
+    "AlignSeconds": 9.861913833,
+    "WriteSeconds": 0.026371542,
+    "Count": 39933,
+    "AllocatedBytes": 3587380848,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "shigella",
+    "mode": "leaves",
+    "PrepareSeconds": 0.357372208,
+    "AlignSeconds": 9.4682845,
+    "WriteSeconds": 0.031083875,
+    "Count": 39830,
+    "AllocatedBytes": 3371322552,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "shigella",
+    "mode": "all",
+    "PrepareSeconds": 0.358573125,
+    "AlignSeconds": 9.436628958,
+    "WriteSeconds": 0.027243292,
+    "Count": 39822,
+    "AllocatedBytes": 3324387696,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "shigella",
+    "mode": "validated",
+    "PrepareSeconds": 0.334436167,
+    "AlignSeconds": 9.294680709,
+    "WriteSeconds": 0.026326083,
+    "Count": 39837,
+    "AllocatedBytes": 3358836632,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "shigella",
+    "mode": "boundary",
+    "PrepareSeconds": 0.317526,
+    "AlignSeconds": 9.811211375,
+    "WriteSeconds": 0.027368292,
+    "Count": 39930,
+    "AllocatedBytes": 3485445672,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "shigella",
+    "mode": "boundary-score",
+    "PrepareSeconds": 0.340559667,
+    "AlignSeconds": 10.154603333,
+    "WriteSeconds": 0.025608583,
+    "Count": 40107,
+    "AllocatedBytes": 3544025424,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  },
+  {
+    "dataset": "shigella",
+    "mode": "boundary-rescore",
+    "PrepareSeconds": 0.394164708,
+    "AlignSeconds": 10.938944375,
+    "WriteSeconds": 0.0288055,
+    "Count": 40095,
+    "AllocatedBytes": 3537298720,
+    "Error": "",
+    "Options": "{Redundancy:1 MinLength:100 MinIdentity:0.7 MinChainScore:40 MinScore:40 MaxGap:2000 BandWidth:96 Extension:256 EndExtension:2 ZDrop:200 Match:2 Mismatch:4 GapOpen:4 GapExtend:2 LongGapOpen:24 LongGapExtend:1 MaxAnchors:20000000 MaxCells:16000000 Progress:<nil>}"
+  }
+]

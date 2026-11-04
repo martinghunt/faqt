@@ -61,3 +61,8 @@ Run the harness tests with:
 ```sh
 python3 -m unittest discover -s benchmarks/alignment -p 'test_*.py'
 ```
+
+For the optional near-duplicate policy, select `--profile faqt-adaptive-near`
+alongside `--profile faqt-adaptive`. Both profiles use the same alignment options
+and anchor budget; only redundancy policy differs. The runner explicitly resets
+both end-extension and redundancy policy for every profile.

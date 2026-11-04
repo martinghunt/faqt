@@ -139,9 +139,19 @@ const (
 	EndExtensionAdaptive
 )
 
+// RedundancyMode controls whether nearly identical paths at the same placement
+// are retained. Distinct target copies are never suppressed by query overlap.
+type RedundancyMode uint8
+
+const (
+	RedundancyExact RedundancyMode = iota // retain every distinct alignment path
+	RedundancyNear                        // collapse short-gap equivalents and near-contained paths
+)
+
 // Options controls sensitivity, alignment scoring, and explicit resource limits.
 // Use DefaultOptions and modify fields; Compare does not fill individual zeros.
 type Options struct {
+	Redundancy                 RedundancyMode
 	MinLength                  int
 	MinIdentity                float64          // [0,1], exact A/C/G/T matches / all alignment columns
 	MinChainScore              int              // minimum chaining coverage score
@@ -168,7 +178,7 @@ func DefaultOptions() Options {
 	return Options{MinLength: 100, MinIdentity: 0.7, MinChainScore: 40, MinScore: 40, MaxGap: 2000, BandWidth: 96, Extension: 256, ZDrop: 200, Match: 2, Mismatch: 4, GapOpen: 4, GapExtend: 2, LongGapOpen: 24, LongGapExtend: 1, MaxAnchors: 2000000, MaxCells: 16000000}
 }
 func (o Options) validate() error {
-	if o.MinLength < 1 || math.IsNaN(o.MinIdentity) || o.MinIdentity < 0 || o.MinIdentity > 1 || o.MinChainScore < 1 || o.MinScore < 0 || o.MaxGap < 1 || o.BandWidth < 1 || o.Extension < 0 || o.EndExtension > EndExtensionAdaptive || o.ZDrop < 0 || o.Match < 1 || o.Mismatch < 1 || o.GapOpen < 1 || o.GapExtend < 1 || o.LongGapOpen < 1 || o.LongGapExtend < 1 || o.MaxAnchors < 0 || o.MaxCells < 0 {
+	if o.Redundancy > RedundancyNear || o.MinLength < 1 || math.IsNaN(o.MinIdentity) || o.MinIdentity < 0 || o.MinIdentity > 1 || o.MinChainScore < 1 || o.MinScore < 0 || o.MaxGap < 1 || o.BandWidth < 1 || o.Extension < 0 || o.EndExtension > EndExtensionAdaptive || o.ZDrop < 0 || o.Match < 1 || o.Mismatch < 1 || o.GapOpen < 1 || o.GapExtend < 1 || o.LongGapOpen < 1 || o.LongGapExtend < 1 || o.MaxAnchors < 0 || o.MaxCells < 0 {
 		return fmt.Errorf("invalid alignment options; start with DefaultOptions()")
 	}
 	return nil
@@ -299,7 +309,11 @@ func Compare(ctx context.Context, a, b *Genome, o Options) ([]Match, error) {
 		return nil, err
 	}
 	var err error
-	matches, err = deduplicateContext(ctx, matches)
+	if o.Redundancy == RedundancyNear {
+		matches, err = cleanRedundantMatches(ctx, a, b, matches, o)
+	} else {
+		matches, err = deduplicateContext(ctx, matches)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,88 @@
+{
+  "policy": "RedundancyNear",
+  "parameters": {
+    "minimum_paired_agreement": 0.99,
+    "maximum_novel_run": "less than MinLength",
+    "indel_and_full_shift": "less than K",
+    "single_host_contains_both_intervals": true
+  },
+  "date": "2026-11-03",
+  "datasets": {
+    "debug": {
+      "baseline": {
+        "raw_records": 7116,
+        "qualifying_records": 7116,
+        "unique_paths": 7116,
+        "unique_endpoints": 6040,
+        "covered_a_bases": 2077031,
+        "covered_b_bases": 2095144,
+        "paired_a_bases": 2077031,
+        "aligned_pair_positions": 3089627,
+        "mean_placements_per_paired_a_base": 1.4875208891923135,
+        "max_placements_per_a_base": 76,
+        "multi_placement_a_bases": 129861,
+        "long_paths": 37,
+        "sum_paired": 4568539
+      },
+      "near": {
+        "raw_records": 6609,
+        "qualifying_records": 6609,
+        "unique_paths": 6609,
+        "unique_endpoints": 5941,
+        "covered_a_bases": 2077031,
+        "covered_b_bases": 2095144,
+        "paired_a_bases": 2077031,
+        "aligned_pair_positions": 3087989,
+        "mean_placements_per_paired_a_base": 1.4867322635049742,
+        "max_placements_per_a_base": 76,
+        "multi_placement_a_bases": 129696,
+        "long_paths": 31,
+        "sum_paired": 3823063
+      },
+      "reference_pairs_retained": 0.9991406729679667,
+      "new_pairs": 1017,
+      "lost_pairs": 2655
+    },
+    "shigella": {
+      "baseline": {
+        "raw_records": 42333,
+        "qualifying_records": 42333,
+        "unique_paths": 42333,
+        "unique_endpoints": 41089,
+        "covered_a_bases": 4770913,
+        "covered_b_bases": 4797226,
+        "paired_a_bases": 4768300,
+        "aligned_pair_positions": 36334068,
+        "mean_placements_per_paired_a_base": 7.6199207264643585,
+        "max_placements_per_a_base": 348,
+        "multi_placement_a_bases": 648215,
+        "long_paths": 483,
+        "sum_paired": 58617526
+      },
+      "near": {
+        "raw_records": 39933,
+        "qualifying_records": 39933,
+        "unique_paths": 39933,
+        "unique_endpoints": 39628,
+        "covered_a_bases": 4770913,
+        "covered_b_bases": 4797226,
+        "paired_a_bases": 4767857,
+        "aligned_pair_positions": 36318217,
+        "mean_placements_per_paired_a_base": 7.617304168308739,
+        "max_placements_per_a_base": 238,
+        "multi_placement_a_bases": 645592,
+        "long_paths": 137,
+        "sum_paired": 38603033
+      },
+      "reference_pairs_retained": 0.9995405138780497,
+      "new_pairs": 844,
+      "lost_pairs": 16695
+    }
+  },
+  "validation": {
+    "all_candidate_paths_replayed": true,
+    "original_missing_region_and_swap": true,
+    "distinct_repeat_copy_regressions": true
+  },
+  "timings": "not a repeated speed study"
+}
