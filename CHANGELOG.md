@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-04
+
 ### Changed
 - Extract alignment chains greedily from the strongest leaf, stopping at anchors claimed by earlier chains while keeping one boundary anchor for short alternative branches. Long duplicated chain backbones are no longer reported as nested alternative alignments; this changes output for both redundancy policies.
 
@@ -213,7 +215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/martinghunt/faqt/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/martinghunt/faqt/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/martinghunt/faqt/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/martinghunt/faqt/compare/v0.9.0...v0.9.1
