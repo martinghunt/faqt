@@ -21,6 +21,9 @@ func Format(r *bufio.Reader) (string, error) {
 	if err != nil && !isShortPeek(err) {
 		return "", err
 	}
+	// A full peek may end inside a long record. Keep
+	// detection bounded and let the parser validate the rest of the record.
+	partial := len(buf) == min(PeekSize, r.Size())
 	buf = bytes.TrimLeft(buf, "\n\r\t ")
 	if len(buf) == 0 {
 		return "", ErrEmptyInput
@@ -38,28 +41,34 @@ func Format(r *bufio.Reader) (string, error) {
 		return "phylip", nil
 	case buf[0] == '>':
 		return "fasta", nil
-	case looksLikeSAM(buf):
+	case looksLikeSAM(buf, partial):
 		return "sam", nil
-	case looksLikeFASTQ(buf):
+	case looksLikeFASTQ(buf, partial):
 		return "fastq", nil
 	default:
 		return "", fmt.Errorf("%w from content", ErrUnknownFormat)
 	}
 }
 
-func looksLikeFASTQ(buf []byte) bool {
+func looksLikeFASTQ(buf []byte, partial bool) bool {
 	if len(buf) == 0 || buf[0] != '@' {
 		return false
 	}
 	lines := bytes.SplitN(buf, []byte{'\n'}, 4)
-	if len(lines) < 4 {
+	if len(lines) < 3 {
+		return partial
+	}
+	if len(lines[1]) == 0 {
 		return false
 	}
-	return len(lines[1]) > 0 && len(lines[2]) > 0 && lines[2][0] == '+'
+	if len(lines[2]) == 0 {
+		return partial && len(lines) == 3
+	}
+	return lines[2][0] == '+' && (partial || len(lines) == 4)
 }
 
-func looksLikeSAM(buf []byte) bool {
-	line, _, _ := bytes.Cut(buf, []byte{'\n'})
+func looksLikeSAM(buf []byte, partial bool) bool {
+	line, _, complete := bytes.Cut(buf, []byte{'\n'})
 	line = bytes.TrimRight(line, "\r")
 	if len(line) == 0 {
 		return false
@@ -73,7 +82,13 @@ func looksLikeSAM(buf []byte) bool {
 	}
 	fields := bytes.Split(line, []byte{'\t'})
 	if len(fields) < 11 {
-		return false
+		// The sequence can extend beyond the peek, hiding the quality
+		// field. Require all nine preceding fields so the numeric checks
+		// below still validate complete fields. The parser validates the
+		// rest; a short or newline-terminated record is not a partial peek.
+		if !partial || complete || len(fields) < 10 {
+			return false
+		}
 	}
 	if len(fields[0]) == 0 {
 		return false

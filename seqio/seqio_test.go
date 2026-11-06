@@ -316,8 +316,8 @@ func TestOpenPathDetectsCompressionAndIgnoresFilename(t *testing.T) {
 }
 
 func TestOpenPathDetectsGzippedFASTQWithLongFirstRecord(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "long-first-record.fastq.gz")
-	firstSeq := strings.Repeat("A", 5000)
+	path := filepath.Join(t.TempDir(), "misleading.bam")
+	firstSeq := strings.Repeat("A", 300000)
 	firstQual := strings.Repeat("I", len(firstSeq))
 	input := "@read1\n" + firstSeq + "\n+\n" + firstQual + "\n@read2\nACGT\n+\n####\n"
 
@@ -353,6 +353,37 @@ func TestOpenPathDetectsGzippedFASTQWithLongFirstRecord(t *testing.T) {
 	}
 	if second.Name != "read2" || string(second.Seq) != "ACGT" || string(second.Qual) != "####" {
 		t.Fatalf("second record = %+v", second)
+	}
+}
+
+func TestOpenReaderDetectsLongHeaderlessSAM(t *testing.T) {
+	input := "read1\t16\tref\t1\t60\t300000M\t*\t0\t0\t" + strings.Repeat("ACGA", 75000) + "\t" + strings.Repeat("!#$%", 75000) + "\n" +
+		"read2\t4\t*\t0\t0\t*\t*\t0\t0\tCC\tII\n"
+	for _, comp := range readCompressors() {
+		t.Run(comp.name, func(t *testing.T) {
+			r, err := seqio.OpenReader(bytes.NewReader(comp.compress(t, []byte(input))))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if closer, ok := r.(io.Closer); ok {
+				defer closer.Close()
+			}
+			for _, want := range []wantRecord{
+				{name: "read1", seq: strings.Repeat("TCGT", 75000), qual: strings.Repeat("%$#!", 75000)},
+				{name: "read2", seq: "CC", qual: "II"},
+			} {
+				rec, err := r.Read()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if rec.Name != want.name || string(rec.Seq) != want.seq || string(rec.Qual) != want.qual {
+					t.Fatalf("record %q: name, sequence or quality differs", want.name)
+				}
+			}
+			if _, err := r.Read(); err != io.EOF {
+				t.Fatalf("Read() error = %v, want EOF", err)
+			}
+		})
 	}
 }
 

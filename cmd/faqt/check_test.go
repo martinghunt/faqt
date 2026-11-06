@@ -21,6 +21,25 @@ func TestCheckCommand(t *testing.T) {
 	}
 	corrupt := append([]byte(nil), compressed.Bytes()...)
 	corrupt[len(corrupt)-8] ^= 1 // Break the CRC without changing the records.
+	longFASTQ := "@one\n" + strings.Repeat("A", 37241) + "\n+\n" + strings.Repeat("?", 37241) + "\n@two\nAC\n+\n!!\n"
+	var longCompressed bytes.Buffer
+	zw = gzip.NewWriter(&longCompressed)
+	if _, err := zw.Write([]byte(longFASTQ)); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	longSAM := "one\t4\t*\t0\t0\t*\t*\t0\t0\t" + strings.Repeat("A", 37241) + "\t" + strings.Repeat("?", 37241) + "\n" +
+		"two\t4\t*\t0\t0\t*\t*\t0\t0\tAC\t!!\n"
+	var samCompressed bytes.Buffer
+	zw = gzip.NewWriter(&samCompressed)
+	if _, err := zw.Write([]byte(longSAM)); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		name string
 		data string
@@ -29,6 +48,13 @@ func TestCheckCommand(t *testing.T) {
 	}{
 		{"FASTA", ">one\nACGT\n>two\nNN\n", "OK\t2 records", false},
 		{"FASTQ", "@one\nACGT\n+\n!!!!\n@two\nNN\n+\n!!\n", "OK\t2 records", false},
+		{"long FASTQ", longFASTQ, "OK\t2 records", false},
+		{"long gzip FASTQ", longCompressed.String(), "OK\t2 records", false},
+		{"long headerless SAM", longSAM, "OK\t2 records", false},
+		{"long gzip headerless SAM", samCompressed.String(), "OK\t2 records", false},
+		{"long SAM missing quality", strings.SplitN(longSAM, "\t?", 2)[0] + "\n", "ERROR\t", true},
+		{"long FASTQ length mismatch", strings.Replace(longFASTQ, "\n+\n", "A\n+\n", 1), "ERROR\t", true},
+		{"long FASTQ bad separator", strings.Replace(longFASTQ, "\n+\n", "\ninvalid\n", 1), "ERROR\tfastq separator line must start with +", true},
 		{"gzip", compressed.String(), "OK\t2 records", false},
 		{"corrupt gzip", string(corrupt), "ERROR\t", true},
 		{"truncated gzip", compressed.String()[:compressed.Len()-4], "ERROR\t", true},
