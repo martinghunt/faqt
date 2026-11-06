@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-06
+
 ### Fixed
 - Detect FASTQ when a long first header or sequence pushes the `+` separator beyond the 8,192-byte format detection window, instead of failing with `could not detect sequence format from content`.
 - Detect headerless SAM when a long first sequence pushes the quality field beyond the format detection window. Both fixes retain bounded lookahead and let the format parser validate the complete record.
@@ -219,7 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.12.1...HEAD
+[0.12.0]: https://github.com/martinghunt/faqt/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/martinghunt/faqt/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/martinghunt/faqt/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/martinghunt/faqt/compare/v0.9.1...v0.10.0
