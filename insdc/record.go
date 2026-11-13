@@ -11,6 +11,9 @@
 //
 // Like Biopython, text lengths for wrapping are counted in characters, not
 // bytes.
+//
+// The writers are adapted from Biopython's Bio/SeqIO/InsdcIO.py under the BSD
+// 3-Clause License; see third_party/biopython.
 package insdc
 
 // Record is an annotated sequence record.

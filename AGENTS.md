@@ -57,6 +57,8 @@ narrow:
 * Output must match Biopython's `SeqIO.write(..., "genbank" / "embl")` byte for
   byte, for the Biopython version stated in the package documentation. Tests
   compare against output written by Biopython (see `insdc/testdata`).
+* The writers are adapted from Biopython (BSD 3-Clause); keep the attribution
+  in `third_party/biopython` up to date when changing them.
 * Format-specific logic beyond writing (feature parsing, conversion between
   annotation formats, GFF3 feature output) remains out of scope.
 
