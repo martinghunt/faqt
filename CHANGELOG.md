@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-13
+
 ### Added
 - Add the `insdc` package for writing annotated records, with features, as GenBank and EMBL. Output matches Biopython's GenBank and EMBL writers byte for byte (Biopython 1.79 to 1.88; 1.78 differs only in the GenBank `DBSOURCE` line). It is write-only and separate from `SeqRecord`; faqt's readers remain sequence-only.
 
@@ -224,8 +226,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release `v0.1.0`, before changelog tracking started in this file.
 
-[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.12.1...HEAD
-[0.12.0]: https://github.com/martinghunt/faqt/compare/v0.12.0...v0.12.1
+[Unreleased]: https://github.com/martinghunt/faqt/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/martinghunt/faqt/compare/v0.12.1...v0.13.0
+[0.12.1]: https://github.com/martinghunt/faqt/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/martinghunt/faqt/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/martinghunt/faqt/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/martinghunt/faqt/compare/v0.9.1...v0.10.0
