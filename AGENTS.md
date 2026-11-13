@@ -4,7 +4,8 @@
 
 `faqt` is a Go library and CLI for reading, writing, and manipulating biological sequence data.
 
-This project is intentionally **sequence-only**.
+This project is intentionally **sequence-only**, with one exception: the
+`insdc` package writes annotated GenBank and EMBL records (see below).
 
 Supported sequence inputs:
 
@@ -38,9 +39,26 @@ type SeqRecord struct {
 
 Rules:
 
-* Do NOT add annotation types
-* Do NOT add feature models
+* Do NOT add annotation types (outside `insdc`)
+* Do NOT add feature models (outside `insdc`)
 * Do NOT add metadata maps
+
+---
+
+## The `insdc` exception
+
+The `insdc` package is the only place annotations exist. It is deliberately
+narrow:
+
+* It **writes** GenBank and EMBL. It does not parse features; the format
+  readers stay sequence-only.
+* Its `Record` type is separate from `SeqRecord`, which stays minimal. No other
+  package may depend on `insdc`'s types.
+* Output must match Biopython's `SeqIO.write(..., "genbank" / "embl")` byte for
+  byte, for the Biopython version stated in the package documentation. Tests
+  compare against output written by Biopython (see `insdc/testdata`).
+* Format-specific logic beyond writing (feature parsing, conversion between
+  annotation formats, GFF3 feature output) remains out of scope.
 
 ---
 
@@ -80,6 +98,7 @@ Rules:
 
 * `seqio`: public API, SeqRecord, Reader/Writer, open helpers
 * `fasta`, `fastq`, `clustal`, `phylip`, `sam`, `bam`, `genbank`, `embl`, `gff3`, `agc`: format parsers and adapters
+* `insdc`: annotated record model and GenBank/EMBL writers (write-only)
 * `seq`: sequence utilities
 * `orf`: ORF finding
 * `internal/sniff`: format detection
@@ -218,7 +237,7 @@ Rules:
 
 ## Non-goals
 
-Do NOT implement:
+Do NOT implement (outside the write-only `insdc` package):
 
 * annotation models
 * feature parsing
@@ -233,7 +252,7 @@ Do NOT implement:
 
 Before adding code:
 
-* Adds annotation? → reject
+* Adds annotation outside `insdc`, or annotation parsing anywhere? → reject
 * Uses filename detection? → reject
 * Breaks streaming? → redesign
 * Adds logic to CLI? → move to library

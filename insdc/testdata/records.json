@@ -1,0 +1,1142 @@
+[
+ {
+  "id": "TEST001.2",
+  "name": "TEST001",
+  "description": "Synthetic record one, with a description long enough to wrap onto more than one line in both formats",
+  "seq": "ACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMA",
+  "dbxrefs": [
+   "BioProject:PRJNA1",
+   "BioSample:SAMN1",
+   "Project:12"
+  ],
+  "annotations": {
+   "molecule_type": "DNA",
+   "topology": "circular",
+   "data_file_division": "BCT",
+   "date": "05-MAR-2024",
+   "gi": "12345",
+   "source": "Testus syntheticus",
+   "organism": "Testus syntheticus",
+   "accessions": [
+    "TEST001"
+   ],
+   "keywords": [
+    "alpha",
+    "beta gamma"
+   ],
+   "taxonomy": [
+    "Bacteria",
+    "Testota",
+    "Testales"
+   ],
+   "comment": [
+    "First comment line",
+    "Second line that is long enough to need wrapping because it has very many words in it",
+    "",
+    "After a blank line"
+   ],
+   "references": [
+    {
+     "authors": "Smith,J., Jones,K. and a very long list of other authors who wrote the paper together",
+     "consrtm": "Test Consortium",
+     "title": "A title",
+     "journal": "J. Test 1:1-10 (2024)",
+     "medline_id": "999",
+     "pubmed_id": "123456",
+     "comment": "A remark",
+     "location": [
+      0,
+      300
+     ]
+    },
+    {
+     "authors": "",
+     "consrtm": "",
+     "title": "",
+     "journal": "Unpublished",
+     "medline_id": "",
+     "pubmed_id": "",
+     "comment": ""
+    }
+   ]
+  },
+  "features": [
+   {
+    "type": "source",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 0
+     },
+     "end": {
+      "kind": "exact",
+      "value": 300
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "mol_type",
+      "values": [
+       {
+        "kind": "text",
+        "text": "genomic DNA"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "gene",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 10
+     },
+     "end": {
+      "kind": "exact",
+      "value": 100
+     },
+     "strand": -1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "locus_tag",
+      "values": [
+       {
+        "kind": "text",
+        "text": "TST_00001"
+       }
+      ]
+     },
+     {
+      "key": "gene",
+      "values": [
+       {
+        "kind": "text",
+        "text": "abcD"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "CDS",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 10
+     },
+     "end": {
+      "kind": "exact",
+      "value": 100
+     },
+     "strand": -1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "locus_tag",
+      "values": [
+       {
+        "kind": "text",
+        "text": "TST_00001"
+       }
+      ]
+     },
+     {
+      "key": "codon_start",
+      "values": [
+       {
+        "kind": "int",
+        "text": "1"
+       }
+      ]
+     },
+     {
+      "key": "transl_table",
+      "values": [
+       {
+        "kind": "int",
+        "text": "11"
+       }
+      ]
+     },
+     {
+      "key": "product",
+      "values": [
+       {
+        "kind": "text",
+        "text": "A very long product name that goes on and on beyond the eighty column limit of the format"
+       }
+      ]
+     },
+     {
+      "key": "translation",
+      "values": [
+       {
+        "kind": "text",
+        "text": "MACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY"
+       }
+      ]
+     },
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "He said \"hello\""
+       },
+       {
+        "kind": "text",
+        "text": "second note"
+       }
+      ]
+     },
+     {
+      "key": "pseudo",
+      "values": [
+       {
+        "kind": "flag"
+       }
+      ]
+     },
+     {
+      "key": "ribosomal_slippage",
+      "values": [
+       {
+        "kind": "int",
+        "text": "True"
+       }
+      ]
+     },
+     {
+      "key": "score",
+      "values": [
+       {
+        "kind": "text",
+        "text": "0.75"
+       }
+      ]
+     },
+     {
+      "key": "anticodon",
+      "values": [
+       {
+        "kind": "text",
+        "text": "(pos:complement(20..22),aa:Ala,seq:tgc)"
+       }
+      ]
+     },
+     {
+      "key": "empty",
+      "values": [
+       {
+        "kind": "text",
+        "text": ""
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "CDS",
+    "location": {
+     "operator": "join",
+     "parts": [
+      {
+       "start": {
+        "kind": "exact",
+        "value": 110
+       },
+       "end": {
+        "kind": "exact",
+        "value": 150
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 160
+       },
+       "end": {
+        "kind": "exact",
+        "value": 200
+       },
+       "strand": 1,
+       "ref": ""
+      }
+     ]
+    },
+    "qualifiers": [
+     {
+      "key": "product",
+      "values": [
+       {
+        "kind": "text",
+        "text": "β-lactamase with a name long enough that it wraps onto a second line here"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "CDS",
+    "location": {
+     "operator": "join",
+     "parts": [
+      {
+       "start": {
+        "kind": "exact",
+        "value": 160
+       },
+       "end": {
+        "kind": "exact",
+        "value": 200
+       },
+       "strand": -1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 110
+       },
+       "end": {
+        "kind": "exact",
+        "value": 150
+       },
+       "strand": -1,
+       "ref": ""
+      }
+     ]
+    },
+    "qualifiers": [
+     {
+      "key": "product",
+      "values": [
+       {
+        "kind": "text",
+        "text": "reverse join"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "operator": "order",
+     "parts": [
+      {
+       "start": {
+        "kind": "exact",
+        "value": 0
+       },
+       "end": {
+        "kind": "exact",
+        "value": 5
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 10
+       },
+       "end": {
+        "kind": "exact",
+        "value": 15
+       },
+       "strand": 1,
+       "ref": ""
+      }
+     ]
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "order"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "before",
+      "value": 4
+     },
+     "end": {
+      "kind": "after",
+      "value": 20
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "partial"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "within",
+      "value": 4,
+      "left": 4,
+      "right": 8
+     },
+     "end": {
+      "kind": "between",
+      "value": 30,
+      "left": 29,
+      "right": 30
+     },
+     "strand": -1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "within/between"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "oneof",
+      "value": 5,
+      "choices": [
+       {
+        "kind": "exact",
+        "value": 5
+       },
+       {
+        "kind": "exact",
+        "value": 7
+       }
+      ]
+     },
+     "end": {
+      "kind": "exact",
+      "value": 40
+     },
+     "strand": 0,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "one-of"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 41
+     },
+     "end": {
+      "kind": "exact",
+      "value": 42
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "single base"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 50
+     },
+     "end": {
+      "kind": "exact",
+      "value": 50
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "between bases"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 300
+     },
+     "end": {
+      "kind": "exact",
+      "value": 300
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "between the end and the start"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 5
+     },
+     "end": {
+      "kind": "exact",
+      "value": 25
+     },
+     "strand": 1,
+     "ref": "OTHER.1"
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "on another record"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "unknown"
+     },
+     "end": {
+      "kind": "exact",
+      "value": 60
+     },
+     "strand": 0,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "unknown start"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 60
+     },
+     "end": {
+      "kind": "unknown"
+     },
+     "strand": 0,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "unknown end"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "operator": "join",
+     "parts": [
+      {
+       "start": {
+        "kind": "exact",
+        "value": 0
+       },
+       "end": {
+        "kind": "exact",
+        "value": 5
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 10
+       },
+       "end": {
+        "kind": "exact",
+        "value": 15
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 20
+       },
+       "end": {
+        "kind": "exact",
+        "value": 25
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 30
+       },
+       "end": {
+        "kind": "exact",
+        "value": 35
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 40
+       },
+       "end": {
+        "kind": "exact",
+        "value": 45
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 50
+       },
+       "end": {
+        "kind": "exact",
+        "value": 55
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 60
+       },
+       "end": {
+        "kind": "exact",
+        "value": 65
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 70
+       },
+       "end": {
+        "kind": "exact",
+        "value": 75
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 80
+       },
+       "end": {
+        "kind": "exact",
+        "value": 85
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 90
+       },
+       "end": {
+        "kind": "exact",
+        "value": 95
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 100
+       },
+       "end": {
+        "kind": "exact",
+        "value": 105
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 110
+       },
+       "end": {
+        "kind": "exact",
+        "value": 115
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 120
+       },
+       "end": {
+        "kind": "exact",
+        "value": 125
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 130
+       },
+       "end": {
+        "kind": "exact",
+        "value": 135
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 140
+       },
+       "end": {
+        "kind": "exact",
+        "value": 145
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 150
+       },
+       "end": {
+        "kind": "exact",
+        "value": 155
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 160
+       },
+       "end": {
+        "kind": "exact",
+        "value": 165
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 170
+       },
+       "end": {
+        "kind": "exact",
+        "value": 175
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 180
+       },
+       "end": {
+        "kind": "exact",
+        "value": 185
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 190
+       },
+       "end": {
+        "kind": "exact",
+        "value": 195
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 200
+       },
+       "end": {
+        "kind": "exact",
+        "value": 205
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 210
+       },
+       "end": {
+        "kind": "exact",
+        "value": 215
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 220
+       },
+       "end": {
+        "kind": "exact",
+        "value": 225
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 230
+       },
+       "end": {
+        "kind": "exact",
+        "value": 235
+       },
+       "strand": 1,
+       "ref": ""
+      },
+      {
+       "start": {
+        "kind": "exact",
+        "value": 240
+       },
+       "end": {
+        "kind": "exact",
+        "value": 245
+       },
+       "strand": 1,
+       "ref": ""
+      }
+     ]
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "long location wraps at commas"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "repeat region",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 0
+     },
+     "end": {
+      "kind": "exact",
+      "value": 30
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "rpt_type",
+      "values": [
+       {
+        "kind": "text",
+        "text": "direct"
+       }
+      ]
+     },
+     {
+      "key": "rpt_unit_seq",
+      "values": [
+       {
+        "kind": "text",
+        "text": "acgtacgt"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "regulatory_region_long_key",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 0
+     },
+     "end": {
+      "kind": "exact",
+      "value": 30
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "key over 15 characters is cut at column 21"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "misc_feature",
+    "location": {
+     "start": {
+      "kind": "exact",
+      "value": 70
+     },
+     "end": {
+      "kind": "exact",
+      "value": 90
+     },
+     "strand": 1,
+     "ref": ""
+    },
+    "qualifiers": [
+     {
+      "key": "note",
+      "values": [
+       {
+        "kind": "text",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+       }
+      ]
+     },
+     {
+      "key": "inference",
+      "values": [
+       {
+        "kind": "text",
+        "text": "a                                                                      b"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "NOVERSION",
+  "name": "<unknown name>",
+  "description": "<unknown description>",
+  "seq": "ACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNac",
+  "dbxrefs": [],
+  "annotations": {
+   "molecule_type": "DNA",
+   "data_file_division": "PRO",
+   "date": "31-FEB-2024",
+   "source": "None"
+  },
+  "features": []
+ },
+ {
+  "id": "LONGNAME",
+  "name": "a_locus_name_longer_than_sixteen",
+  "description": "long locus name",
+  "seq": "ACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacg",
+  "dbxrefs": [],
+  "annotations": {
+   "molecule_type": "unassigned DNA",
+   "topology": "linear",
+   "data_file_division": "XYZ",
+   "db_source": "some source",
+   "segment": "1 of 2",
+   "organism": "An organism name that is far longer than sixty-eight characters in total length",
+   "keywords": [],
+   "structured_comment": [
+    {
+     "name": "Genome-Assembly-Data",
+     "fields": [
+      [
+       "Assembly Method",
+       "Test v. 1"
+      ],
+      [
+       "Coverage",
+       "10x"
+      ]
+     ]
+    },
+    {
+     "name": "Genome-Annotation-Data",
+     "fields": [
+      [
+       "Annotation Provider",
+       "Bakta"
+      ]
+     ]
+    }
+   ]
+  },
+  "features": []
+ },
+ {
+  "id": "prot.x",
+  "name": "PROT1",
+  "description": "a protein",
+  "seq": "ACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgt",
+  "dbxrefs": [],
+  "annotations": {
+   "molecule_type": "protein",
+   "date": "bad date"
+  },
+  "features": []
+ },
+ {
+  "id": "RNA1.1",
+  "name": "RNA1",
+  "description": "an RNA",
+  "seq": "ACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacg",
+  "dbxrefs": [],
+  "annotations": {
+   "molecule_type": "mRNA",
+   "topology": "a-very-long-topology",
+   "data_file_division": "HUM",
+   "comment": [
+    "list comment one",
+    "list comment two\n"
+   ]
+  },
+  "features": []
+ },
+ {
+  "id": "EMPTY",
+  "name": "EMPTY",
+  "description": "empty sequence",
+  "seq": "",
+  "dbxrefs": [],
+  "annotations": {
+   "molecule_type": "DNA"
+  },
+  "features": []
+ },
+ {
+  "id": "abcdefghijklmnopqrstu",
+  "name": "abcdefghijklmnopqrstu",
+  "description": "long name and length",
+  "seq": "ACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYKMACGTNacgtRYK",
+  "dbxrefs": [],
+  "annotations": {
+   "molecule_type": "DNA"
+  },
+  "features": []
+ }
+]

@@ -1,0 +1,203 @@
+LOCUS       TEST001                  300 bp    DNA     circular BCT 05-MAR-2024
+DEFINITION  Synthetic record one, with a description long enough to wrap onto
+            more than one line in both formats.
+ACCESSION   TEST001
+VERSION     TEST001.2  GI:12345
+DBLINK      BioProject: PRJNA1
+            BioSample: SAMN1
+            Project: 12
+KEYWORDS    alpha; beta gamma.
+SOURCE      Testus syntheticus
+  ORGANISM  Testus syntheticus
+            Bacteria; Testota; Testales.
+REFERENCE   1  (bases 1 to 300)
+  AUTHORS   Smith,J., Jones,K. and a very long list of other authors who wrote
+            the paper together
+  CONSRTM   Test Consortium
+  TITLE     A title
+  JOURNAL   J. Test 1:1-10 (2024)
+  MEDLINE   999
+   PUBMED   123456
+  REMARK    A remark
+REFERENCE   2
+  JOURNAL   Unpublished
+COMMENT     First comment line
+            Second line that is long enough to need wrapping because it has very
+            many words in it
+            
+            After a blank line
+FEATURES             Location/Qualifiers
+     source          1..300
+                     /mol_type="genomic DNA"
+     gene            complement(11..100)
+                     /locus_tag="TST_00001"
+                     /gene="abcD"
+     CDS             complement(11..100)
+                     /locus_tag="TST_00001"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="A very long product name that goes on and on
+                     beyond the eighty column limit of the format"
+                     /translation="MACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDE
+                     FGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACD
+                     EFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY"
+                     /note="He said ""hello"""
+                     /note="second note"
+                     /pseudo
+                     /ribosomal_slippage=True
+                     /score="0.75"
+                     /anticodon=(pos:complement(20..22),aa:Ala,seq:tgc)
+                     /empty=""
+     CDS             join(111..150,161..200)
+                     /product="β-lactamase with a name long enough that it wraps
+                     onto a second line here"
+     CDS             complement(join(111..150,161..200))
+                     /product="reverse join"
+     misc_feature    order(1..5,11..15)
+                     /note="order"
+     misc_feature    <5..>20
+                     /note="partial"
+     misc_feature    complement((5.9)..(29^30))
+                     /note="within/between"
+     misc_feature    one-of(6,8)..40
+                     /note="one-of"
+     misc_feature    42
+                     /note="single base"
+     misc_feature    50^51
+                     /note="between bases"
+     misc_feature    300^1
+                     /note="between the end and the start"
+     misc_feature    OTHER.1:6..25
+                     /note="on another record"
+     misc_feature    <60..60
+                     /note="unknown start"
+     misc_feature    61..>61
+                     /note="unknown end"
+     misc_feature    join(1..5,11..15,21..25,31..35,41..45,51..55,61..65,71..75,
+                     81..85,91..95,101..105,111..115,121..125,131..135,141..145,
+                     151..155,161..165,171..175,181..185,191..195,201..205,
+                     211..215,221..225,231..235,241..245)
+                     /note="long location wraps at commas"
+     repeat_region   1..30
+                     /rpt_type=direct
+                     /rpt_unit_seq="acgtacgt"
+     regulatory_regio1..30
+                     /note="key over 15 characters is cut at column 21"
+     misc_feature    71..90
+                     /note="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                     /inference="a                                              
+                     b"
+ORIGIN
+        1 acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg
+       61 trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg
+      121 tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry
+      181 kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna
+      241 cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma
+//
+LOCUS       NOVERSION                 59 bp    DNA              BCT 01-JAN-1980
+DEFINITION  .
+ACCESSION   NOVERSION
+VERSION     NOVERSION
+KEYWORDS    .
+SOURCE      None
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+ORIGIN
+        1 acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnac
+//
+LOCUS       a_locus_name_longer_than_sixteen 60 bp    DNA     linear   UNK 01-JAN-1980
+DEFINITION  long locus name.
+ACCESSION   LONGNAME
+VERSION     LONGNAME
+KEYWORDS    .
+SEGMENT     1 of 2
+SOURCE      .
+  ORGANISM  An organism name that is far longer than sixty-eight characters ...
+            .
+DBSOURCE    some source
+COMMENT     ##Genome-Assembly-Data-START##
+            Assembly Method     :: Test v. 1
+            Coverage            :: 10x
+            ##Genome-Assembly-Data-END##
+            ##Genome-Annotation-Data-START##
+            Annotation Provider :: Bakta
+            ##Genome-Annotation-Data-END##
+FEATURES             Location/Qualifiers
+ORIGIN
+        1 acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg
+//
+LOCUS       PROT1                     61 aa                     UNK 01-JAN-1980
+DEFINITION  a protein.
+ACCESSION   prot.x
+VERSION     prot.x
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+ORIGIN
+        1 acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg
+       61 t
+//
+LOCUS       RNA1                     125 bp    mRNA             PRI 01-JAN-1980
+DEFINITION  an RNA.
+ACCESSION   RNA1
+VERSION     RNA1.1
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+COMMENT     list comment one
+            list comment two
+FEATURES             Location/Qualifiers
+ORIGIN
+        1 acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg
+       61 trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg
+      121 tnacg
+//
+LOCUS       EMPTY                      0 bp    DNA              UNK 01-JAN-1980
+DEFINITION  empty sequence.
+ACCESSION   EMPTY
+VERSION     EMPTY
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+ORIGIN
+//
+LOCUS       abcdefghijklmnopqrstu   1234 bp    DNA              UNK 01-JAN-1980
+DEFINITION  long name and length.
+ACCESSION   abcdefghijklmnopqrstu
+VERSION     abcdefghijklmnopqrstu
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+ORIGIN
+        1 acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg
+       61 trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg
+      121 tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry
+      181 kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna
+      241 cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma
+      301 cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt
+      361 rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt
+      421 nacgtrykma cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk
+      481 macgtnacgt rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac
+      541 gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac
+      601 gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr
+      661 ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg trykmacgtn
+      721 acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg tnacgtrykm
+      781 acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg
+      841 trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg
+      901 tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry
+      961 kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna
+     1021 cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma
+     1081 cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt
+     1141 rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt
+     1201 nacgtrykma cgtnacgtry kmacgtnacg tryk
+//
