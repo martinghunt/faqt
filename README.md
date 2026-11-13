@@ -449,14 +449,12 @@ Use these when the input format is already known and you do not need `seqio` for
 
 ### Writing Annotated GenBank and EMBL
 
-The `insdc` package writes annotated records, with features, as GenBank or EMBL. It is write-only: faqt's GenBank and EMBL readers stay sequence-only. Output matches Biopython's `SeqIO.write(record, handle, "genbank")` and `"embl"` byte for byte, so `insdc.Record` mirrors the parts of Biopython's `SeqRecord` those writers read.
+The `insdc` package writes annotated records, with features, as GenBank or EMBL. It is write-only: faqt's GenBank and EMBL readers stay sequence-only. Output matches Biopython's `SeqIO.write(record, handle, "genbank")` and `"embl"` byte for byte, so `insdc.Record` mirrors the parts of Biopython's `SeqRecord` those writers read. It embeds the usual `seqio.SeqRecord` for the name, description and sequence, and adds the record ID and the annotation.
 
 ```go
 record := &insdc.Record{
+	SeqRecord:   seqio.SeqRecord{Name: "contig_1", Description: "an example", Seq: []byte("ATGAAATAA")},
 	ID:          "contig_1",
-	Name:        "contig_1",
-	Description: "an example",
-	Seq:         []byte("ATGAAATAA"),
 	Annotations: insdc.Annotations{MoleculeType: "DNA", Topology: "linear", DataFileDivision: "BCT"},
 	Features: []insdc.Feature{{
 		Type:     "CDS",

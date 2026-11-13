@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/martinghunt/faqt/seqio"
 )
 
 // The fixtures in testdata are made by make_fixtures.py: Biopython records
@@ -93,11 +95,9 @@ func loadRecords(t *testing.T, path string) []*Record {
 	for i, jr := range raw {
 		a := jr.Annotations
 		r := &Record{
-			ID:          jr.ID,
-			Name:        jr.Name,
-			Description: jr.Description,
-			Seq:         []byte(jr.Seq),
-			DBXrefs:     jr.DBXrefs,
+			SeqRecord: seqio.SeqRecord{Name: jr.Name, Description: jr.Description, Seq: []byte(jr.Seq)},
+			ID:        jr.ID,
+			DBXrefs:   jr.DBXrefs,
 			Annotations: Annotations{
 				MoleculeType:     a.MoleculeType,
 				Topology:         a.Topology,
@@ -223,12 +223,12 @@ func TestWriteErrors(t *testing.T) {
 		genbank string
 		embl    string
 	}{
-		{name: "missing molecule type", record: Record{ID: "A", Seq: []byte("acgt")}, genbank: "missing molecule type", embl: "missing molecule type"},
-		{name: "whitespace in locus", record: Record{ID: "A", Name: "two words", Seq: []byte("acgt"), Annotations: dna}, genbank: "invalid whitespace"},
-		{name: "semicolon in accession", record: Record{ID: "A;B", Seq: []byte("acgt"), Annotations: dna}, embl: "semi-colon"},
-		{name: "space in accession", record: Record{ID: "A", Seq: []byte("acgt"), Annotations: Annotations{MoleculeType: "DNA", Accessions: []string{"A B"}}}, embl: "spaces"},
-		{name: "unknown molecule type", record: Record{ID: "A", Seq: []byte("acgt"), Annotations: Annotations{MoleculeType: "other"}}, embl: "failed to understand molecule type"},
-		{name: "unknown location", record: Record{ID: "A", Seq: []byte("acgt"), Annotations: dna, Features: []Feature{
+		{name: "missing molecule type", record: Record{ID: "A", SeqRecord: seqio.SeqRecord{Seq: []byte("acgt")}}, genbank: "missing molecule type", embl: "missing molecule type"},
+		{name: "whitespace in locus", record: Record{ID: "A", SeqRecord: seqio.SeqRecord{Name: "two words", Seq: []byte("acgt")}, Annotations: dna}, genbank: "invalid whitespace"},
+		{name: "semicolon in accession", record: Record{ID: "A;B", SeqRecord: seqio.SeqRecord{Seq: []byte("acgt")}, Annotations: dna}, embl: "semi-colon"},
+		{name: "space in accession", record: Record{ID: "A", SeqRecord: seqio.SeqRecord{Seq: []byte("acgt")}, Annotations: Annotations{MoleculeType: "DNA", Accessions: []string{"A B"}}}, embl: "spaces"},
+		{name: "unknown molecule type", record: Record{ID: "A", SeqRecord: seqio.SeqRecord{Seq: []byte("acgt")}, Annotations: Annotations{MoleculeType: "other"}}, embl: "failed to understand molecule type"},
+		{name: "unknown location", record: Record{ID: "A", SeqRecord: seqio.SeqRecord{Seq: []byte("acgt")}, Annotations: dna, Features: []Feature{
 			{Type: "misc_feature", Location: Location{Start: Position{Kind: Unknown}, End: Position{Kind: Unknown}}},
 		}}, genbank: "unknown location", embl: "unknown location"},
 	} {

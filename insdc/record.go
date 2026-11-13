@@ -16,17 +16,19 @@
 // 3-Clause License; see third_party/biopython.
 package insdc
 
-// Record is an annotated sequence record.
+import "github.com/martinghunt/faqt/seqio"
+
+// Record is an annotated sequence record: a sequence record as faqt's readers
+// return it, plus the annotation.
 type Record struct {
+	// SeqRecord holds the sequence. Its Name is record.name, the GenBank LOCUS
+	// name (ID is used if it is empty); Description is record.description,
+	// written as DEFINITION or DE; Seq is written in lower case. Qual is not
+	// written.
+	seqio.SeqRecord
 	// ID is record.id. GenBank and EMBL take the accession and version from
 	// it when Annotations.Accessions is empty.
 	ID string
-	// Name is record.name, the GenBank LOCUS name. If empty, ID is used.
-	Name string
-	// Description is record.description, written as DEFINITION or DE.
-	Description string
-	// Seq is the sequence. Output is lower case.
-	Seq []byte
 	// DBXrefs is record.dbxrefs, written as GenBank DBLINK and EMBL PR.
 	DBXrefs     []string
 	Annotations Annotations
