@@ -1,0 +1,222 @@
+ID   TEST001; SV 2; circular; DNA; ; PRO; 300 BP.
+XX
+AC   TEST001;
+XX
+PR   Project:PRJNA1;
+XX
+DE   Synthetic record one, with a description long enough to wrap onto more than
+DE   one line in both formats
+XX
+KW   alpha
+KW   beta gamma
+XX
+OS   Testus syntheticus
+OC   Bacteria; Testota; Testales.
+XX
+RN   [1]
+RP   1-300
+RX   PUBMED; 123456.
+RG   Test Consortium
+RA   Smith,J., Jones,K. and a very long list of other authors who wrote the
+RA   paper together;
+RT   "A title";
+RL   J. Test 1:1-10 (2024)
+XX
+RN   [2]
+RL   Unpublished
+XX
+CC   First comment line
+CC   Second line that is long enough to need wrapping because it has very many
+CC   words in it
+CC   
+CC   After a blank line
+XX
+FH   Key             Location/Qualifiers
+FH
+FT   source          1..300
+FT                   /mol_type="genomic DNA"
+FT   gene            complement(11..100)
+FT                   /locus_tag="TST_00001"
+FT                   /gene="abcD"
+FT   CDS             complement(11..100)
+FT                   /locus_tag="TST_00001"
+FT                   /codon_start=1
+FT                   /transl_table=11
+FT                   /product="A very long product name that goes on and on
+FT                   beyond the eighty column limit of the format"
+FT                   /translation="MACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDE
+FT                   FGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACD
+FT                   EFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWYACDEFGHIKLMNPQRSTVWY"
+FT                   /note="He said ""hello"""
+FT                   /note="second note"
+FT                   /pseudo
+FT                   /ribosomal_slippage=True
+FT                   /score="0.75"
+FT                   /anticodon=(pos:complement(20..22),aa:Ala,seq:tgc)
+FT                   /empty=""
+FT   CDS             join(111..150,161..200)
+FT                   /product="β-lactamase with a name long enough that it wraps
+FT                   onto a second line here"
+FT   CDS             complement(join(111..150,161..200))
+FT                   /product="reverse join"
+FT   misc_feature    order(1..5,11..15)
+FT                   /note="order"
+FT   misc_feature    <5..>20
+FT                   /note="partial"
+FT   misc_feature    complement((5.9)..(29^30))
+FT                   /note="within/between"
+FT   misc_feature    one-of(6,8)..40
+FT                   /note="one-of"
+FT   misc_feature    42
+FT                   /note="single base"
+FT   misc_feature    50^51
+FT                   /note="between bases"
+FT   misc_feature    300^1
+FT                   /note="between the end and the start"
+FT   misc_feature    OTHER.1:6..25
+FT                   /note="on another record"
+FT   misc_feature    <60..60
+FT                   /note="unknown start"
+FT   misc_feature    61..>61
+FT                   /note="unknown end"
+FT   misc_feature    join(1..5,11..15,21..25,31..35,41..45,51..55,61..65,71..75,
+FT                   81..85,91..95,101..105,111..115,121..125,131..135,141..145,
+FT                   151..155,161..165,171..175,181..185,191..195,201..205,
+FT                   211..215,221..225,231..235,241..245)
+FT                   /note="long location wraps at commas"
+FT   repeat_region   1..30
+FT                   /rpt_type=direct
+FT                   /rpt_unit_seq="acgtacgt"
+FT   regulatory_regio1..30
+FT                   /note="key over 15 characters is cut at column 21"
+FT   misc_feature    71..90
+FT                   /note="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+FT                   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+FT                   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+FT                   /inference="a                                              
+FT                   b"
+XX
+SQ   Sequence 300 BP; 47 A; 46 C; 46 G; 46 T; 115 other;
+     acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg        60
+     trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg       120
+     tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry       180
+     kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna       240
+     cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma       300
+//
+ID   NOVERSION; ; ; DNA; ; PRO; 59 BP.
+XX
+AC   NOVERSION;
+XX
+DE   .
+XX
+OS   .
+OC   .
+XX
+FH   Key             Location/Qualifiers
+FH
+XX
+SQ   Sequence 59 BP; 10 A; 10 C; 9 G; 9 T; 21 other;
+     acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnac         59
+//
+ID   LONGNAME; ; linear; unassigned DNA; ; UNC; 60 BP.
+XX
+AC   LONGNAME;
+XX
+DE   long locus name
+XX
+XX
+OS   An organism name that is far longer than sixty-eight characters in total
+OS   length
+OC   .
+XX
+FH   Key             Location/Qualifiers
+FH
+XX
+SQ   Sequence 60 BP; 10 A; 10 C; 10 G; 9 T; 21 other;
+     acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg        60
+//
+ID   prot.x; ; ; PROTEIN; ; UNC; 61 AA.
+XX
+AC   prot.x;
+XX
+DE   a protein
+XX
+OS   .
+OC   .
+XX
+FH   Key             Location/Qualifiers
+FH
+XX
+SQ   
+     acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg        60
+     t                                                                        61
+//
+ID   RNA1; SV 1; a-very-long-topology; mRNA; ; HUM; 125 BP.
+XX
+AC   RNA1;
+XX
+DE   an RNA
+XX
+OS   .
+OC   .
+XX
+CC   list comment one
+CC   list comment two
+XX
+FH   Key             Location/Qualifiers
+FH
+XX
+SQ   
+     acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg        60
+     trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg       120
+     tnacg                                                                   125
+//
+ID   EMPTY; ; ; DNA; ; UNC; 0 BP.
+XX
+AC   EMPTY;
+XX
+DE   empty sequence
+XX
+OS   .
+OC   .
+XX
+FH   Key             Location/Qualifiers
+FH
+XX
+SQ   Sequence 0 BP; 0 A; 0 C; 0 G; 0 T; 0 other;
+//
+ID   abcdefghijklmnopqrstu; ; ; DNA; ; UNC; 1234 BP.
+XX
+AC   abcdefghijklmnopqrstu;
+XX
+DE   long name and length
+XX
+OS   .
+OC   .
+XX
+FH   Key             Location/Qualifiers
+FH
+XX
+SQ   Sequence 1234 BP; 190 A; 190 C; 190 G; 190 T; 474 other;
+     acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg        60
+     trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg       120
+     tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry       180
+     kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna       240
+     cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma       300
+     cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt       360
+     rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt       420
+     nacgtrykma cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk       480
+     macgtnacgt rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac       540
+     gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac       600
+     gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr       660
+     ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg trykmacgtn       720
+     acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg tnacgtrykm       780
+     acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry kmacgtnacg       840
+     trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna cgtrykmacg       900
+     tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma cgtnacgtry       960
+     kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt rykmacgtna      1020
+     cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt nacgtrykma      1080
+     cgtnacgtry kmacgtnacg trykmacgtn acgtrykmac gtnacgtryk macgtnacgt      1140
+     rykmacgtna cgtrykmacg tnacgtrykm acgtnacgtr ykmacgtnac gtrykmacgt      1200
+     nacgtrykma cgtnacgtry kmacgtnacg tryk                                  1234
+//

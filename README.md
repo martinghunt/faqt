@@ -269,7 +269,7 @@ type SeqRecord struct {
 }
 ```
 
-All supported inputs normalize to this record. `Qual` is `nil` unless the source has FASTQ-style qualities. The library does not expose annotation models, feature graphs, or metadata maps.
+All supported inputs normalize to this record. `Qual` is `nil` unless the source has FASTQ-style qualities. Apart from the write-only `insdc` package below, the library does not expose annotation models, feature graphs, or metadata maps.
 
 ### Reading Records
 
@@ -446,6 +446,32 @@ The format packages expose direct readers and writers where available:
 - `agc`: random-access archive and per-sample sequence readers
 
 Use these when the input format is already known and you do not need `seqio` format or compression detection.
+
+### Writing Annotated GenBank and EMBL
+
+The `insdc` package writes annotated records, with features, as GenBank or EMBL. It is write-only: faqt's GenBank and EMBL readers stay sequence-only. Output matches Biopython's `SeqIO.write(record, handle, "genbank")` and `"embl"` byte for byte, so `insdc.Record` mirrors the parts of Biopython's `SeqRecord` those writers read. It embeds the usual `seqio.SeqRecord` for the name, description and sequence, and adds the record ID and the annotation.
+
+```go
+record := &insdc.Record{
+	SeqRecord:   seqio.SeqRecord{Name: "contig_1", Description: "an example", Seq: []byte("ATGAAATAA")},
+	ID:          "contig_1",
+	Annotations: insdc.Annotations{MoleculeType: "DNA", Topology: "linear", DataFileDivision: "BCT"},
+	Features: []insdc.Feature{{
+		Type:     "CDS",
+		Location: insdc.Span(0, 9, 1), // 0-based start, exclusive end, strand
+		Qualifiers: []insdc.Qualifier{
+			{Key: "locus_tag", Values: []insdc.Value{insdc.Text("EX_00001")}},
+			{Key: "transl_table", Values: []insdc.Value{insdc.Int("11")}},
+			{Key: "pseudo", Values: []insdc.Value{insdc.Flag()}},
+		},
+	}},
+}
+if err := insdc.WriteGenBank(os.Stdout, record); err != nil {
+	log.Fatal(err)
+}
+```
+
+Use `insdc.NewGenBankWriter` and `insdc.NewEMBLWriter` to write records one at a time. Output was checked against Biopython 1.88; Biopython 1.79 to 1.88 write the same files, and 1.78 differs only in not writing the GenBank `DBSOURCE` line.
 
 ### Sequence Utilities
 
